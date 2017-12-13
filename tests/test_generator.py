@@ -1050,8 +1050,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             len(self.results.image.successes),
             51
         )
-        # sync_update = self.results.image.successes[0]
-        sync_update = self.results.image.successes.get_by_ids("-1|ACA.jpg", 100002)
+        sync_update = self.results.image.successes[0]
+        # sync_update = self.results.image.successes.get_by_ids("-1|ACA.jpg", 100002)
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -1066,8 +1066,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        # sync_update = self.results.image.successes[-1]
-        sync_update = self.results.image.successes.get_by_ids("41|ACARB-S.jpg", 100052)
+        sync_update = self.results.image.successes[-1]
+        # sync_update = self.results.image.successes.get_by_ids("41|ACARB-S.jpg", 100052)
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -1693,7 +1693,7 @@ probbos:
         # TODO: more tests
 
     @pytest.mark.slow
-    def test_dummy_do_merge_prod_cat(self):
+    def test_dummy_do_merge_prod_cat_img(self):
         self.setup_temp_img_dir()
         self.populate_master_parsers()
         self.populate_slave_parsers()
@@ -1746,6 +1746,485 @@ probbos:
         self.assertEqual(len(self.updates.slave), 48)
 
         sync_update = self.updates.slave.get_by_ids(10, 24863)
+
+        """
+update <      10 |   24863 ><class 'woogenerator.syncupdate.SyncUpdateProdWoo'>
+---
+M:                                         ACARF-CRS ====> <ImportWooProductSimple> <ImportWooProductSimple>
+{'CA': u'S',
+ 'CVC': u'0.20',
+ 'D': u'',
+ 'DNR': u'8.45',
+ 'DPR': u'7.75',
+ 'DYNCAT': u'',
+ 'DYNPROD': u'',
+ 'E': u'E',
+ 'HTML Description': u'',
+ 'ID': '',
+ 'Images': u'ACARF-CRS.png',
+ 'PA': u'',
+ 'RNR': u'',
+ 'RPR': u'',
+ 'SCHEDULE': u'',
+ 'Updated': u'',
+ 'VA': u'',
+ 'VISIBILITY': u'local',
+ 'WNF': 1465801200,
+ 'WNR': u'12.95',
+ 'WNS': 10.36,
+ 'WNT': 32519278800,
+ 'WPR': u'11.00',
+ 'Xero Description': u'',
+ '_row': [],
+ 'attachment_objects': [93|ACARF-CRS.png <ImportWooImg>],
+ 'attribute:pa_brand': 'Company A',
+ 'attribute:pa_colour': 'Style 14',
+ 'attribute_data:pa_brand': '0|1|0',
+ 'attribute_data:pa_colour': '0|1|0',
+ 'attribute_default:pa_brand': '',
+ 'attribute_default:pa_colour': '',
+ 'backorders': 'no',
+ 'catalog_visibility': 'visible',
+ 'category_objects': [A|r:3|w:315|Product A <ImportWooCategory>,
+                      ACA|r:4|w:316|Company A Product A <ImportWooCategory>,
+                      ACARF|r:77|w:323|Range F <ImportWooCategory>,
+                      ACAS|r:12|w:320|100ml Company A Product A Samples <ImportWooCategory>,
+                      specials|r:166|w:100000|Specials <ImportWooCategory>,
+                      product_a_specials|r:167|w:100001|Product A Specials <ImportWooCategory>],
+ 'catsum': u'Product A|Product A > Company A Product A|Product A > Company A Product A > Range F|Product A > Company A Product A > 100ml Company A Product A Samples|Specials|Specials > Product A Specials',
+ 'code': u'S',
+ 'codesum': u'ACARF-CRS',
+ 'descsum': u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.",
+ 'download_expiry': -1,
+ 'download_limit': -1,
+ 'featured': 'no',
+ 'fullname': u'100ml Sample',
+ 'fullnamesum': u'Range F - Style 14 - 100ml Sample',
+ 'height': u'120',
+ 'imgsum': u'ACARF-CRS.png',
+ 'is_purchased': u'',
+ 'is_sold': u'',
+ 'itemsum': u'Range F - Style 14 - 100ml Sample',
+ 'length': u'40',
+ 'modified_gmt': datetime.datetime(2017, 12, 5, 16, 56, 30, tzinfo=<UTC>),
+ 'modified_local': datetime.datetime(2017, 12, 6, 2, 36, 30),
+ 'name': u'100ml Sample',
+ 'post_status': u'',
+ 'price': u'',
+ 'prod_type': 'simple',
+ 'rowcount': 93,
+ 'slug': '',
+ 'spsum': 'EOFY2016-ACA',
+ 'stock': u'',
+ 'stock_status': 'instock',
+ 'tax_status': 'taxable',
+ 'title': u'Range F - Style 14 - 100ml Sample',
+ 'title_1': u'Range F',
+ 'title_2': u'Style 14 - 100ml Sample',
+ 'weight': u'0.12',
+ 'width': u'40'}
+S:r:10|a:24863|ACARF-CRS <ImportWooApiProductSimple>
+{'CVC': 0.2,
+ 'D': u'',
+ 'DNF': None,
+ 'DNR': '8.45',
+ 'DNS': '0.00',
+ 'DNT': None,
+ 'DPF': None,
+ 'DPR': '7.75',
+ 'DPS': '0.00',
+ 'DPT': None,
+ 'HTML Description': "Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.",
+ 'ID': 24863,
+ 'RNF': None,
+ 'RNR': '0.00',
+ 'RNS': '0.00',
+ 'RNT': None,
+ 'RPF': None,
+ 'RPR': '0.00',
+ 'RPS': '0.00',
+ 'RPT': None,
+ 'WNF': 1465837200,
+ 'WNR': '12.95',
+ 'WNS': '10.36',
+ 'WNT': 32519314800,
+ 'WPF': None,
+ 'WPR': '11.00',
+ 'WPS': '0.00',
+ 'WPT': None,
+ '_row': [],
+ 'api_data': {u'_links': {u'collection': [{u'href': u'http://localhost:18080/wptest/wp-json/wc/v2/products'}],
+                          u'self': [{u'href': u'http://localhost:18080/wptest/wp-json/wc/v2/products/24863'}]},
+              u'attributes': [{u'id': 2,
+                               u'name': None,
+                               u'options': [],
+                               u'position': 0,
+                               u'variation': False,
+                               u'visible': True},
+                              {u'id': 1,
+                               u'name': None,
+                               u'options': [u'Company A'],
+                               u'position': 0,
+                               u'variation': False,
+                               u'visible': True},
+                              {u'id': 3,
+                               u'name': None,
+                               u'options': [u'Style 14'],
+                               u'position': 0,
+                               u'variation': False,
+                               u'visible': True}],
+              u'average_rating': u'0.00',
+              u'backordered': False,
+              u'backorders': u'no',
+              u'backorders_allowed': False,
+              u'button_text': u'',
+              u'catalog_visibility': u'visible',
+              u'categories': [{u'id': 320,
+                               u'name': u'100ml Company A Product A Samples',
+                               u'slug': u'product-a-company-a-product-a-100ml-company-a-product-a-samples'},
+                              {u'id': 316,
+                               u'name': u'Company A Product A',
+                               u'slug': u'product-a-company-a-product-a'},
+                              {u'id': 315,
+                               u'name': u'Product A',
+                               u'slug': u'product-a'}],
+              u'cross_sell_ids': [],
+              u'date_created': u'2017-11-08T06:50:45',
+              u'date_created_gmt': u'2017-11-08T06:50:45',
+              u'date_modified': u'2017-11-08T08:55:06',
+              u'date_modified_gmt': u'2017-11-08T08:55:06',
+              u'date_on_sale_from': None,
+              u'date_on_sale_from_gmt': None,
+              u'date_on_sale_to': None,
+              u'date_on_sale_to_gmt': None,
+              u'default_attributes': [],
+              u'description': u"<p>Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.</p>\n",
+              u'dimensions': {u'height': u'120',
+                              u'length': u'40',
+                              u'width': u'40'},
+              u'download_expiry': -1,
+              u'download_limit': -1,
+              u'downloadable': False,
+              u'downloads': [],
+              u'external_url': u'',
+              u'featured': False,
+              u'grouped_products': [],
+              u'id': 24863,
+              u'images': [{u'alt': u'Range F - Style 14 - 100ml Sample',
+                           u'date_created': u'2017-11-08T06:50:45',
+                           u'date_created_gmt': u'2017-11-08T06:50:45',
+                           u'date_modified': u'2017-11-08T06:50:45',
+                           u'date_modified_gmt': u'2017-11-08T06:50:45',
+                           u'id': 24864,
+                           u'name': u'Range F &#8211; Style 14 &#8211; 100ml Sample 1',
+                           u'position': 0,
+                           u'src': u'http://localhost:18080/wptest/wp-content/uploads/2017/11/ACARF-CRS.png'}],
+              u'in_stock': True,
+              u'manage_stock': False,
+              u'menu_order': 93,
+              u'meta_data': [{u'id': 88322,
+                              u'key': u'_upsell_skus',
+                              u'value': []},
+                             {u'id': 88323,
+                              u'key': u'_crosssell_skus',
+                              u'value': []},
+                             {u'id': 88333,
+                              u'key': u'_file_path',
+                              u'value': u''},
+                             {u'id': 88337,
+                              u'key': u'_product_url',
+                              u'value': u''},
+                             {u'id': 88338,
+                              u'key': u'_button_text',
+                              u'value': u''},
+                             {u'id': 93993,
+                              u'key': u'_max_variation_sale_price',
+                              u'value': u''},
+                             {u'id': 93994,
+                              u'key': u'_min_variation_sale_price',
+                              u'value': u''},
+                             {u'id': 93995,
+                              u'key': u'_max_variation_regular_price',
+                              u'value': u''},
+                             {u'id': 93996,
+                              u'key': u'_min_variation_regular_price',
+                              u'value': u''},
+                             {u'id': 93997,
+                              u'key': u'_max_variation_price',
+                              u'value': u''},
+                             {u'id': 93998,
+                              u'key': u'_min_variation_price',
+                              u'value': u''},
+                             {u'id': 93999,
+                              u'key': u'title_1',
+                              u'value': u'Range F'},
+                             {u'id': 94000,
+                              u'key': u'title_2',
+                              u'value': u'Style 14 - 100ml Sample'},
+                             {u'id': 94001,
+                              u'key': u'wootan_danger',
+                              u'value': u''},
+                             {u'id': 94002,
+                              u'key': u'lc_rn_regular_price',
+                              u'value': u''},
+                             {u'id': 94003,
+                              u'key': u'lc_rn_sale_price',
+                              u'value': u''},
+                             {u'id': 94004,
+                              u'key': u'lc_rn_sale_price_dates_from',
+                              u'value': u''},
+                             {u'id': 94005,
+                              u'key': u'lc_rn_sale_price_dates_to',
+                              u'value': u''},
+                             {u'id': 94006,
+                              u'key': u'lc_rp_regular_price',
+                              u'value': u''},
+                             {u'id': 94007,
+                              u'key': u'lc_rp_sale_price',
+                              u'value': u''},
+                             {u'id': 94008,
+                              u'key': u'lc_rp_sale_price_dates_from',
+                              u'value': u''},
+                             {u'id': 94009,
+                              u'key': u'lc_rp_sale_price_dates_to',
+                              u'value': u''},
+                             {u'id': 94010,
+                              u'key': u'lc_wn_regular_price',
+                              u'value': u'12.95'},
+                             {u'id': 94011,
+                              u'key': u'lc_wn_sale_price',
+                              u'value': u'10.36'},
+                             {u'id': 94012,
+                              u'key': u'lc_wn_sale_price_dates_from',
+                              u'value': u'1465837200'},
+                             {u'id': 94013,
+                              u'key': u'lc_wn_sale_price_dates_to',
+                              u'value': u'32519314800'},
+                             {u'id': 94014,
+                              u'key': u'lc_wp_regular_price',
+                              u'value': u'11.00'},
+                             {u'id': 94015,
+                              u'key': u'lc_wp_sale_price',
+                              u'value': u''},
+                             {u'id': 94016,
+                              u'key': u'lc_wp_sale_price_dates_from',
+                              u'value': u''},
+                             {u'id': 94017,
+                              u'key': u'lc_wp_sale_price_dates_to',
+                              u'value': u''},
+                             {u'id': 94018,
+                              u'key': u'lc_dn_regular_price',
+                              u'value': u'8.45'},
+                             {u'id': 94019,
+                              u'key': u'lc_dn_sale_price',
+                              u'value': u''},
+                             {u'id': 94020,
+                              u'key': u'lc_dn_sale_price_dates_from',
+                              u'value': u''},
+                             {u'id': 94021,
+                              u'key': u'lc_dn_sale_price_dates_to',
+                              u'value': u''},
+                             {u'id': 94022,
+                              u'key': u'lc_dp_regular_price',
+                              u'value': u'7.75'},
+                             {u'id': 94023,
+                              u'key': u'lc_dp_sale_price',
+                              u'value': u''},
+                             {u'id': 94024,
+                              u'key': u'lc_dp_sale_price_dates_from',
+                              u'value': u''},
+                             {u'id': 94025,
+                              u'key': u'lc_dp_sale_price_dates_to',
+                              u'value': u''},
+                             {u'id': 94026,
+                              u'key': u'commissionable_value',
+                              u'value': u'0.20'},
+                             {u'id': 94027,
+                              u'key': u'last_import',
+                              u'value': u''}],
+              u'name': u'Range F - Style 14 - 100ml Sample',
+              u'on_sale': False,
+              u'parent_id': 0,
+              u'permalink': u'http://localhost:18080/wptest/product/range-f-style-14-100ml-sample/',
+              u'price': u'0',
+              u'price_html': u'<span class="woocommerce-Price-amount amount"><span class="woocommerce-Price-currencySymbol">$</span>0.00</span>',
+              u'purchasable': True,
+              u'purchase_note': u'',
+              u'rating_count': 0,
+              u'regular_price': u'',
+              u'related_ids': [24802, 24808, 24778, 24788, 24804],
+              u'reviews_allowed': True,
+              u'sale_price': u'',
+              u'shipping_class': u'',
+              u'shipping_class_id': 0,
+              u'shipping_required': True,
+              u'shipping_taxable': True,
+              u'short_description': u'',
+              u'sku': u'ACARF-CRS',
+              u'slug': u'range-f-style-14-100ml-sample',
+              u'sold_individually': False,
+              u'status': u'publish',
+              u'stock_quantity': None,
+              u'tags': [],
+              u'tax_class': u'',
+              u'tax_status': u'taxable',
+              u'total_sales': 0,
+              u'type': u'simple',
+              u'upsell_ids': [],
+              u'variations': [],
+              u'virtual': False,
+              u'weight': u'0.12'},
+ 'attachment_objects': [24864|ACARF-CRS.png <ImportWooApiImg>],
+ 'attribute_objects': [OrderedDict([('title', ''), ('ID', 2)]),
+                       OrderedDict([('title', ''), ('ID', 1)]),
+                       OrderedDict([('title', ''), ('ID', 3)])],
+ 'backorders': u'no',
+ 'button_text': u'',
+ 'catalog_visibility': u'visible',
+ 'category_objects': [r:8|a:320|100ml Company A Product A Samples <ImportWooApiCategory>,
+                      r:2|a:316|Company A Product A <ImportWooApiCategory>,
+                      r:1|a:315|Product A <ImportWooApiCategory>],
+ 'codesum': u'ACARF-CRS',
+ 'created_gmt': datetime.datetime(2017, 11, 8, 6, 50, 45),
+ 'cross_sell_ids': [],
+ 'descsum': "Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.",
+ 'download_expiry': -1,
+ 'download_limit': -1,
+ 'downloadable': False,
+ 'external_url': u'',
+ 'featured': 'no',
+ 'height': u'120',
+ 'length': u'40',
+ 'meta': OrderedDict([(u'lc_dp_sale_price', u''), (u'_file_path', u''), (u'_crosssell_skus', []), (u'lc_dn_sale_price_dates_to', u''), (u'lc_rp_regular_price', u''), (u'lc_wp_sale_price_dates_from', u''), (u'lc_wn_sale_price_dates_from', u'1465837200'), (u'_max_variation_sale_price', u''), (u'_min_variation_sale_price', u''), (u'lc_rn_regular_price', u''), (u'lc_rn_sale_price_dates_to', u''), (u'lc_rp_sale_price', u''), (u'lc_wp_regular_price', u'11.00'), (u'_product_url', u''), (u'lc_rn_sale_price_dates_from', u''), (u'lc_wp_sale_price', u''), (u'lc_wp_sale_price_dates_to', u''), (u'lc_dp_sale_price_dates_to', u''), (u'lc_wn_sale_price_dates_to', u'32519314800'), (u'lc_dn_sale_price', u''), (u'commissionable_value', u'0.20'), (u'_upsell_skus', []), (u'lc_rn_sale_price', u''), (u'lc_rp_sale_price_dates_from', u''), (u'_max_variation_price', u''), (u'lc_wn_regular_price', u'12.95'), (u'title_1', u'Range F'), (u'title_2', u'Style 14 - 100ml Sample'), (u'_min_variation_price', u''), (u'lc_wn_sale_price', u'10.36'), (u'wootan_danger', u''), (u'lc_dn_regular_price', u'8.45'), (u'_button_text', u''), (u'lc_dp_regular_price', u'7.75'), (u'lc_dp_sale_price_dates_from', u''), (u'_min_variation_regular_price', u''), (u'_max_variation_regular_price', u''), (u'lc_rp_sale_price_dates_to', u''), (u'lc_dn_sale_price_dates_from', u''), (u'last_import', u'')]),
+ 'modified_gmt': datetime.datetime(2017, 11, 8, 8, 55, 6),
+ 'modified_local': datetime.datetime(2017, 11, 8, 8, 55, 6),
+ 'parent_id': 0,
+ 'post_status': u'publish',
+ 'price': '0.00',
+ 'prod_type': u'simple',
+ 'regular_price': '0.00',
+ 'rowcount': 10,
+ 'sale_price': '0.00',
+ 'sale_price_dates_from': None,
+ 'sale_price_dates_to': None,
+ 'slug': u'range-f-style-14-100ml-sample',
+ 'sold_individually': 'no',
+ 'source': 'woocommerce-test',
+ 'stock': u'',
+ 'stock_status': 'instock',
+ 'tax_status': u'taxable',
+ 'title': u'Range F - Style 14 - 100ml Sample',
+ 'type': u'simple',
+ 'upsell_ids': [],
+ 'virtual': False,
+ 'weight': u'0.12',
+ 'width': u'40'}
+warnings:
+-
+Column            Reason        Subject      Old    New                                                 M TIME               S TIME               EXTRA
+----------------  ------------  -----------  -----  --------------------------------------------------  -------------------  -------------------  -------
+post_status       merging       gdrive-test         publish                                             2017-12-06 03:56:30  2017-11-08 19:55:06
+slug              merging-read  gdrive-test         range-f-style-14-100ml-sample                       2017-12-06 03:56:30  2017-11-08 19:55:06
+meta              merging-read  gdrive-test         {u'lc_dp_sale_price': OrderedDict([('meta_value',   2017-12-06 03:56:30  2017-11-08 19:55:06
+menu_order        merging-read  gdrive-test  93     10                                                  2017-12-06 03:56:30  2017-11-08 19:55:06
+regular_price     merging-read  gdrive-test         0.00                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+upsell_ids        merging-read  gdrive-test         []                                                  2017-12-06 03:56:30  2017-11-08 19:55:06
+sale_price        merging-read  gdrive-test         0.00                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+cross_sell_ids    merging-read  gdrive-test         []                                                  2017-12-06 03:56:30  2017-11-08 19:55:06
+attributes        merging       gdrive-test         [OrderedDict([('title', ''), ('term_id', 2)]), Ord  2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rn_sale_price  merging       gdrive-test         0.00                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rp_sale_price  merging       gdrive-test         0.00                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wp_sale_price  merging       gdrive-test         0.00                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dn_sale_price  merging       gdrive-test         0.00                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dp_sale_price  merging       gdrive-test         0.00                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+-
+Column                       Reason     Subject           Old                                                 New                                                 M TIME               S TIME               EXTRA
+---------------------------  ---------  ----------------  --------------------------------------------------  --------------------------------------------------  -------------------  -------------------  -------
+product_categories           updating   woocommerce-test  [{'term_id': 320}, {'term_id': 316}, {'term_id': 3  [{'term_id': 315}, {'term_id': 316}, {'term_id': 3  2017-12-06 03:56:30  2017-11-08 19:55:06
+attachment_objects           updating   woocommerce-test  [{'id': 24864}]                                     [{'id': 100044}]                                    2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wn_sale_price_dates_from  updating   woocommerce-test  2016-06-13 17:00:00                                 2016-06-13 07:00:00                                 2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wn_sale_price_dates_to    updating   woocommerce-test  3000-06-30 23:00:00                                 3000-06-30 13:00:00                                 2017-12-06 03:56:30  2017-11-08 19:55:06
+passes:
+-
+Column                       Reason     Master                                             Slave                                              M TIME               S TIME               EXTRA
+---------------------------  ---------  -------------------------------------------------  -------------------------------------------------  -------------------  -------------------  -------
+title                        identical  Range F - Style 14 - 100ml Sample                  Range F - Style 14 - 100ml Sample                  2017-12-06 03:56:30  2017-11-08 19:55:06
+post_content                 identical  Company A have developed a range of unique blends  Company A have developed a range of unique blends  2017-12-06 03:56:30  2017-11-08 19:55:06
+sold_individually            similar                                                       False                                              2017-12-06 03:56:30  2017-11-08 19:55:06
+height                       identical  120                                                120                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+featured                     identical  False                                              False                                              2017-12-06 03:56:30  2017-11-08 19:55:06
+sku                          identical  ACARF-CRS                                          ACARF-CRS                                          2017-12-06 03:56:30  2017-11-08 19:55:06
+download_limit               identical  -1                                                 -1                                                 2017-12-06 03:56:30  2017-11-08 19:55:06
+width                        identical  40                                                 40                                                 2017-12-06 03:56:30  2017-11-08 19:55:06
+catalog_visibility           identical  visible                                            visible                                            2017-12-06 03:56:30  2017-11-08 19:55:06
+downloadable                 similar                                                       False                                              2017-12-06 03:56:30  2017-11-08 19:55:06
+download_expiry              identical  -1                                                 -1                                                 2017-12-06 03:56:30  2017-11-08 19:55:06
+button_text                  identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+in_stock                     identical  True                                               True                                               2017-12-06 03:56:30  2017-11-08 19:55:06
+external_url                 identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+weight                       identical  0.12                                               0.12                                               2017-12-06 03:56:30  2017-11-08 19:55:06
+tax_status                   identical  taxable                                            taxable                                            2017-12-06 03:56:30  2017-11-08 19:55:06
+virtual                      similar                                                       False                                              2017-12-06 03:56:30  2017-11-08 19:55:06
+stock_quantity               identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+backorders                   identical  no                                                 no                                                 2017-12-06 03:56:30  2017-11-08 19:55:06
+sale_price_dates_from        identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+product_type                 identical  simple                                             simple                                             2017-12-06 03:56:30  2017-11-08 19:55:06
+sale_price_dates_to          identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+length                       identical  40                                                 40                                                 2017-12-06 03:56:30  2017-11-08 19:55:06
+commissionable_value         identical  0.2                                                0.2                                                2017-12-06 03:56:30  2017-11-08 19:55:06
+wootan_danger                identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rn_regular_price          identical  0.00                                               0.00                                               2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rn_sale_price_dates_from  identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rn_sale_price_dates_to    identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rp_regular_price          identical  0.00                                               0.00                                               2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rp_sale_price_dates_from  identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_rp_sale_price_dates_to    identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wn_regular_price          identical  12.95                                              12.95                                              2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wn_sale_price             identical  10.36                                              10.36                                              2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wp_regular_price          identical  11.00                                              11.00                                              2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wp_sale_price_dates_from  identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_wp_sale_price_dates_to    identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dn_regular_price          identical  8.45                                               8.45                                               2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dn_sale_price_dates_from  identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dn_sale_price_dates_to    identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dp_regular_price          identical  7.75                                               7.75                                               2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dp_sale_price_dates_from  identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+lc_dp_sale_price_dates_to    identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
+        """
+        """
+[('categories',
+  [OrderedDict([('name', u'Product A'), ('id', 315), ('slug', u'product-a')]),
+   OrderedDict([('name', u'Company A Product A'), ('id', 316), ('slug', u'product-a-company-a-product-a')]),
+   OrderedDict([('name', u'Range F'), ('id', 323), ('slug', u'product-a-company-a-product-a-range-f')]),
+   OrderedDict([('name', u'100ml Company A Product A Samples'), ('id', 320), ('slug', u'product-a-company-a-product-a-100ml-company-a-product-a-samples')]),
+   OrderedDict([('name', 'Specials'), ('id', 100000), ('slug', u'specials')]),
+   OrderedDict([('name', 'Product A Specials'), ('id', 100001), ('slug', u'product_a_specials')])]),
+ ('images',
+  [OrderedDict([('date_modified_gmt', '2017-12-12T13:20:43'), ('name', 'Range F - Style 14 - 100ml Sample'), ('src', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/tmprcnMSxgenerator_dummy_process_images_img/imgs_cmp/images-CA/ACARF-CRS.png'), ('alt', u'Range F - Style 14 - 100ml Sample'), ('id', 100044)])]),
+ ('meta_data',
+  [OrderedDict([('value', datetime.datetime(3000, 6, 30, 13, 0)), ('key', 'lc_wn_sale_price_dates_to')]),
+   OrderedDict([('value', datetime.datetime(2016, 6, 13, 7, 0)), ('key', 'lc_wn_sale_price_dates_from')])])]
+        """
+        """
+[('product_categories',                                                                                                                                                      call_runtest_hook runner.py:151
+  [OrderedDict([('description', u'Product A'), ('title', u'Product A'), ('term_id', 315), ('slug', u'product-a')]),                                                       Breakpoints:
+   OrderedDict([('description', u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the
+finest naturally derived botanical and certified organic ingredients."), ('title', u'Company A Product A'), ('term_id', 316), ('slug',
+u'product-a-company-a-product-a')]),
+   OrderedDict([('description', u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the
+finest naturally derived botanical and certified organic ingredients."), ('title', u'Range F'), ('term_id', 323), ('slug', u'product-a-company-a-product-a-range-f')]),
+   OrderedDict([('description', u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the
+finest naturally derived botanical and certified organic ingredients."), ('title', u'100ml Company A Product A Samples'), ('term_id', 320), ('slug',
+u'product-a-company-a-product-a-100ml-company-a-product-a-samples')]),
+   OrderedDict([('description', u'Specials'), ('title', 'Specials'), ('term_id', 100000), ('slug', u'specials')]),
+   OrderedDict([('description', u'Product A Specials'), ('title', 'Product A Specials'), ('term_id', 100001), ('slug', u'product_a_specials')])]),
+ ('attachment_objects',
+  [OrderedDict([('modified_gmt', datetime.datetime(2017, 12, 12, 13, 20, 43, tzinfo=<UTC>)), ('title', 'Range F - Style 14 - 100ml Sample'), ('file_name',
+u'ACARF-CRS.png'), ('source_url', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/tmprcnMSxgenerator_dummy_process_images_img/imgs_cmp/images-CA/ACARF-CRS.png'),
+('alt_text', u'Range F - Style 14 - 100ml Sample'), ('id', 100044)])]),
+ ('lc_wn_sale_price_dates_from', datetime.datetime(2016, 6, 13, 7, 0)),
+ ('lc_wn_sale_price_dates_to', datetime.datetime(3000, 6, 30, 13, 0))]
+        """
 
         try:
             if self.debug:
@@ -1823,6 +2302,43 @@ probbos:
                 self.assertEqual(
                     set(new_s_core_img_ids),
                     expected_master_images
+                )
+
+            # TODO: test exact contents of get_slave_updates_native()
+            # Specifically make sure that sale_price_dates_(to|from) are not datetime
+            if self.debug:
+                import pudb; pudb.set_trace()
+            slave_updates_core = sync_update.get_slave_updates()
+            slave_updates_native = sync_update.get_slave_updates_native()
+            if self.debug:
+                pprint(slave_updates_native.items())
+                pprint(slave_updates_core.items())
+
+
+            expected_items = {
+                'product_categories': [
+                    {'term_id': 315},
+                    {'term_id': 316},
+                    {'term_id': 323},
+                    {'term_id': 320},
+                    {'term_id': 100000},
+                    {'term_id': 100001}
+                ],
+                'attachment_objects': [
+                    {'id': 100044}
+                ],
+                'lc_wn_sale_price_dates_from': "2016-06-13 07:00:00",
+                'lc_wn_sale_price_dates_to': "3000-06-30 13:00:00"
+            }
+            for key, value in expected_items:
+                expected_value = value
+                actual_value = slave_updates_core[key]
+                if isinstance(actual_value, list):
+                    actual_value = set(actual_value)
+                    expected_value = set(expected_value)
+                self.assertEquals(
+                    actual_value,
+                    expected_value
                 )
 
         except AssertionError as exc:
