@@ -535,9 +535,17 @@ def do_match_images(parsers, matches, settings):
                 for attachment in match.s_objects
             )
             if new_masterless_matches:
-                matches.image.masterless.add_matches(new_masterless_matches)
+                for match in new_masterless_matches:
+                    try:
+                        matches.image.masterless.add_match(match)
+                    except AssertionError:
+                        pass
             if new_slaveless_matches:
-                matches.image.slaveless.add_matches(new_slaveless_matches)
+                for match in new_slaveless_matches:
+                    try:
+                        matches.image.slaveless.add_match(match)
+                    except AssertionError:
+                        pass
 
         # attachee_title_matcher = AttacheeTitleMatcher(
         #     list(set(matches.image.globals.s_indices) ^ set(extra_valid_indices_s)),
