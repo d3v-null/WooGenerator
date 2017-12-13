@@ -2729,21 +2729,21 @@ class ColDataProduct(ColDataWpEntity):
                 'read': False,
             },
         },
-        'manage_stock': {
-            'type': bool,
-            # 'default': False,
-            'wp-sql': {
-                'path': 'meta._manage_stock',
-                'type': 'yesno',
-                'default': 'no'
-            },
-            'xero-api': {
-                'path': 'IsTrackedAsInventory',
-            },
-            'gen-csv': {
-                'read': False,
-            },
-        },
+        # 'manage_stock': {
+        #     'type': bool,
+        #     # 'default': False,
+        #     'wp-sql': {
+        #         'path': 'meta._manage_stock',
+        #         'type': 'yesno',
+        #         'default': 'no'
+        #     },
+        #     'xero-api': {
+        #         'path': 'IsTrackedAsInventory',
+        #     },
+        #     'gen-csv': {
+        #         'read': False,
+        #     },
+        # },
         'stock_quantity': {
             'type': 'optional_int',
             'xero-api': {
