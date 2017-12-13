@@ -2736,6 +2736,7 @@ class ColDataProduct(ColDataWpEntity):
                 'read': False,
             },
         },
+        # TODO: sync this later
         # 'manage_stock': {
         #     'type': bool,
         #     # 'default': False,
@@ -2961,47 +2962,48 @@ class ColDataProduct(ColDataWpEntity):
                 'path': None
             }
         },
-        'upsell_skus': {
-            'path': None,
-            'wp-sql': {
-                'path': 'meta._upsell_skus',
-                'type': 'php_array_indexed'
-            },
-            'csv': {
-                'type': 'pipe_array'
-            },
-            'xero-api': {
-                'path': None
-            }
-        },
-        'cross_sell_ids': {
-            'default': [],
-            'wp-sql': {
-                'path': 'meta._crosssell_ids',
-                'type': 'php_array_indexed',
-                'default': ''
-            },
-            'csv': {
-                'type': 'pipe_array',
-                'default': ''
-            },
-            'gen-csv': {
-                'read': False,
-            },
-            'xero-api': {
-                'path': None
-            }
-        },
-        'crosssell_skus': {
-            'path': None,
-            'wp-sql': {
-                'path': 'meta._crosssell_skus',
-                'type': 'php_array_indexed'
-            },
-            'csv': {
-                'type': 'pipe_array'
-            },
-        },
+        # TODO: sync this later
+        # 'upsell_skus': {
+        #     'path': None,
+        #     'wp-sql': {
+        #         'path': 'meta._upsell_skus',
+        #         'type': 'php_array_indexed'
+        #     },
+        #     'csv': {
+        #         'type': 'pipe_array'
+        #     },
+        #     'xero-api': {
+        #         'path': None
+        #     }
+        # },
+        # 'cross_sell_ids': {
+        #     'default': [],
+        #     'wp-sql': {
+        #         'path': 'meta._crosssell_ids',
+        #         'type': 'php_array_indexed',
+        #         'default': ''
+        #     },
+        #     'csv': {
+        #         'type': 'pipe_array',
+        #         'default': ''
+        #     },
+        #     'gen-csv': {
+        #         'read': False,
+        #     },
+        #     'xero-api': {
+        #         'path': None
+        #     }
+        # },
+        # 'crosssell_skus': {
+        #     'path': None,
+        #     'wp-sql': {
+        #         'path': 'meta._crosssell_skus',
+        #         'type': 'php_array_indexed'
+        #     },
+        #     'csv': {
+        #         'type': 'pipe_array'
+        #     },
+        # },
         'purchase_note': {
             'path': None,
             'wc-api': {
