@@ -2192,38 +2192,135 @@ lc_dp_sale_price_dates_from  identical                                          
 lc_dp_sale_price_dates_to    identical                                                                                                        2017-12-06 03:56:30  2017-11-08 19:55:06
         """
         """
-[('categories',
-  [OrderedDict([('name', u'Product A'), ('id', 315), ('slug', u'product-a')]),
-   OrderedDict([('name', u'Company A Product A'), ('id', 316), ('slug', u'product-a-company-a-product-a')]),
-   OrderedDict([('name', u'Range F'), ('id', 323), ('slug', u'product-a-company-a-product-a-range-f')]),
-   OrderedDict([('name', u'100ml Company A Product A Samples'), ('id', 320), ('slug', u'product-a-company-a-product-a-100ml-company-a-product-a-samples')]),
-   OrderedDict([('name', 'Specials'), ('id', 100000), ('slug', u'specials')]),
-   OrderedDict([('name', 'Product A Specials'), ('id', 100001), ('slug', u'product_a_specials')])]),
- ('images',
-  [OrderedDict([('date_modified_gmt', '2017-12-12T13:20:43'), ('name', 'Range F - Style 14 - 100ml Sample'), ('src', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/tmprcnMSxgenerator_dummy_process_images_img/imgs_cmp/images-CA/ACARF-CRS.png'), ('alt', u'Range F - Style 14 - 100ml Sample'), ('id', 100044)])]),
+slave_updates_native:
+[('status', u'publish'),
+ ('slug', u'range-f-style-14-100ml-sample'),
  ('meta_data',
-  [OrderedDict([('value', datetime.datetime(3000, 6, 30, 13, 0)), ('key', 'lc_wn_sale_price_dates_to')]),
-   OrderedDict([('value', datetime.datetime(2016, 6, 13, 7, 0)), ('key', 'lc_wn_sale_price_dates_from')])])]
-        """
-        """
-[('product_categories',                                                                                                                                                      call_runtest_hook runner.py:151
-  [OrderedDict([('description', u'Product A'), ('title', u'Product A'), ('term_id', 315), ('slug', u'product-a')]),                                                       Breakpoints:
-   OrderedDict([('description', u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the
-finest naturally derived botanical and certified organic ingredients."), ('title', u'Company A Product A'), ('term_id', 316), ('slug',
-u'product-a-company-a-product-a')]),
-   OrderedDict([('description', u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the
-finest naturally derived botanical and certified organic ingredients."), ('title', u'Range F'), ('term_id', 323), ('slug', u'product-a-company-a-product-a-range-f')]),
-   OrderedDict([('description', u"Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the
-finest naturally derived botanical and certified organic ingredients."), ('title', u'100ml Company A Product A Samples'), ('term_id', 320), ('slug',
-u'product-a-company-a-product-a-100ml-company-a-product-a-samples')]),
-   OrderedDict([('description', u'Specials'), ('title', 'Specials'), ('term_id', 100000), ('slug', u'specials')]),
-   OrderedDict([('description', u'Product A Specials'), ('title', 'Product A Specials'), ('term_id', 100001), ('slug', u'product_a_specials')])]),
- ('attachment_objects',
-  [OrderedDict([('modified_gmt', datetime.datetime(2017, 12, 12, 13, 20, 43, tzinfo=<UTC>)), ('title', 'Range F - Style 14 - 100ml Sample'), ('file_name',
-u'ACARF-CRS.png'), ('source_url', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/tmprcnMSxgenerator_dummy_process_images_img/imgs_cmp/images-CA/ACARF-CRS.png'),
-('alt_text', u'Range F - Style 14 - 100ml Sample'), ('id', 100044)])]),
+  [OrderedDict([('value', '0.00'), ('key', u'lc_dp_sale_price')]),
+   OrderedDict([('value', u''), ('key', u'_file_path')]),
+   OrderedDict([('value', []), ('key', u'_crosssell_skus')]),
+   OrderedDict([('value', u''), ('key', u'lc_dn_sale_price_dates_to')]),
+   OrderedDict([('value', u''), ('key', u'lc_rp_regular_price')]),
+   OrderedDict([('value', u''), ('key', u'lc_wp_sale_price_dates_from')]),
+   OrderedDict([('value', 1465801200), ('key', u'lc_wn_sale_price_dates_from')]),
+   OrderedDict([('value', u''), ('key', u'_max_variation_sale_price')]),
+   OrderedDict([('value', u''), ('key', u'_min_variation_sale_price')]),
+   OrderedDict([('value', u''), ('key', u'lc_rn_regular_price')]),
+   OrderedDict([('value', u''), ('key', u'lc_rn_sale_price_dates_to')]),
+   OrderedDict([('value', '0.00'), ('key', u'lc_rp_sale_price')]),
+   OrderedDict([('value', u'11.00'), ('key', u'lc_wp_regular_price')]),
+   OrderedDict([('value', u''), ('key', u'_product_url')]),
+   OrderedDict([('value', u''), ('key', u'lc_rn_sale_price_dates_from')]),
+   OrderedDict([('value', '0.00'), ('key', u'lc_wp_sale_price')]),
+   OrderedDict([('value', u''), ('key', u'lc_wp_sale_price_dates_to')]),
+   OrderedDict([('value', u''), ('key', u'lc_dp_sale_price_dates_to')]),
+   OrderedDict([('value', 32519278800), ('key', u'lc_wn_sale_price_dates_to')]),
+   OrderedDict([('value', '0.00'), ('key', u'lc_dn_sale_price')]),
+   OrderedDict([('value', u'0.20'), ('key', u'commissionable_value')]),
+   OrderedDict([('value', []), ('key', u'_upsell_skus')]),
+   OrderedDict([('value', '0.00'), ('key', u'lc_rn_sale_price')]),
+   OrderedDict([('value', u''), ('key', u'lc_rp_sale_price_dates_from')]),
+   OrderedDict([('value', u''), ('key', u'_max_variation_price')]),
+   OrderedDict([('value', u'12.95'), ('key', u'lc_wn_regular_price')]),
+   OrderedDict([('value', u'Range F'), ('key', u'title_1')]),
+   OrderedDict([('value', u'Style 14 - 100ml Sample'), ('key', u'title_2')]),
+   OrderedDict([('value', u''), ('key', u'_min_variation_price')]),
+   OrderedDict([('value', u'10.36'), ('key', u'lc_wn_sale_price')]),
+   OrderedDict([('value', u''), ('key', u'wootan_danger')]),
+   OrderedDict([('value', u'8.45'), ('key', u'lc_dn_regular_price')]),
+   OrderedDict([('value', u''), ('key', u'_button_text')]),
+   OrderedDict([('value', u'7.75'), ('key', u'lc_dp_regular_price')]),
+   OrderedDict([('value', u''), ('key', u'lc_dp_sale_price_dates_from')]),
+   OrderedDict([('value', u''), ('key', u'_min_variation_regular_price')]),
+   OrderedDict([('value', u''), ('key', u'_max_variation_regular_price')]),
+   OrderedDict([('value', u''), ('key', u'lc_rp_sale_price_dates_to')]),
+   OrderedDict([('value', u''), ('key', u'lc_dn_sale_price_dates_from')]),
+   OrderedDict([('value', u''), ('key', u'last_import')])]),
+ ('menu_order', 10),
+ ('regular_price', '0.00'),
+ ('categories',
+  [OrderedDict([('id', 315)]),
+   OrderedDict([('id', 316)]),
+   OrderedDict([('id', 323)]),
+   OrderedDict([('id', 320)]),
+   OrderedDict([('id', 100000)]),
+   OrderedDict([('id', 100001)])]),
+ ('upsell_ids', u'[]'),
+ ('images', [OrderedDict([('id', 100044)])]),
+ ('sale_price', '0.00'),
+ ('cross_sell_ids', u'[]'),
+ ('attributes',
+  [OrderedDict([('name', ''), ('id', 2)]),
+   OrderedDict([('name', ''), ('id', 1)]),
+   OrderedDict([('name', ''), ('id', 3)])])]
+slave_updates_core:
+[('post_status', u'publish'),
+ ('slug', u'range-f-style-14-100ml-sample'),
+ ('meta',
+  {u'_button_text': OrderedDict([('meta_value', u''), ('meta_key', u'_button_text')]),
+   u'_crosssell_skus': OrderedDict([('meta_value', []), ('meta_key', u'_crosssell_skus')]),
+   u'_file_path': OrderedDict([('meta_value', u''), ('meta_key', u'_file_path')]),
+   u'_max_variation_price': OrderedDict([('meta_value', u''), ('meta_key', u'_max_variation_price')]),
+   u'_max_variation_regular_price': OrderedDict([('meta_value', u''), ('meta_key', u'_max_variation_regular_price')]),
+   u'_max_variation_sale_price': OrderedDict([('meta_value', u''), ('meta_key', u'_max_variation_sale_price')]),
+   u'_min_variation_price': OrderedDict([('meta_value', u''), ('meta_key', u'_min_variation_price')]),
+   u'_min_variation_regular_price': OrderedDict([('meta_value', u''), ('meta_key', u'_min_variation_regular_price')]),
+   u'_min_variation_sale_price': OrderedDict([('meta_value', u''), ('meta_key', u'_min_variation_sale_price')]),
+   u'_product_url': OrderedDict([('meta_value', u''), ('meta_key', u'_product_url')]),
+   u'_upsell_skus': OrderedDict([('meta_value', []), ('meta_key', u'_upsell_skus')]),
+   u'commissionable_value': OrderedDict([('meta_value', u'0.20'), ('meta_key', u'commissionable_value')]),
+   u'last_import': OrderedDict([('meta_value', u''), ('meta_key', u'last_import')]),
+   u'lc_dn_regular_price': OrderedDict([('meta_value', u'8.45'), ('meta_key', u'lc_dn_regular_price')]),
+   u'lc_dn_sale_price': OrderedDict([('meta_value', u''), ('meta_key', u'lc_dn_sale_price')]),
+   u'lc_dn_sale_price_dates_from': OrderedDict([('meta_value', u''), ('meta_key', u'lc_dn_sale_price_dates_from')]),
+   u'lc_dn_sale_price_dates_to': OrderedDict([('meta_value', u''), ('meta_key', u'lc_dn_sale_price_dates_to')]),
+   u'lc_dp_regular_price': OrderedDict([('meta_value', u'7.75'), ('meta_key', u'lc_dp_regular_price')]),
+   u'lc_dp_sale_price': OrderedDict([('meta_value', u''), ('meta_key', u'lc_dp_sale_price')]),
+   u'lc_dp_sale_price_dates_from': OrderedDict([('meta_value', u''), ('meta_key', u'lc_dp_sale_price_dates_from')]),
+   u'lc_dp_sale_price_dates_to': OrderedDict([('meta_value', u''), ('meta_key', u'lc_dp_sale_price_dates_to')]),
+   u'lc_rn_regular_price': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rn_regular_price')]),
+   u'lc_rn_sale_price': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rn_sale_price')]),
+   u'lc_rn_sale_price_dates_from': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rn_sale_price_dates_from')]),
+   u'lc_rn_sale_price_dates_to': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rn_sale_price_dates_to')]),
+   u'lc_rp_regular_price': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rp_regular_price')]),
+   u'lc_rp_sale_price': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rp_sale_price')]),
+   u'lc_rp_sale_price_dates_from': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rp_sale_price_dates_from')]),
+   u'lc_rp_sale_price_dates_to': OrderedDict([('meta_value', u''), ('meta_key', u'lc_rp_sale_price_dates_to')]),
+   u'lc_wn_regular_price': OrderedDict([('meta_value', u'12.95'), ('meta_key', u'lc_wn_regular_price')]),
+   u'lc_wn_sale_price': OrderedDict([('meta_value', u'10.36'), ('meta_key', u'lc_wn_sale_price')]),
+   u'lc_wn_sale_price_dates_from': OrderedDict([('meta_value', u'1465837200'), ('meta_key', u'lc_wn_sale_price_dates_from')]),
+   u'lc_wn_sale_price_dates_to': OrderedDict([('meta_value', u'32519314800'), ('meta_key', u'lc_wn_sale_price_dates_to')]),
+   u'lc_wp_regular_price': OrderedDict([('meta_value', u'11.00'), ('meta_key', u'lc_wp_regular_price')]),
+   u'lc_wp_sale_price': OrderedDict([('meta_value', u''), ('meta_key', u'lc_wp_sale_price')]),
+   u'lc_wp_sale_price_dates_from': OrderedDict([('meta_value', u''), ('meta_key', u'lc_wp_sale_price_dates_from')]),
+   u'lc_wp_sale_price_dates_to': OrderedDict([('meta_value', u''), ('meta_key', u'lc_wp_sale_price_dates_to')]),
+   u'title_1': OrderedDict([('meta_value', u'Range F'), ('meta_key', u'title_1')]),
+   u'title_2': OrderedDict([('meta_value', u'Style 14 - 100ml Sample'), ('meta_key', u'title_2')]),
+   u'wootan_danger': OrderedDict([('meta_value', u''), ('meta_key', u'wootan_danger')])}),
+ ('menu_order', 10),
+ ('regular_price', '0.00'),
+ ('product_categories',
+  [{'term_id': 315},
+   {'term_id': 316},
+   {'term_id': 323},
+   {'term_id': 320},
+   {'term_id': 100000},
+   {'term_id': 100001}]),
+ ('upsell_ids', u'[]'),
+ ('attachment_objects', [{'id': 100044}]),
+ ('sale_price', '0.00'),
+ ('cross_sell_ids', u'[]'),
+ ('attributes',
+  [OrderedDict([('title', ''), ('term_id', 2)]),
+   OrderedDict([('title', ''), ('term_id', 1)]),
+   OrderedDict([('title', ''), ('term_id', 3)])]),
+ ('lc_rn_sale_price', '0.00'),
+ ('lc_rp_sale_price', '0.00'),
  ('lc_wn_sale_price_dates_from', datetime.datetime(2016, 6, 13, 7, 0)),
- ('lc_wn_sale_price_dates_to', datetime.datetime(3000, 6, 30, 13, 0))]
+ ('lc_wn_sale_price_dates_to', datetime.datetime(3000, 6, 30, 13, 0)),
+ ('lc_wp_sale_price', '0.00'),
+ ('lc_dn_sale_price', '0.00'),
+ ('lc_dp_sale_price', '0.00')]
         """
 
         try:
@@ -2306,16 +2403,13 @@ u'ACARF-CRS.png'), ('source_url', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000
 
             # TODO: test exact contents of get_slave_updates_native()
             # Specifically make sure that sale_price_dates_(to|from) are not datetime
-            if self.debug:
-                import pudb; pudb.set_trace()
             slave_updates_core = sync_update.get_slave_updates()
             slave_updates_native = sync_update.get_slave_updates_native()
             if self.debug:
-                pprint(slave_updates_native.items())
-                pprint(slave_updates_core.items())
+                print("slave_updates_native:\n%s" % pformat(slave_updates_native.items()))
+                print("slave_updates_core:\n%s" % pformat(slave_updates_core.items()))
 
-
-            expected_items = {
+            expected_dict = {
                 'product_categories': [
                     {'term_id': 315},
                     {'term_id': 316},
@@ -2330,12 +2424,23 @@ u'ACARF-CRS.png'), ('source_url', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000
                 'lc_wn_sale_price_dates_from': "2016-06-13 07:00:00",
                 'lc_wn_sale_price_dates_to': "3000-06-30 13:00:00"
             }
-            for key, value in expected_items:
+            for key, value in expected_dict.items():
                 expected_value = value
                 actual_value = slave_updates_core[key]
-                if isinstance(actual_value, list):
-                    actual_value = set(actual_value)
-                    expected_value = set(expected_value)
+                if isinstance(actual_value, dict):
+                    actual_value = set(actual_value.items())
+                    expected_value = set(expected_value.items())
+                elif isinstance(actual_value, list):
+                    actual_value = set([
+                        unicode(item) for item in actual_value
+                    ])
+                    expected_value = set([
+                        unicode(item) for item in expected_value
+                    ])
+                else:
+                    actual_value = unicode(actual_value)
+                    expected_value = unicode(expected_value)
+
                 self.assertEquals(
                     actual_value,
                     expected_value

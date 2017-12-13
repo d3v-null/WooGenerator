@@ -1007,7 +1007,9 @@ class ColDataAbstract(ColDataLegacy):
         for handle, sub_data in sub_datum.items():
             if sub_data:
                 sub_data_handles.add(handle)
+        # target paths which have sub_data
         path_translation_pre = OrderedDict()
+        # core paths which don't have sub_data
         path_translation_post = OrderedDict()
         for handle in cls.data.keys():
             if handle in sub_data_handles:
@@ -1015,9 +1017,12 @@ class ColDataAbstract(ColDataLegacy):
             else:
                 path_translation_post[handle] = core_path_translation[handle]
 
+        # translate handles in target format which have sub_data
         data = cls.translate_types_from(
             data, target, path_translation_pre
         )
+
+        # translate structure
         data = cls.translate_structure_from(
             data, target, target_path_translation
         )
@@ -1047,15 +1052,17 @@ class ColDataAbstract(ColDataLegacy):
         for handle, sub_data in sub_datum.items():
             if sub_data:
                 sub_data_handles.add(handle)
+        # core paths which do not have sub data
         path_translation_pre = OrderedDict()
+        # target paths which have sub data
         path_translation_post = OrderedDict()
         for handle in cls.data.keys():
-            if handle in sub_data_handles:
+            if handle not in sub_data_handles:
                 path_translation_pre[handle] = core_path_translation[handle]
             else:
                 path_translation_post[handle] = target_path_translation[handle]
 
-        # translate types of subdata handles
+        # translate types of non-subdata handles in core format
         data = cls.translate_types_to(
             data, target, path_translation_pre
         )
@@ -1067,7 +1074,7 @@ class ColDataAbstract(ColDataLegacy):
         data = cls.translate_structure_to(
             data, target, target_path_translation
         )
-        # translate remaining types
+        # translate types of subdata handles in target format
         data = cls.translate_types_to(
             data, target, path_translation_post
         )
