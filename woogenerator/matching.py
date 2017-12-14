@@ -15,6 +15,10 @@ class Match(object):
     """ A list of master objects and slave objects that match in sosme way """
 
     def __init__(self, m_objects=None, s_objects=None):
+        if m_objects is None:
+            m_objects = []
+        if s_objects is None:
+            s_objects = []
         self._m_objects = filter(None, m_objects) or []
         self._s_objects = filter(None, s_objects) or []
         for _object in self._m_objects + self._s_objects:
@@ -692,6 +696,15 @@ class ImageMatcher(AbstractMatcher):
         super(ImageMatcher, self).__init__(self.image_index_fn)
         self.process_registers = self.process_registers_singular
         # self.retrieveObjects = self.retrieveObjectsSingular
+
+    @classmethod
+    def find_attachee_sku_matches(cls, match):
+        """
+        find within the match, matches based on an objects attachee_sku
+        """
+        return match.find_key_matches(
+            lambda obj: SanitationUtils.normalize_val(obj.attachee_skus)
+        )
 
 class AttachmentIDMatcher(AbstractMatcher):
     """

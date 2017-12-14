@@ -469,83 +469,140 @@ def do_match_images(parsers, matches, settings):
         for attachment in match.s_objects
     ])
 
-    attachee_sku_matcher = AttacheeSkuMatcher(
-        matches.image.globals.s_indices, matches.image.globals.m_indices
-    )
-    attachee_sku_matcher.process_registers(
-        slave_imgs_attachments, master_imgs_attachments
-    )
-
-    # make sure that all duplicates are resolved after matching using attachee_skus
-    if Registrar.DEBUG_IMG:
-        Registrar.register_message(
-            "adding attache_sku_matcher.pure_matches:\n%s" % (
-                attachee_sku_matcher.pure_matches.tabulate()
+    for match in image_matcher.duplicate_matches:
+        if Registrar.DEBUG_IMG:
+            Registrar.register_message(
+                "analysing duplicate match:\n%s" % match.tabulate()
             )
-        )
-    matches.image.valid += attachee_sku_matcher.pure_matches
+        attachee_sku_sub_matches = image_matcher.find_attachee_sku_matches(match)
+        for key, match in attachee_sku_sub_matches.items():
+            if Registrar.DEBUG_IMG:
+                Registrar.register_message(
+                    "sub match %s is %s:\n%s" % (
+                        key,
+                        match.type,
+                        match.tabulate()
+                    )
+                )
+            if match.type in ['pure', 'masterless', 'slaveless']:
+                extra_valid_indices_m.update([
+                    attachment.index for attachment in match.m_objects
+                ])
+                extra_valid_indices_s.update([
+                    attachment.index for attachment in match.s_objects
+                ])
+                if match.type == 'pure':
+                    matches.image.valid += [match]
+                elif match.type == 'masterless':
+                    matches.image.masterless.add_matches([match])
+                elif match.type == 'slaveless':
+                    matches.image.slaveless.add_matches([match])
+            else:
+                exc = UserWarning(
+                    (
+                        "Could not match image, most likely because multiple "
+                        "images with the same name are attached to the same SKU.\n%s"
+                    ) % (
+                        match.tabulate()
+                    )
+                )
+                Registrar.register_warning(exc)
 
-    extra_valid_indices_m.update([
-        attachment.index \
-        for match in attachee_sku_matcher.pure_matches
-        for attachment in match.m_objects
-    ])
-    extra_valid_indices_s.update([
-        attachment.index \
-        for match in attachee_sku_matcher.pure_matches
-        for attachment in match.s_objects
-    ])
-
-
-    # TODO: further process attachee_sku_duplicate_matches for when the same image is attached to multiple categories
-
-    if attachee_sku_matcher.duplicate_matches:
-        matches.image.duplicate['attachee_sku'] = attachee_sku_matcher.duplicate_matches
-
-        for match in attachee_sku_matcher.duplicate_matches:
-            assert \
-            match.m_len == 1 or match.s_len == 1, \
-            "can't process complicated duplicate match: \n%s" % match.tabulate()
-
-            m_objects = match.m_objects
-            s_objects = match.s_objects
-            match_class = match.__class__
-            new_pure_match = match_class([m_objects[0]], [s_objects[0]])
-            new_masterless_matches = [
-                match_class(
-                    [],
-                    [s_object]
-                ) for s_object in s_objects[1:]
-            ]
-            new_slaveless_matches = [
-                match_class(
-                    [m_object],
-                    [],
-                ) for m_object in m_objects[1:]
-            ]
-            matches.image.valid += [new_pure_match]
-            extra_valid_indices_m.update(
-                attachment.index \
-                for match in [new_pure_match]
-                for attachment in match.m_objects
-            )
-            extra_valid_indices_s.update(
-                attachment.index \
-                for match in [new_pure_match]
-                for attachment in match.s_objects
-            )
-            if new_masterless_matches:
-                for match in new_masterless_matches:
-                    try:
-                        matches.image.masterless.add_match(match)
-                    except AssertionError:
-                        pass
-            if new_slaveless_matches:
-                for match in new_slaveless_matches:
-                    try:
-                        matches.image.slaveless.add_match(match)
-                    except AssertionError:
-                        pass
+    # attachee_sku_matcher = AttacheeSkuMatcher(
+    #     matches.image.globals.s_indices, matches.image.globals.m_indices
+    # )
+    # attachee_sku_matcher.process_registers(
+    #     slave_imgs_attachments, master_imgs_attachments
+    # )
+    #
+    # # make sure that all duplicates are resolved after matching using attachee_skus
+    # if Registrar.DEBUG_IMG:
+    #     Registrar.register_message(
+    #         "adding attache_sku_matcher.pure_matches:\n%s" % (
+    #             attachee_sku_matcher.pure_matches.tabulate()
+    #         )
+    #     )
+    # matches.image.valid += attachee_sku_matcher.pure_matches
+    #
+    # extra_valid_indices_m.update([
+    #     attachment.index \
+    #     for match in attachee_sku_matcher.pure_matches
+    #     for attachment in match.m_objects
+    # ])
+    # extra_valid_indices_s.update([
+    #     attachment.index \
+    #     for match in attachee_sku_matcher.pure_matches
+    #     for attachment in match.s_objects
+    # ])
+    #
+    #
+    # # TODO: further process attachee_sku_duplicate_matches for when the same image is attached to multiple categories
+    #
+    # if attachee_sku_matcher.duplicate_matches:
+    #     matches.image.duplicate['attachee_sku'] = attachee_sku_matcher.duplicate_matches
+    #
+    #     for match in attachee_sku_matcher.duplicate_matches:
+    #         assert \
+    #         match.m_len == 1 or match.s_len == 1, \
+    #         "can't process complicated duplicate match: \n%s" % match.tabulate()
+    #
+    #         m_objects = match.m_objects
+    #         s_objects = match.s_objects
+    #         match_class = match.__class__
+    #         new_pure_match = match_class([m_objects[0]], [s_objects[0]])
+    #         if Registrar.DEBUG_IMG:
+    #             Registrar.register_message(
+    #                 'new pure match from attachee_sku_matcher:\n%s' \
+    #                 % new_pure_match.tabulate()
+    #             )
+    #         new_masterless_matches = [
+    #             match_class(
+    #                 [],
+    #                 [s_object]
+    #             ) for s_object in s_objects[1:]
+    #         ]
+    #         new_slaveless_matches = [
+    #             match_class(
+    #                 [m_object],
+    #                 [],
+    #             ) for m_object in m_objects[1:]
+    #         ]
+    #         if Registrar.DEBUG_IMG:
+    #             Registrar.register_message(
+    #                 'new masterless matches from attachee_sku_matcher:\n%s' \
+    #                 % unicode([
+    #                     match.tabulate() for match in new_masterless_matches
+    #                 ])
+    #             )
+    #             Registrar.register_message(
+    #                 'new slaveless matches from attachee_sku_matcher:\n%s' \
+    #                 % unicode([
+    #                     match.tabulate() for match in new_slaveless_matches
+    #                 ])
+    #             )
+    #         matches.image.valid += [new_pure_match]
+    #         extra_valid_indices_m.update(
+    #             attachment.index \
+    #             for match in [new_pure_match]
+    #             for attachment in match.m_objects
+    #         )
+    #         extra_valid_indices_s.update(
+    #             attachment.index \
+    #             for match in [new_pure_match]
+    #             for attachment in match.s_objects
+    #         )
+    #         if new_masterless_matches:
+    #             for match in new_masterless_matches:
+    #                 try:
+    #                     matches.image.masterless.add_match(match)
+    #                 except AssertionError:
+    #                     pass
+    #         if new_slaveless_matches:
+    #             for match in new_slaveless_matches:
+    #                 try:
+    #                     matches.image.slaveless.add_match(match)
+    #                 except AssertionError:
+    #                     pass
 
         # attachee_title_matcher = AttacheeTitleMatcher(
         #     list(set(matches.image.globals.s_indices) ^ set(extra_valid_indices_s)),
@@ -1236,6 +1293,7 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
                 response_core_data, settings.coldata_gen_target_write
             )
 
+            import pudb; pudb.set_trace()
             sync_update.old_s_object_gen.update(response_gen_data)
             response_gen_object = sync_update.old_s_object_gen
 
@@ -1749,6 +1807,8 @@ def main(override_args=None, settings=None):
     updates = UpdateNamespace()
     reporters = ReporterNamespace()
     results = ResultsNamespace()
+    if Registrar.DEBUG_TRACE:
+        Registrar.DEBUG_IMG = True
 
     if settings.do_images:
         do_match_images(parsers, matches, settings)

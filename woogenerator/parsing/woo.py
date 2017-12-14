@@ -460,6 +460,7 @@ class CsvParseWooMixin(object):
             img_raw_data['rowcount'] = -1
         elif not img_raw_data.get('rowcount'):
             img_raw_data['rowcount'] = self.rowcount
+            self.rowcount += 1
 
         img_data = None
         img_index = self.attachment_indexer(img_raw_data)
@@ -467,20 +468,20 @@ class CsvParseWooMixin(object):
             img_data = self.attachments.get(img_index)
         if not img_data:
             img_data = self.find_image(img_raw_data)
+        if not img_data and img_raw_data.get('type') == 'sub-image':
+            img_data = self.find_image(img_raw_data)
         if not img_data:
             if self.DEBUG_IMG:
                 self.register_message("SEARCH IMG NOT FOUND")
-                if img_raw_data.get('type') == 'sub-image':
-                    img_data = self.find_image(img_raw_data)
             row_data = deepcopy(img_raw_data)
             kwargs['defaults'] = self.img_defaults
             kwargs['row_data'] = row_data
             kwargs['parent'] = self.root_data
             kwargs['container'] = self.attachment_container
+            kwargs['rowcount'] = img_raw_data['rowcount']
 
             try:
                 img_data = self.new_object(
-                    rowcount=img_raw_data['rowcount'],
                     **kwargs
                 )
             except UserWarning as exc:

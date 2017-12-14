@@ -152,7 +152,7 @@ class ImportShopAttachmentMixin(ShopMixin):
 
     @classmethod
     def get_index(cls, data):
-        return cls.get_file_name(data)
+        return cls.get_normalized_filename(data)
 
     @property
     def index(self):

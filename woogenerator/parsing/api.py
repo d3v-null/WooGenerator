@@ -250,8 +250,8 @@ ImportWooApiImg.container = WooApiImgList
 class ApiParseMixin(object):
     root_container = ImportApiRoot
     coldata_gen_target = 'gen-api'
-    attachment_indexer = ImportWooApiObject.attachment_indexer
     attachment_container = ImportWooApiImg
+    attachment_indexer = attachment_container.get_identifier
 
     def analyse_stream(self, byte_file_obj, **kwargs):
 
@@ -381,8 +381,8 @@ class ApiParseWoo(
 
     def analyse_api_image_gen(self, img_gen_data, object_data=None, **kwargs):
         """ Create object for and analyse an API image object that is in gen format. """
-        file_path = self.attachment_container.get_file_name(img_gen_data)
-        if not file_path:
+        file_name = self.attachment_container.get_file_name(img_gen_data)
+        if not file_name:
             warn = UserWarning(
                 (
                     "could not process api img: no file path in API object\n"
