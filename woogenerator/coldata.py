@@ -2944,25 +2944,25 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'related_ids'
             }
         },
-        'upsell_ids': {
-            'default': [],
-            'wp-sql': {
-                'path': 'meta._upsell_ids',
-                'type': 'php_array_indexed',
-                'default': ''
-            },
-            'csv': {
-                'type': 'pipe_array',
-                'default': ''
-            },
-            'gen-csv': {
-                'read': False,
-            },
-            'xero-api': {
-                'path': None
-            }
-        },
         # TODO: sync this later
+        # 'upsell_ids': {
+        #     'default': [],
+        #     'wp-sql': {
+        #         'path': 'meta._upsell_ids',
+        #         'type': 'php_array_indexed',
+        #         'default': ''
+        #     },
+        #     'csv': {
+        #         'type': 'pipe_array',
+        #         'default': ''
+        #     },
+        #     'gen-csv': {
+        #         'read': False,
+        #     },
+        #     'xero-api': {
+        #         'path': None
+        #     }
+        # },
         # 'upsell_skus': {
         #     'path': None,
         #     'wp-sql': {
