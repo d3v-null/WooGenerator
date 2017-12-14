@@ -1022,7 +1022,16 @@ def do_report(reporters, matches, updates, parsers, settings):
 
 def do_report_post(reporters, results, settings):
     """ Reports results from performing updates."""
-    raise NotImplementedError()
+    # raise NotImplementedError()
+    if settings.get('do_report'):
+        Registrar.register_progress("Write Post Report")
+
+        do_post_summary_group(reporters.post, results, settings)
+        do_failures_group(reporters.post, results, settings)
+        do_successes_group(reporters.post, results, settings)
+        if reporters.post:
+            reporters.post.write_document_to_file(
+                'post', settings.rep_post_path)
 
 def handle_failed_update(update, results, exc, settings, source=None):
     """Handle a failed update."""
@@ -1688,6 +1697,9 @@ def main(override_args=None, settings=None):
         do_report_images(
             reporters, matches, updates, parsers, settings
         )
+        Registrar.register_message(
+            "pre-sync summary: \n%s" % reporters.img.get_summary_text()
+        )
         check_warnings(settings)
         if not settings.report_and_quit:
             do_updates_images_master(updates, parsers, results, settings)
@@ -1703,6 +1715,9 @@ def main(override_args=None, settings=None):
         do_merge_categories(matches, parsers, updates, settings)
         do_report_categories(
             reporters, matches, updates, parsers, settings
+        )
+        Registrar.register_message(
+            "pre-sync summary: \n%s" % reporters.cat.get_summary_text()
         )
         check_warnings(settings)
         if not settings.report_and_quit:
@@ -1721,6 +1736,9 @@ def main(override_args=None, settings=None):
         do_merge_attributes(matches, parsers, updates, settings)
         do_report_attributes(
             reporters, matches, updates, parsers, settings
+        )
+        Registrar.register_message(
+            "pre-sync summary: \n%s" % reporters.attr.get_summary_text()
         )
         check_warnings(settings)
         if not settings.report_and_quit:

@@ -434,7 +434,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def exclude_cols_cat(self):
         # TODO: convert these to their handles
-        response = ['post_status']
+        response = ['post_status', 'rowcount']
         if not self.do_images:
             response.extend(['image'])
         return response
