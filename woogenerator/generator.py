@@ -145,11 +145,9 @@ def check_warnings(settings):
         print("there were some urgent errors "
               "that need to be reviewed before continuing")
         Registrar.print_message_dict(0)
-        status = ExitStatus.failure
-        print "\nexiting with status %s\n" % status
+        usr_prompt_continue(settings)
         if Registrar.DEBUG_TRACE:
             import pudb; pudb.set_trace()
-        sys.exit(status)
 
     elif Registrar.warnings:
         print "there were some warnings that should be reviewed"
@@ -805,6 +803,10 @@ def do_merge_prod(matches, parsers, updates, settings):
     if Registrar.DEBUG_TRACE:
         import pudb; pudb.set_trace()
 
+    # Q: why aren't new images being merged?
+    # E.G. ACARA-CAL.png | 24772 gets replaced but not sync'd in ACARA-CAL
+    # A: Because m_mod is based on master file mod
+
     if settings.do_variations:
         updates.variation = UpdateNamespace()
 
@@ -841,7 +843,7 @@ def do_merge_prod(matches, parsers, updates, settings):
             sync_update.simplify_sync_warning_value_listed('product_categories', ['term_id'])
 
         if settings.do_images:
-            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id', 'title', 'source_url'])
+            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id', 'title', 'source_url', 'position'])
 
         # TODO: settings.do_attributes
         # if settings.do_attributes:
@@ -964,6 +966,9 @@ def do_report_images(reporters, matches, updates, parsers, settings):
     Registrar.register_progress("Write Images Report")
 
     do_img_sync_group(reporters.img, matches, updates, parsers, settings)
+
+    if settings.get('report_matching'):
+        do_matches_group(reporters.img, matches.image, updates, parsers, settings)
 
     if reporters.img:
         reporters.img.write_document_to_file('img', settings.rep_img_path)
@@ -1201,8 +1206,8 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
         results.successes.append(sync_update)
 
 def do_updates_images_master(updates, parsers, results, settings):
-    if Registrar.DEBUG_TRACE:
-        import pudb; pudb.set_trace()
+    # if Registrar.DEBUG_TRACE:
+    #     import pudb; pudb.set_trace()
 
     for update in updates.image.master:
         old_master_id = update.master_id

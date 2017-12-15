@@ -328,6 +328,8 @@ class ImportShopProductMixin(object):
             response['category_objects'] = self.categories.values()
         if hasattr(self, 'attachments'):
             response['attachment_objects'] = self.attachments.values()
+            for count, attachment_object in enumerate(response['attachment_objects']):
+                attachment_object['position'] = count
         # TODO: enable attributes later
         # if hasattr(self, 'attributes'):
         #     response['attribute_objects'] = self.attributes.values()

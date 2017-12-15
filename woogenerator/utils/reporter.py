@@ -1258,7 +1258,7 @@ def do_img_sync_group(reporter, matches, updates, parsers, settings):
     if not settings.do_sync or not settings.do_images:
         return
 
-    group = reporter.Group('img_sync', 'Variation Syncing Results')
+    group = reporter.Group('img_sync', 'Image Syncing Results')
 
     target_update_list_meta = [
         (

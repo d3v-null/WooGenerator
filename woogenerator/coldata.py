@@ -1279,6 +1279,9 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
             'path': None,
             'wc-api': {
                 'path': 'position'
+            },
+            'gen-csv': {
+                'path': 'position'
             }
         },
         'file_name': {

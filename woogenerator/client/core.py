@@ -884,7 +884,13 @@ class SyncClientRest(SyncClientAbstract):
                 service_endpoint,
                 pformat(data)[:1000]
             ))
-        response = self.service.post(service_endpoint, data, **kwargs)
+        # TODO: add a better read timeout
+        try:
+            response = self.service.post(service_endpoint, data, **kwargs)
+        except ReadTimeout as exc:
+            Registrar.register_warning(exc)
+            kwargs['timeout'] = 30
+            response = self.service.post(service_endpoint, data, **kwargs)
         assert response.status_code not in [400, 401], "API ERROR"
         assert response.json(), "json should exist"
         assert not isinstance(
