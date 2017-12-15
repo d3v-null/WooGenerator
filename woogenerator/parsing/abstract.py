@@ -814,7 +814,7 @@ class CsvParseBase(Registrar):
         return None
 
     @classmethod
-    def translate_keys(cls, object_data, key_translation):
+    def translate_handle_keys(cls, object_data, key_translation):
         """
         Translate keys from one type of dict to another using the key_translation.
         """

@@ -192,7 +192,7 @@ class SyncClientNull(SyncClientAbstract):
 
     def upload_changes(self, pkey, updates=None):
         super(SyncClientNull, self).upload_changes(pkey)
-        native_pkey = self.coldata_class.translate_key(
+        native_pkey = self.coldata_class.translate_handle(
             self.primary_key_handle, self.coldata_target
         )
         updates.update({
@@ -230,13 +230,13 @@ class SyncClientNull(SyncClientAbstract):
         return super(SyncClientNull, self).upload_changes_core(pkey, updates_core)
 
     def create_item(self, data, **kwargs):
-        native_pkey = self.coldata_class.translate_key(
+        native_pkey = self.coldata_class.translate_handle(
             self.primary_key_handle, self.coldata_target
         )
-        native_slug_key = self.coldata_class.translate_key(
+        native_slug_key = self.coldata_class.translate_handle(
             'slug', self.coldata_target_write
         )
-        native_title_key = self.coldata_class.translate_key(
+        native_title_key = self.coldata_class.translate_handle(
             'title', self.coldata_target_write
         )
         if not isinstance(data, dict):
@@ -1217,7 +1217,7 @@ class SyncClientSqlWP(SyncClientAbstract):
             self.coldata_target
         )
         native_pkey = wp_db_col_paths[self.primary_key_handle]
-        native_pkey = self.coldata_class.translate_key(
+        native_pkey = self.coldata_class.translate_handle(
             self.primary_key_handle, self.coldata_target
         )
 

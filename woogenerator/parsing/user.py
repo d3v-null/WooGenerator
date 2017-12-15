@@ -733,7 +733,7 @@ class ApiParseUser(CsvParseUser):
         if Registrar.DEBUG_API:
             Registrar.register_message("core_translation: %s" %
                                        pformat(core_translation))
-        parser_data.update(**cls.translate_keys(api_data, core_translation))
+        parser_data.update(**cls.translate_handle_keys(api_data, core_translation))
 
         if 'meta' in api_data:
             meta_translation = OrderedDict()
@@ -757,7 +757,7 @@ class ApiParseUser(CsvParseUser):
             if Registrar.DEBUG_API:
                 Registrar.register_message("meta_translation: %s" %
                                            pformat(meta_translation))
-            meta_translation_result = cls.translate_keys(meta_data,
+            meta_translation_result = cls.translate_handle_keys(meta_data,
                                                          meta_translation)
             # if Registrar.DEBUG_API:
             #     Registrar.register_message(

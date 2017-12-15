@@ -194,19 +194,19 @@ class SyncUpdate(Registrar):
 
     @property
     def sync_warnings(self):
-        return self.coldata_class.translate_keys(
+        return self.coldata_class.translate_handle_keys(
             self.sync_warnings_core, self.object_target
         )
 
     @property
     def sync_passes(self):
-        return self.coldata_class.translate_keys(
+        return self.coldata_class.translate_handle_keys(
             self.sync_passes_core, self.object_target
         )
 
     @property
     def sync_problematics(self):
-        return self.coldata_class.translate_keys(
+        return self.coldata_class.translate_handle_keys(
             self.sync_problematics_core, self.object_target
         )
 

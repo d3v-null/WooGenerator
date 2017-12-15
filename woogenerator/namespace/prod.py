@@ -371,8 +371,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = self.coldata_class.get_sync_handles(
             self.coldata_gen_target_write, self.coldata_target_write
         )
-        # TODO: exclude_cols are in gen format
-        for handle in self.exclude_cols:
+        for handle in self.exclude_handles:
             if handle in response:
                 del response[handle]
         return response
@@ -382,8 +381,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = self.coldata_class_var.get_sync_handles(
             self.coldata_gen_target_write, self.coldata_target_write
         )
-        # TODO: exclude_cols are in gen format
-        for handle in self.exclude_cols:
+        for handle in self.exclude_handles:
             if handle in response:
                 del response[handle]
         return response
@@ -404,7 +402,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = self.coldata_class_cat.get_sync_handles(
             self.coldata_gen_target_write, self.coldata_cat_target_write
         )
-        for handle in self.exclude_cols_cat:
+        for handle in self.exclude_handles_cat:
             if handle in response:
                 del response[handle]
         return response
@@ -432,12 +430,24 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
+    def exclude_handles(self):
+        return self.coldata_class_cat.translate_col_seq(
+            self.exclude_cols, self.coldata_gen_target_write
+        )
+
+    @property
     def exclude_cols_cat(self):
         # TODO: convert these to their handles
         response = ['post_status', 'rowcount']
         if not self.do_images:
             response.extend(['image'])
         return response
+
+    @property
+    def exclude_handles_cat(self):
+        return self.coldata_class_cat.translate_col_seq(
+            self.exclude_cols_cat, self.coldata_gen_target_write
+        )
 
     @property
     def master_parser_class(self):

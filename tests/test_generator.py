@@ -159,6 +159,13 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertEqual(self.settings.spec_gid, None)
 
     @pytest.mark.first
+    def test_dummy_settings_namespace(self):
+        self.assertNotIn(
+            'rowcount',
+            self.settings.sync_handles_cat
+        )
+
+    @pytest.mark.first
     def test_dummy_populate_master_parsers(self):
         self.populate_master_parsers()
 

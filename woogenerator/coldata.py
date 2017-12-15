@@ -243,7 +243,7 @@ class ColDataLegacy(object):
                 if not target_property_value:
                     continue
                 core_data[handle] = cls.data.get(handle)
-        return cls.translate_keys(core_data, base_target)
+        return cls.translate_handle_keys(core_data, base_target)
 
     @classmethod
     def get_col_values_native(
@@ -260,7 +260,7 @@ class ColDataLegacy(object):
             if not target_property_value:
                 continue
             core_data[handle] = target_property_value
-        return cls.translate_keys(core_data, base_target)
+        return cls.translate_handle_keys(core_data, base_target)
 
     @classmethod
     def get_delta_cols_native(cls, target=default_native_target):
@@ -270,7 +270,10 @@ class ColDataLegacy(object):
         ])
 
     @classmethod
-    def translate_keys(cls, datum, target):
+    def translate_handle_keys(cls, datum, target):
+        """
+        Return `datum` with the key handles translated to paths in `target`.
+        """
         target_paths = cls.get_handles_property_defaults('path', target)
         translated = OrderedDict()
         for handle, data in datum.items():
@@ -281,8 +284,38 @@ class ColDataLegacy(object):
         return translated
 
     @classmethod
-    def translate_key(cls, handle, target):
-        return cls.get_handle_property(handle, 'path', target)
+    def translate_handle(cls, handle, target):
+        """
+        Return the `path` associated with `handle` in `target`.
+        """
+        target_paths = cls.get_handles_property_defaults('path', target)
+        return target_paths.get(handle, handle)
+
+    @classmethod
+    def translate_col_seq(cls, cols, target):
+        """
+        Return the `handle`s associated with the sequence of paths `cols` in `target`.
+        """
+        cols = deepcopy(cols)
+        target_paths = cls.get_handles_property_defaults('path', target)
+        for handle, target_path in target_paths.items():
+            while True:
+                try:
+                    path_index = cols.index(target_path)
+                except ValueError:
+                    break
+                cols[path_index] = handle
+        return cols
+
+    @classmethod
+    def translate_col(cls, col, target):
+        """
+        Return the `handle` associated with the path `col` in `target`.
+        """
+        target_paths = cls.get_handles_property_defaults('path', target)
+        for handle, target_path in target_paths.items():
+            if col == target_path:
+                return col
 
     @classmethod
     def delta_col(cls, col):
@@ -2072,9 +2105,6 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'wp-sql': {
                 'path': 'menu_order'
             },
-            # 'wp-csv': {
-            #     'path': 'menu_order'
-            # },
             'gen-csv': {
                 'path': 'rowcount',
                 'read': False,

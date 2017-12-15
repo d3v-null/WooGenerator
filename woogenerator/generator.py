@@ -750,6 +750,9 @@ def do_merge_categories(matches, parsers, updates, settings):
 
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
+            if Registrar.DEBUG_TRACE:
+                import pudb; pudb.set_trace()
+
             sync_update.update(sync_handles)
 
             if settings.do_images:
@@ -1688,8 +1691,6 @@ def main(override_args=None, settings=None):
     updates = UpdateNamespace()
     reporters = ReporterNamespace()
     results = ResultsNamespace()
-    if Registrar.DEBUG_TRACE:
-        Registrar.DEBUG_IMG = True
 
     if settings.do_images:
         do_match_images(parsers, matches, settings)
