@@ -933,9 +933,9 @@ class SyncUpdate(Registrar):
         updates_core = OrderedDict()
         for handle, warnings in self.sync_warnings_core.items():
             for warning in warnings:
-                updates_core[handle] = warning['new_value']
-                # loser = warning['subject']
-                # if loser == subject:
+                loser = warning['subject']
+                if loser == subject:
+                    updates_core[handle] = warning['new_value']
                 #     winner = self.opposite_src(loser)
                 #     new_val = self.get_new_subject_value(handle, winner)
                 #     updates_core[handle] = new_val

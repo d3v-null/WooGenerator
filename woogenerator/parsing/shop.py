@@ -135,7 +135,7 @@ class ImportShopAttachmentMixin(ShopMixin):
                 code_match = code_match.groupdict()
                 before = code_match.get('before')
                 after = code_match.get('after')
-        after = re.sub(r'-\d+\$', '', after)
+        after = re.sub(r'-\d+$', '', after)
         name = "%s%s" % (before, after)
         return '%s%s' % (name, ext)
 

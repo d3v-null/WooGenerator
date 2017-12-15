@@ -425,6 +425,9 @@ def do_match_images(parsers, matches, settings):
         index_fn=ImageMatcher.image_index_fn
     )
 
+    if Registrar.DEBUG_TRACE:
+        import pudb; pudb.set_trace()
+
     image_matcher = ImageMatcher()
     image_matcher.clear()
     slave_imgs_attachments = OrderedDict([
@@ -484,14 +487,15 @@ def do_match_images(parsers, matches, settings):
                         match.tabulate()
                     )
                 )
-            if match.type in ['pure', 'masterless', 'slaveless']:
+            if match.type in ['pure', 'masterless', 'slaveless'] \
+            or match.type == 'duplicate' and match.m_len == 1:
                 extra_valid_indices_m.update([
                     attachment.index for attachment in match.m_objects
                 ])
                 extra_valid_indices_s.update([
                     attachment.index for attachment in match.s_objects
                 ])
-                if match.type == 'pure':
+                if match.type in ['pure', 'duplicate']:
                     matches.image.valid += [match]
                 elif match.type == 'masterless':
                     matches.image.masterless.add_matches([match])
@@ -700,8 +704,8 @@ def do_merge_images(matches, parsers, updates, settings):
 
     sync_handles = settings.sync_handles_img
 
-    # if Registrar.DEBUG_TRACE:
-    #     import pudb; pudb.set_trace()
+    if Registrar.DEBUG_TRACE:
+        import pudb; pudb.set_trace()
 
     for match in matches.image.valid:
         m_object = match.m_object

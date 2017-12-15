@@ -4,6 +4,7 @@ import os
 
 from ..coldata import ColDataAttachment
 from .core import SyncClientWP
+from copy import deepcopy
 from ..utils import ProgressCounter, SeqUtils, Registrar
 
 
@@ -38,7 +39,7 @@ class ImgSyncClientWP(SyncClientWP):
         If file_path in core changes, upload file and get new pkey before
         uploading changes to that record.
         """
-
+        updates_core = deepcopy(updates_core)
         file_path = updates_core.pop(self.file_path_handle, None)
         if file_path:
             response_raw = self.upload_image(file_path)

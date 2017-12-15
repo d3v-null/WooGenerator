@@ -3484,6 +3484,9 @@ class ColDataAttachment(ColDataWpEntity):
             'wp-api-v1': {
                 'path': 'attachment_meta.file',
             },
+            'gen-csv': {
+                'write': False,
+            },
             'report': True,
             # TODO: should this be static? run slow tests.
             # 'static': True,
