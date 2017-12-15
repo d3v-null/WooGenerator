@@ -1521,16 +1521,27 @@ probbos:
                 sync_update.old_s_object_core['image']['id'],
                 24879
             )
+            self.assertEqual(
+                sync_update.new_s_object_core['image']['id'],
+                100002
+            )
             if self.debug:
+                print(
+                    "sync warnings core img:\n%s" % \
+                    pformat(sync_update.sync_warnings_core.items())
+                )
                 print(
                     "slave img updates native: \n%s" % \
                     pformat(sync_update.get_slave_updates_native())
                 )
             self.assertTrue(
-                sync_update.get_slave_updates_native()['image']
+                sync_update.sync_warnings_core.get('image')
             )
             self.assertTrue(
-                sync_update.new_s_object_core['image']['id'],
+                sync_update.get_slave_updates_native().get('image')
+            )
+            self.assertTrue(
+                sync_update.get_slave_updates_native().get('image').get('id'),
                 100002
             )
 
@@ -2417,17 +2428,6 @@ slave_updates_core:
                 print("slave_updates_core:\n%s" % pformat(slave_updates_core.items()))
 
             expected_dict = {
-                'product_categories': [
-                    {'term_id': 315},
-                    {'term_id': 316},
-                    {'term_id': 323},
-                    {'term_id': 320},
-                    {'term_id': 100000},
-                    {'term_id': 100001}
-                ],
-                'attachment_objects': [
-                    {'id': 100044}
-                ],
                 'lc_wn_sale_price_dates_from': "2016-06-13 07:00:00",
                 'lc_wn_sale_price_dates_to': "3000-06-30 13:00:00"
             }
@@ -2452,6 +2452,24 @@ slave_updates_core:
                     actual_value,
                     expected_value
                 )
+            expected_categories = set([315, 316, 323, 320, 100000, 100001])
+            actual_categories = set([
+                cat.get('term_id') for cat in slave_updates_core['product_categories']
+            ])
+            self.assertEqual(
+                expected_categories,
+                actual_categories
+            )
+            expected_attachments = set([100044])
+            actual_attachments = set([
+                img.get('id') for img in slave_updates_core['attachment_objects']
+            ])
+            self.assertEqual(
+                expected_attachments,
+                actual_attachments
+            )
+
+
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)

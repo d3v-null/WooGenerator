@@ -1258,7 +1258,8 @@ class DebugUtils(object):
 
     @classmethod
     def hashify(cls, in_str):
-        out_str = "#" * (len(in_str) + 4) + "\n"
+        out_str = "\n"
+        out_str += "#" * (len(in_str) + 4) + "\n"
         out_str += "# " + in_str + " #\n"
         out_str += "#" * (len(in_str) + 4) + "\n"
         return out_str
@@ -1938,7 +1939,7 @@ class ProgressCounter(object):
                 ratio = (float(self.total) / (count) - 1.0)
                 time_remaining = float(time_elapsed) * ratio
                 # line += " | elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
-                line += " | remaining: %3d seconds, %3d elapsed" % (
+                line += " | remaining: %4d seconds, %4d elapsed   " % (
                     int(time_remaining),
                     int(time_elapsed)
                 )

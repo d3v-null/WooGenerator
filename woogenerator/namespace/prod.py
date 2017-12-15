@@ -392,7 +392,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             self.coldata_gen_target_write, self.coldata_img_target_write
         )
         # for handle in ['post_status', 'file_path']:
-        for handle in ['post_status']:
+        for handle in self.exclude_handles_img:
             if handle in response:
                 del response[handle]
         return response
@@ -448,6 +448,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return self.coldata_class_cat.translate_col_seq(
             self.exclude_cols_cat, self.coldata_gen_target_write
         )
+
+    @property
+    def exclude_handles_img(self):
+        return ['post_status', 'meta', 'file_name']
 
     @property
     def master_parser_class(self):

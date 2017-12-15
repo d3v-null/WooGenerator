@@ -470,13 +470,13 @@ def do_match_images(parsers, matches, settings):
     ])
 
     for match in image_matcher.duplicate_matches:
-        if Registrar.DEBUG_IMG:
+        if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
             Registrar.register_message(
                 "analysing duplicate match:\n%s" % match.tabulate()
             )
         attachee_sku_sub_matches = image_matcher.find_attachee_sku_matches(match)
         for key, match in attachee_sku_sub_matches.items():
-            if Registrar.DEBUG_IMG:
+            if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
                 Registrar.register_message(
                     "sub match %s is %s:\n%s" % (
                         key,
@@ -540,6 +540,9 @@ def do_match_images(parsers, matches, settings):
         Registrar.register_warning(warn)
         if Registrar.DEBUG_TRACE:
             import pudb; pudb.set_trace()
+
+    if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
+        Registrar.register_message("all matches:\n%s" % matches.image.tabulate())
 
     return matches
 
@@ -697,6 +700,9 @@ def do_merge_images(matches, parsers, updates, settings):
 
     sync_handles = settings.sync_handles_img
 
+    # if Registrar.DEBUG_TRACE:
+    #     import pudb; pudb.set_trace()
+
     for match in matches.image.valid:
         m_object = match.m_object
         for s_object in match.s_objects:
@@ -743,6 +749,9 @@ def do_merge_categories(matches, parsers, updates, settings):
 
     sync_handles = settings.sync_handles_cat
 
+    # if Registrar.DEBUG_TRACE:
+    #     import pudb; pudb.set_trace()
+
     for match in matches.category.valid:
         s_object = match.s_object
         for m_object in match.m_objects:
@@ -750,13 +759,10 @@ def do_merge_categories(matches, parsers, updates, settings):
 
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
-            if Registrar.DEBUG_TRACE:
-                import pudb; pudb.set_trace()
-
             sync_update.update(sync_handles)
 
             if settings.do_images:
-                sync_update.simplify_sync_warning_value_singular('image', ['id'])
+                sync_update.simplify_sync_warning_value_singular('image', ['id', 'title', 'source_url'])
 
             if not sync_update.important_static:
                 updates.category.problematic(sync_update)
@@ -792,13 +798,14 @@ def do_merge_attributes(matches, parsers, updates, settings):
 def do_merge_prod(matches, parsers, updates, settings):
     """For a given list of matches, return a description of updates required to merge them."""
 
+    if Registrar.DEBUG_TRACE:
+        import pudb; pudb.set_trace()
+
     if settings.do_variations:
         updates.variation = UpdateNamespace()
 
     if not settings['do_sync']:
         return
-
-    # Merge products
 
     sync_handles = settings.sync_handles_prod
 
@@ -827,7 +834,7 @@ def do_merge_prod(matches, parsers, updates, settings):
             sync_update.simplify_sync_warning_value_listed('product_categories', ['term_id'])
 
         if settings.do_images:
-            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id'])
+            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id', 'title', 'source_url'])
 
         # TODO: settings.do_attributes
         # if settings.do_attributes:
@@ -1058,8 +1065,7 @@ def handle_failed_update(update, results, exc, settings, source=None):
     )
 
     if Registrar.DEBUG_TRACE:
-        import pudb
-        pudb.set_trace()
+        import pudb; pudb.set_trace()
 
 def usr_prompt_continue(settings):
     try:
@@ -1123,7 +1129,7 @@ def upload_new_images_slave(parsers, results, settings, client, new_updates):
 
         response_gen_object = parsers.slave.analyse_api_image_raw(response_api_data)
 
-        sync_update.set_new_s_object_gen(response_gen_object)
+        # TODO: fix constantly re-uploading images
 
         if Registrar.DEBUG_IMG:
             Registrar.register_message(
@@ -1145,6 +1151,9 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
 
     if not settings['update_slave']:
         return
+
+    # if Registrar.DEBUG_TRACE:
+    #     import pudb; pudb.set_trace()
 
     for count, sync_update in enumerate(change_updates):
         if Registrar.DEBUG_PROGRESS:
@@ -1176,8 +1185,6 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
             response_gen_data = settings.coldata_class_img.translate_data_to(
                 response_core_data, settings.coldata_gen_target_write
             )
-
-            import pudb; pudb.set_trace()
             sync_update.old_s_object_gen.update(response_gen_data)
             response_gen_object = sync_update.old_s_object_gen
 
@@ -1348,6 +1355,9 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
     if not settings['update_slave']:
         return
 
+    if Registrar.DEBUG_TRACE:
+        import pudb; pudb.set_trace()
+
     for count, sync_update in enumerate(change_updates):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter.maybe_print_update(count)
@@ -1358,10 +1368,11 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
         try:
             pkey = sync_update.slave_id
             changes = sync_update.get_slave_updates_native()
-            if 'image' in changes:
-                # quick hack to stop syncing bad images
-                if 'src' in changes['image']:
-                    del changes['image']
+            # TODO: does this need replacing?
+            # if 'image' in changes:
+            #     # quick hack to stop syncing bad images
+            #     if 'src' in changes['image']:
+            #         del changes['image']
             response_raw = client.upload_changes(pkey, changes)
             response_api_data = response_raw.json()
         except Exception as exc:
