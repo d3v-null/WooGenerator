@@ -425,8 +425,8 @@ def do_match_images(parsers, matches, settings):
         index_fn=ImageMatcher.image_index_fn
     )
 
-    if Registrar.DEBUG_TRACE:
-        import pudb; pudb.set_trace()
+    # if Registrar.DEBUG_TRACE:
+    #     import pudb; pudb.set_trace()
 
     image_matcher = ImageMatcher()
     image_matcher.clear()
@@ -702,10 +702,10 @@ def do_merge_images(matches, parsers, updates, settings):
     if not hasattr(matches, 'image'):
         return updates
 
-    sync_handles = settings.sync_handles_img
-
     if Registrar.DEBUG_TRACE:
         import pudb; pudb.set_trace()
+
+    sync_handles = settings.sync_handles_img
 
     for match in matches.image.valid:
         m_object = match.m_object
@@ -824,6 +824,9 @@ def do_merge_prod(matches, parsers, updates, settings):
         s_object = match.s_object
 
         sync_update = settings.syncupdate_class_prod(m_object, s_object)
+
+        # TODO: make sure that syc_update uses the correct mod_time for sub_entities like attachment_objects.
+        # (I'm not sure this is a thing any more? )
 
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not m_object.is_variation
@@ -1198,6 +1201,9 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
         results.successes.append(sync_update)
 
 def do_updates_images_master(updates, parsers, results, settings):
+    if Registrar.DEBUG_TRACE:
+        import pudb; pudb.set_trace()
+
     for update in updates.image.master:
         old_master_id = update.master_id
         if Registrar.DEBUG_UPDATE:

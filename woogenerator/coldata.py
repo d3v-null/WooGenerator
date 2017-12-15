@@ -1811,6 +1811,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             'gen-csv': {
                 'path': 'ID',
                 'read': False,
+                'write': True,
             },
             'wc-csv': {
                 'write': False

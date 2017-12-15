@@ -845,7 +845,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-        self.assertEqual(len(self.updates.image.master), 45)
+        self.assertEqual(len(self.updates.image.master), 51)
         if self.debug:
             print("master updates:")
             for sync_update in self.updates.image.master:
