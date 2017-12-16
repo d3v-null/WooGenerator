@@ -1286,6 +1286,9 @@ class CreatedModifiedGmtMixin(object):
                 'path': 'created_gmt',
                 'read': False,
             },
+            'wc-csv': {
+                'path': None
+            },
         },
         'modified_gmt': {
             'type': 'datetime',
@@ -1313,6 +1316,9 @@ class CreatedModifiedGmtMixin(object):
             'xero-api': {
                 'path': 'UpdatedDateUTC',
                 'type': 'iso8601'
+            },
+            'wc-csv': {
+                'path': None
             },
             'report': True,
         },
@@ -1361,6 +1367,7 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
             'report': True
         },
         'title': {
+            'type': 'unicode',
             'wc-wp-api':{
                 'path': 'name',
                 'type': 'wp_content_rendered'

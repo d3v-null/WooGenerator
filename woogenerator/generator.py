@@ -331,6 +331,8 @@ def export_master_parser(settings, parsers):
     product_list = container(parsers.master.products.values())
     product_list.export_items(settings.fla_path, product_colnames)
 
+    # TODO: stop exporting modified_gmt to spreadsheet
+
     if settings.schema_is_woo:
         # variations
         variation_container = settings.master_parser_class.variation_container.container
@@ -697,10 +699,6 @@ def do_merge_images(matches, parsers, updates, settings):
     if not hasattr(matches, 'image'):
         return updates
 
-    if Registrar.DEBUG_TRACE:
-        import pudb; pudb.set_trace()
-        # TODO: why does ACARA.jpg not update url in master?
-
     sync_handles = settings.sync_handles_img
 
     for match in matches.image.valid:
@@ -749,9 +747,6 @@ def do_merge_categories(matches, parsers, updates, settings):
 
     sync_handles = settings.sync_handles_cat
 
-    if Registrar.DEBUG_TRACE:
-        import pudb; pudb.set_trace()
-
     for match in matches.category.valid:
         s_object = match.s_object
         for m_object in match.m_objects:
@@ -799,9 +794,7 @@ def do_merge_prod(matches, parsers, updates, settings):
     if Registrar.DEBUG_TRACE:
         import pudb; pudb.set_trace()
 
-    # Q: why aren't new images being merged?
-    # E.G. ACARA-CAL.png | 24772 gets replaced but not sync'd in ACARA-CAL
-    # A: Because m_mod is based on master file mod
+    # TODO: fix update < 234 | 24800 > updating product_categories every time
 
     if settings.do_variations:
         updates.variation = UpdateNamespace()
@@ -821,19 +814,14 @@ def do_merge_prod(matches, parsers, updates, settings):
         m_object = match.m_object
         s_object = match.s_object
 
-        sync_update = settings.syncupdate_class_prod(m_object, s_object)
-
-        # TODO: make sure that syc_update uses the correct mod_time for sub_entities like attachment_objects.
-        # (I'm not sure this is a thing any more? )
-
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not m_object.is_variation
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not s_object.is_variation
 
-        sync_update.update(sync_handles)
+        sync_update = settings.syncupdate_class_prod(m_object, s_object)
 
-        # print sync_update.tabulate()
+        sync_update.update(sync_handles)
 
         if settings.do_categories:
             sync_update.simplify_sync_warning_value_listed('product_categories', ['term_id'])
@@ -1160,9 +1148,6 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
     if not settings['update_slave']:
         return
 
-    # if Registrar.DEBUG_TRACE:
-    #     import pudb; pudb.set_trace()
-
     for count, sync_update in enumerate(change_updates):
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter.maybe_print_update(count)
@@ -1363,9 +1348,6 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
 
     if not settings['update_slave']:
         return
-
-    if Registrar.DEBUG_TRACE:
-        import pudb; pudb.set_trace()
 
     for count, sync_update in enumerate(change_updates):
         if Registrar.DEBUG_PROGRESS:
