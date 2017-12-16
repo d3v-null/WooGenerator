@@ -794,7 +794,7 @@ def do_merge_prod(matches, parsers, updates, settings):
     if Registrar.DEBUG_TRACE:
         import pudb; pudb.set_trace()
 
-    # TODO: fix update < 234 | 24800 > updating product_categories every time
+    # TODO: fix update < 234 | 24800 > (ACARB-ML) updating product_categories every time
 
     if settings.do_variations:
         updates.variation = UpdateNamespace()

@@ -359,11 +359,13 @@ class SyncUpdate(Registrar):
             response = True
         elif not (m_value and s_value):
             response = False
-        # check if they are similar
-        # if hasattr(m_value, 'reprocess_kwargs') and m_value.reprocess_kwargs:
-        # if handle == 'Role Info':
         if hasattr(m_value, 'similar') and callable(m_value.similar):
             response = m_value.similar(s_value)
+        # if handle in self.coldata_class.get_property_inclusions('sub_data'):
+        #     if isinstance(m_value, list):
+        #         m_value = sorted(m_value) # only sorts keys
+        #     if isinstance(s_value, list):
+        #         s_value = sorted(s_value)
         similar_m_value = SanitationUtils.similar_comparison(m_value)
         similar_s_value = SanitationUtils.similar_comparison(s_value)
 

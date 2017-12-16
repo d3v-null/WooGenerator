@@ -222,6 +222,11 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         for base_class in ImportWooProduct.__bases__:
             if hasattr(base_class, 'to_dict'):
                 response.update(base_class.to_dict(self))
+
+        response['category_objects'] = sorted(
+            response['category_objects'],
+            lambda cat_a, cat_b: cmp(cat_a.wpid, cat_b.wpid)
+        )
         return response
 
 class WooProdList(ShopProdList, WooListMixin):

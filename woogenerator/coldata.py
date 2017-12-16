@@ -558,17 +558,35 @@ class ColDataAbstract(ColDataLegacy):
         return response
 
     @classmethod
+    def get_property_inclusions(cls, property_, target=None):
+        """
+        Return a list of handles in which the value of `property_` in the context
+        of `target` (or the default value if it is not explicitly set) is trueish.
+        """
+        response = set()
+        if not property_:
+            return response
+        for handle, value in \
+        cls.get_handles_property_defaults(property_, target).items():
+            if value:
+                response.add(handle)
+        return response
+
+    @classmethod
     def get_property_exclusions(cls, property_, target=None):
         """
+        Return a list of handles in which the value of `property_` in the context
+        of `target` (or the default value if it is not explicitly set) is not trueish.
         Return a list of handles whose value of `property_` in `target` is not True-ish.
         """
-        exclusions = []
+        response = set()
         if not property_:
-            return exclusions
-        for handle, value in cls.get_handles_property_defaults(property_).items():
+            return response
+        for handle, value in \
+        cls.get_handles_property_defaults(property_, target).items():
             if not value:
-                exclusions.append(handle)
-        return exclusions
+                response.add(handle)
+        return response
 
     @classmethod
     def get_properties_exclusions(cls, properties, target=None):
@@ -1097,11 +1115,7 @@ class ColDataAbstract(ColDataLegacy):
             target, excluding_properties=excluding_properties
         )
 
-        sub_datum = cls.get_handles_property('sub_data')
-        sub_data_handles = set()
-        for handle, sub_data in sub_datum.items():
-            if sub_data:
-                sub_data_handles.add(handle)
+        sub_data_handles = cls.get_property_inclusions('sub_data')
         # target paths which have sub_data
         path_translation_pre = OrderedDict()
         # core paths which don't have sub_data
@@ -1163,11 +1177,7 @@ class ColDataAbstract(ColDataLegacy):
         )
         # TODO: roll path_translation_(pre|post) into get_path_translation functions
 
-        sub_datum = cls.get_handles_property('sub_data')
-        sub_data_handles = set()
-        for handle, sub_data in sub_datum.items():
-            if sub_data:
-                sub_data_handles.add(handle)
+        sub_data_handles = cls.get_property_inclusions('sub_data')
         # core paths which do not have sub data
         path_translation_pre = OrderedDict()
         # target paths which have sub data
