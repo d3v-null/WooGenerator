@@ -693,13 +693,12 @@ class ApiParseWoo(
                 )
 
         if 'attachment_objects' in object_data:
-            sub_imgs_gen = object_data['attachment_objects']
+            sub_imgs_gen = object_data.pop('attachment_objects')
             if sub_imgs_gen:
                 for sub_img_gen_data in sub_imgs_gen:
                     self.process_api_sub_image_gen(
                         sub_img_gen_data, object_data
                     )
-            del(object_data['attachment_objects'])
 
         return object_data
 

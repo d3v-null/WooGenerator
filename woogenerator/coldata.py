@@ -565,7 +565,7 @@ class ColDataAbstract(ColDataLegacy):
         exclusions = []
         if not property_:
             return exclusions
-        for handle, value in cls.get_handles_property(property_).items():
+        for handle, value in cls.get_handles_property_defaults(property_).items():
             if not value:
                 exclusions.append(handle)
         return exclusions
@@ -579,7 +579,7 @@ class ColDataAbstract(ColDataLegacy):
         if not properties:
             return exclusions
         handles_properties = [
-            cls.get_handles_property(property_, target) for property_ in properties
+            cls.get_handles_property_defaults(property_, target) for property_ in properties
         ]
         for handle in cls.data.keys():
             handles_values = [
@@ -673,8 +673,8 @@ class ColDataAbstract(ColDataLegacy):
         """
         Translate the data using functions preserving paths.
         """
-        for handle in cls.data.keys():
-            if handle in morph_functions and handle in path_translation:
+        for handle in morph_functions.keys():
+            if handle in path_translation:
                 target_path = path_translation.get(handle)
                 try:
                     target_value = deepcopy(cls.get_from_path(
@@ -1080,6 +1080,7 @@ class ColDataAbstract(ColDataLegacy):
         core_path_translation = cls.get_core_path_translation(
             target, excluding_properties=excluding_properties
         )
+
         sub_datum = cls.get_handles_property('sub_data')
         sub_data_handles = set()
         for handle, sub_data in sub_datum.items():
@@ -1112,6 +1113,13 @@ class ColDataAbstract(ColDataLegacy):
         data = cls.translate_types_from(
             data, target, path_translation_post
         )
+
+        data = OrderedDict([
+            (key, value) \
+            for key, value in data.items() \
+            if key in core_path_translation.values()
+        ])
+
         return data
 
     @classmethod
@@ -1138,14 +1146,6 @@ class ColDataAbstract(ColDataLegacy):
             target, excluding_properties=excluding_properties
         )
         # TODO: roll path_translation_(pre|post) into get_path_translation functions
-
-        # TODO: something like this
-
-        # data = OrderedDict([
-        #     (key, deepcopy(value)) \
-        #     for key, value in data.items() \
-        #     if key in core_path_translations.values()
-        # ])
 
         sub_datum = cls.get_handles_property('sub_data')
         sub_data_handles = set()
@@ -1180,6 +1180,12 @@ class ColDataAbstract(ColDataLegacy):
         data = cls.translate_types_to(
             data, target, path_translation_post
         )
+
+        data = OrderedDict([
+            (key, value) \
+            for key, value in data.items() \
+            if key in target_path_translation.values()
+        ])
 
         return data
 
