@@ -1373,7 +1373,50 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
         if self.debug:
             self.print_updates_summary(self.updates.category)
+
+        expected_sub_img_handles = ['source_url', 'title', 'id']
+        unexpected_sub_img_handles = ['modified_gmt', 'created_gmt']
+        expected_sub_img_cols = ['src', 'title', 'id']
+        def sync_update_cat_rudiments_test(sync_update):
+            if getattr(sync_update, 'new_s_object_core') \
+            and sync_update.new_s_object_core.get('image'):
+                new_s_core_img = sync_update.new_s_object_core['image']
+                for key in expected_sub_img_handles:
+                    self.assertIn(
+                        key,
+                        new_s_core_img
+                    )
+                for key in unexpected_sub_img_handles:
+                    self.assertNotIn(
+                        key,
+                        new_s_core_img
+                    )
+            if sync_update.get_slave_updates().get('image'):
+                slave_updates_core_img = sync_update.get_slave_updates().get('image')
+                for key in expected_sub_img_handles:
+                    self.assertIn(
+                        key,
+                        slave_updates_core_img
+                    )
+                for key in unexpected_sub_img_handles:
+                    self.assertNotIn(
+                        key,
+                        slave_updates_core_img
+                    )
+                slave_updates_native_img = sync_update.get_slave_updates_native().get('image')
+                for key in expected_sub_img_cols:
+                    self.assertIn(
+                        key,
+                        slave_updates_native_img
+                    )
+
         self.assertEqual(len(self.updates.category.master), 9)
+
+        for sync_update in self.updates.category.master:
+            try:
+                sync_update_cat_rudiments_test(sync_update)
+            except AssertionError as exc:
+                self.fail_syncupdate_assertion(exc, sync_update)
 
         """
 update <       4 |     316 ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
@@ -1548,6 +1591,101 @@ probbos:
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
+        # TODO: this
+        if self.debug:
+            import pudb; pudb.set_trace()
+        self.assertEqual(len(self.updates.category.slave), 9)
+        for sync_update in self.updates.category.slave:
+            try:
+                sync_update_cat_rudiments_test(sync_update)
+            except AssertionError as exc:
+                self.fail_syncupdate_assertion(exc, sync_update)
+        """
+update <       8 |     317 >OLD
+taxos                 descsum                                            title    parent_id    ID    slug
+--------------------  -------------------------------------------------  -------  -----------  ----  -------------------------------------
+ACARA|r:8|w:|Range A  Company A have developed a range of unique blends  Range A
+r:3|a:317|Range A                                                        Range A  316          317   product-a-company-a-product-a-range-a
+CHANGES (6!1)
+-
+Column       Reason     Subject           Old                                                 New                                                   M TIME    S TIME  EXTRA
+-----------  ---------  ----------------  --------------------------------------------------  --------------------------------------------------  --------  --------  -------
+description  inserting  woocommerce-test                                                      Company A have developed a range of unique blends          0         0
+image        updating   woocommerce-test  {'source_url': u'http://localhost:18080/wptest/wp-  {'source_url': u'/var/folders/sx/43gc_nmj43dcwbw15         0         0
+-
+Column          Reason        Subject      Old    New                                      M TIME    S TIME  EXTRA
+--------------  ------------  -----------  -----  -------------------------------------  --------  --------  -------
+term_parent_id  merging-read  gdrive-test         316                                           0         0
+term_id         merging       gdrive-test         317                                           0         0
+slug            merging       gdrive-test         product-a-company-a-product-a-range-a         0         0
+display         merging       gdrive-test         default                                       0         0
+gdrive-test CHANGES
+  ID    term_parent_id    term_id  slug                                   display
+----  ----------------  ---------  -------------------------------------  ---------
+   8               316        317  product-a-company-a-product-a-range-a  default
+woocommerce-test CHANGES
+  ID  description                                                                                                                                                                                                 image
+----  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 317  Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.  OrderedDict([('src', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/tmpGiIcYKgenerator_dummy_process_images_img/imgs_cmp/images-CA/ACARA.jpg'), ('id', 100003), ('title', u'Product A > Company A Product A > Range A')])
+PASSES (1)
+-
+Column    Reason     Master    Slave      M TIME    S TIME  EXTRA
+--------  ---------  --------  -------  --------  --------  -------
+title     identical  Range A   Range A         0         0
+
+NEW
+taxos                              descsum                                            title      parent_id    ID  slug
+---------------------------------  -------------------------------------------------  -------  -----------  ----  -------------------------------------
+ACA|r:8|w:317|Company A Product A  Company A have developed a range of unique blends  Range A          316   317  product-a-company-a-product-a-range-a
+r:3|a:317|Range A                  Company A have developed a range of unique blends  Range A          316   317  product-a-company-a-product-a-range-a
+        """
+        sync_update = self.updates.category.slave.get_by_ids(8,317)
+        try:
+            if self.debug:
+                self.print_update(sync_update)
+
+            m_attachment = sync_update.old_m_object_gen.to_dict()['attachment_object']
+            self.assertEqual(
+                m_attachment.get('file_name'),
+                'ACARA.jpg'
+            )
+            self.assertEqual(
+                m_attachment.get('ID'),
+                100003
+            )
+            s_attachment = sync_update.old_s_object_gen.to_dict()['attachment_object']
+            self.assertEqual(
+                s_attachment.get('file_name'),
+                'ACARA.jpg'
+            )
+            self.assertEqual(
+                s_attachment.get('ID'),
+                24880
+            )
+
+            self.assertTrue(
+                sync_update.sync_warnings_core.get('image')
+            )
+            self.assertTrue(
+                sync_update.get_slave_updates_native().get('image')
+            )
+            self.assertTrue(
+                sync_update.get_slave_updates_native().get('image').get('id'),
+                100003
+            )
+
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
+
+        self.assertEqual(len(self.updates.category.new_slaves), 2)
+
+        for sync_update in self.updates.category.new_slaves:
+            try:
+                sync_update_cat_rudiments_test(sync_update)
+            except AssertionError as exc:
+                self.fail_syncupdate_assertion(exc, sync_update)
+
+
         """
 update <     167 |         ><class 'woogenerator.syncupdate.SyncUpdateCatWoo'>
 ---
@@ -1644,14 +1782,6 @@ probbos:
             self.fail_syncupdate_assertion(exc, sync_update)
 
 # equivalent to:
-
-        self.settings.master_file = os.path.join(
-            TESTS_DATA_DIR, "generator_master_dummy.csv"
-        )
-        self.settings.specials_file = os.path.join(
-            TESTS_DATA_DIR, "generator_specials_dummy.csv"
-        )
-
     """
 python -m woogenerator.generator \
       --schema=CA --local-work-dir 'tests/sample_data' --local-test-config 'generator_config_test.yaml' \
@@ -1758,10 +1888,58 @@ python -m woogenerator.generator \
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
 
+        expected_sub_img_handles = ['source_url', 'title', 'id', 'position']
+        unexpected_sub_img_handles = ['modified_gmt', 'created_gmt']
+        expected_sub_img_cols = ['src', 'name', 'id', 'position']
+        def sync_update_prod_rudiments_test(sync_update):
+            if self.debug:
+                import pudb; pudb.set_trace()
+            if getattr(sync_update, 'new_s_object_core') \
+            and sync_update.new_s_object_core.get('attachment_objects'):
+                new_s_core_imgs = sync_update.new_s_object_core['attachment_objects']
+                for new_s_core_img in new_s_core_imgs:
+                    for key in expected_sub_img_handles:
+                        self.assertIn(
+                            key,
+                            new_s_core_img
+                        )
+                    for key in unexpected_sub_img_handles:
+                        self.assertNotIn(
+                            key,
+                            new_s_core_img
+                        )
+            if sync_update.get_slave_updates().get('attachment_objects'):
+                slave_updates_core_imgs = sync_update.get_slave_updates().get('attachment_objects')
+                for slave_updates_core_img in slave_updates_core_imgs:
+                    for key in expected_sub_img_handles:
+                        self.assertIn(
+                            key,
+                            slave_updates_core_img
+                        )
+                    for key in unexpected_sub_img_handles:
+                        self.assertNotIn(
+                            key,
+                            slave_updates_core_img
+                        )
+                slave_updates_native_imgs = sync_update.get_slave_updates_native().get('images')
+                for slave_updates_native_img in slave_updates_native_imgs:
+                    for key in expected_sub_img_cols:
+                        self.assertIn(
+                            key,
+                            slave_updates_native_img
+                        )
+
+
         if self.debug:
             self.print_updates_summary(self.updates)
         self.assertTrue(self.updates.slave)
         self.assertEqual(len(self.updates.slave), 48)
+
+        for sync_update in self.updates.slave:
+            try:
+                sync_update_prod_rudiments_test(sync_update)
+            except AssertionError as exc:
+                self.fail_syncupdate_assertion(exc, sync_update)
 
         sync_update = self.updates.slave.get_by_ids(10, 24863)
 
@@ -2468,9 +2646,6 @@ slave_updates_core:
                 expected_attachments,
                 actual_attachments
             )
-
-
-
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 

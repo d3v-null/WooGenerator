@@ -759,8 +759,6 @@ def do_merge_categories(matches, parsers, updates, settings):
         for m_object in match.m_objects:
             # m_object = match.m_objects[0]
 
-            # TODO: remove extra handles from sub_entitires like img.modified_gmt
-
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
             sync_update.update(sync_handles)

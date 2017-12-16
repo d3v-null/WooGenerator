@@ -105,7 +105,8 @@ class SyncUpdate(Registrar):
         assert issubclass(self.master_container, ImportObject)
         self.master_parent = self.old_m_object_gen.parent
         self.old_m_object_core = self.coldata_class.translate_data_from(
-            self.old_m_object_gen.to_dict(), self.object_target
+            self.old_m_object_gen.to_dict(), self.object_target,
+            excluding_properties=['sync']
         )
         if self.old_m_object_core.get('modified_gmt'):
             self.m_time = self.parse_m_time(self.old_m_object_core['modified_gmt'])
@@ -116,7 +117,8 @@ class SyncUpdate(Registrar):
         assert issubclass(self.slave_container, ImportObject)
         self.slave_parent = self.old_s_object_gen.parent
         self.old_s_object_core = self.coldata_class.translate_data_from(
-            self.old_s_object_gen.to_dict(), self.object_target
+            self.old_s_object_gen.to_dict(), self.object_target,
+            excluding_properties=['sync']
         )
         if self.old_s_object_core.get('modified_gmt'):
             self.s_time = self.parse_s_time(self.old_s_object_core['modified_gmt'])
@@ -126,7 +128,8 @@ class SyncUpdate(Registrar):
         assert issubclass(self.master_container, ImportObject)
         self.master_parent = new_m_object_gen.parent
         new_m_object_core = self.coldata_class.translate_data_from(
-            new_m_object_gen.to_dict(), self.object_target
+            new_m_object_gen.to_dict(), self.object_target,
+            excluding_properties=['sync']
         )
         self.set_new_subject_object(new_m_object_core, self.master_name)
 
@@ -135,7 +138,8 @@ class SyncUpdate(Registrar):
         assert issubclass(self.master_container, ImportObject)
         self.slave_parent = new_s_object_gen.parent
         new_s_object_core = self.coldata_class.translate_data_from(
-            new_s_object_gen.to_dict(), self.object_target
+            new_s_object_gen.to_dict(), self.object_target,
+            excluding_properties=['sync']
         )
         self.set_new_subject_object(new_s_object_core, self.slave_name)
 

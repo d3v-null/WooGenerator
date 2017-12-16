@@ -738,7 +738,9 @@ class ColDataAbstract(ColDataLegacy):
         return deepcopy(data)
 
     @classmethod
-    def deconstruct_sub_entity(cls, sub_data, target, target_structure=None, forced_mapping_handle=None):
+    def deconstruct_sub_entity(
+        cls, sub_data, target, target_structure=None, forced_mapping_handle=None, excluding_properties=None
+    ):
         if target_structure is None:
             target_structure = cls.get_property_default('structure')
         path_translation = cls.get_target_path_translation(target)
@@ -747,7 +749,8 @@ class ColDataAbstract(ColDataLegacy):
             if sub_data:
                 return cls.translate_data_from(
                     sub_data,
-                    target
+                    target,
+                    excluding_properties=excluding_properties
                 )
         elif target_structure[0] == 'singular-value':
             target_value_handle = target_structure[1]
@@ -759,7 +762,8 @@ class ColDataAbstract(ColDataLegacy):
                         target_value_path,
                         sub_data
                     ),
-                    target
+                    target,
+                    excluding_properties=excluding_properties
                 )
         elif target_structure[0] == 'listed-values':
             target_value_handle = target_structure[1]
@@ -771,14 +775,16 @@ class ColDataAbstract(ColDataLegacy):
                         target_value_path,
                         sub_value
                     ),
-                    target
+                    target,
+                    excluding_properties=excluding_properties
                 ) for sub_value in sub_data
             ]
         elif target_structure[0] == 'listed-objects':
             objects = [
                 cls.translate_data_from(
                     sub_object,
-                    target
+                    target,
+                    excluding_properties=excluding_properties
                 ) for sub_object in sub_data
             ]
         elif target_structure[0] == 'mapping-value':
@@ -797,7 +803,8 @@ class ColDataAbstract(ColDataLegacy):
                         target_value_path,
                         sub_value
                     ),
-                    target
+                    target,
+                    excluding_properties=excluding_properties
                 ) for sub_key, sub_value in sub_data.items()
             ]
         elif target_structure[0] == 'mapping-object':
@@ -810,7 +817,8 @@ class ColDataAbstract(ColDataLegacy):
                         target_key_path,
                         sub_key
                     ),
-                    target
+                    target,
+                    excluding_properties=excluding_properties
                 ) for sub_key, sub_value in sub_data.items()
             ]
         if forced_mapping_handle:
@@ -826,7 +834,9 @@ class ColDataAbstract(ColDataLegacy):
         return objects
 
     @classmethod
-    def reconstruct_sub_entity(cls, sub_data, target, target_structure=None, forced_mapping_handle=None):
+    def reconstruct_sub_entity(
+        cls, sub_data, target, target_structure=None, forced_mapping_handle=None, excluding_properties=None
+    ):
         """
         The inverse of deconstruct_sub_entity.
         """
@@ -836,7 +846,8 @@ class ColDataAbstract(ColDataLegacy):
         if target_structure[0] == 'singular-object':
              return cls.translate_data_to(
                 sub_data,
-                target
+                target,
+                excluding_properties=excluding_properties
             )
         elif target_structure[0] == 'singular-value':
             target_value_handle = target_structure[1]
@@ -844,7 +855,8 @@ class ColDataAbstract(ColDataLegacy):
             return cls.get_from_path(
                 cls.translate_data_to(
                     sub_data,
-                    target
+                    target,
+                    excluding_properties=excluding_properties
                 ),
                 target_value_path
             )
@@ -872,7 +884,8 @@ class ColDataAbstract(ColDataLegacy):
             #         cls.get_from_path(
             #             cls.translate_data_to(
             #                 sub_object,
-            #                 target
+            #                 target,
+            #                 excluding_properties=excluding_properties
             #             ),
             #             target_value_path
             #         ) for sub_object in objects
@@ -881,7 +894,8 @@ class ColDataAbstract(ColDataLegacy):
                 return [
                     cls.translate_data_to(
                         sub_object,
-                        target
+                        target,
+                        excluding_properties=excluding_properties
                     ) for sub_object in objects
                 ]
             if target_structure[0] == 'mapping-value':
@@ -892,7 +906,8 @@ class ColDataAbstract(ColDataLegacy):
                 translated_objects = [
                     cls.translate_data_to(
                         sub_object,
-                        target
+                        target,
+                        excluding_properties=excluding_properties
                     ) for sub_object in objects
                 ]
                 return OrderedDict([
@@ -905,7 +920,7 @@ class ColDataAbstract(ColDataLegacy):
 
 
     @classmethod
-    def get_structure_morph_functions(cls, target, direction='from'):
+    def get_structure_morph_functions(cls, target, direction='from', excluding_properties=None):
         cache_key = (cls.__name__, target, direction)
         if cache_key in cls.structure_morph_cache:
             return cls.structure_morph_cache.get(cache_key)
@@ -934,7 +949,8 @@ class ColDataAbstract(ColDataLegacy):
                         getattr(target_sub_data_class, morph_function_attribute),
                         target=target,
                         target_structure=target_structure,
-                        forced_mapping_handle=forced_mapping_handle
+                        forced_mapping_handle=forced_mapping_handle,
+                        excluding_properties=excluding_properties
                     )
                 if morph_function:
                     morph_functions[handle] = morph_function
@@ -943,19 +959,19 @@ class ColDataAbstract(ColDataLegacy):
 
 
     @classmethod
-    def translate_structure_from(cls, data, target, path_translation=None):
+    def translate_structure_from(cls, data, target, path_translation=None, excluding_properties=None):
         """
         Translate the Sub-entity structures in data between `target` and core.
         """
-        morph_functions = cls.get_structure_morph_functions(target, 'from')
+        morph_functions = cls.get_structure_morph_functions(target, 'from', excluding_properties)
         return cls.morph_data(data, morph_functions, path_translation)
 
     @classmethod
-    def translate_structure_to(cls, data, target, path_translation=None):
+    def translate_structure_to(cls, data, target, path_translation=None, excluding_properties=None):
         """
         Translate the Sub-entity structures in data between core and `target`.
         """
-        morph_functions = cls.get_structure_morph_functions(target, 'to')
+        morph_functions = cls.get_structure_morph_functions(target, 'to', excluding_properties)
         return cls.morph_data(data, morph_functions, path_translation)
 
     @classmethod
@@ -1105,7 +1121,7 @@ class ColDataAbstract(ColDataLegacy):
 
         # translate structure
         data = cls.translate_structure_from(
-            data, target, target_path_translation
+            data, target, target_path_translation, excluding_properties
         )
         data = cls.translate_paths_from(
             data, target
@@ -1174,7 +1190,7 @@ class ColDataAbstract(ColDataLegacy):
         )
         # translate subdata structure
         data = cls.translate_structure_to(
-            data, target, target_path_translation
+            data, target, target_path_translation, excluding_properties
         )
         # translate types of subdata handles in target format
         data = cls.translate_types_to(
@@ -1317,11 +1333,13 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
         'wc-wp-api-v2-edit': {
             'path': None,
         },
+        'sync': False
     })
     data['modified_gmt'].update({
         'wc-wp-api-v2-edit': {
             'path': None,
         },
+        'sync': False
     })
     data = SeqUtils.combine_ordered_dicts(data, {
         'id': {
@@ -1369,18 +1387,18 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
                 'path': 'position'
             }
         },
-        'file_name': {
-            'path': None,
-            'wc-wp-api': {
-                'path': 'src',
-                'type': 'file_basename',
-                'write': False
-            },
-            'gen-csv': {
-                'path': 'file_name',
-                'read': False
-            }
-        }
+        # 'file_name': {
+        #     'path': None,
+        #     'wc-wp-api': {
+        #         'path': 'src',
+        #         'type': 'file_basename',
+        #         'write': False
+        #     },
+        #     'gen-csv': {
+        #         'path': 'file_name',
+        #         'read': False
+        #     }
+        # }
     })
 
 class ColDataSubTermAttachment(ColDataSubAttachment):
