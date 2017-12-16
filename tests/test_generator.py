@@ -2567,6 +2567,14 @@ slave_updates_core:
                 self.reporters.cat.get_summary_text()
             )
 
+class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
+    """
+    Stuff missing from original dummy:
+     - variations
+     - attributes
+     - collapsable categories (e.g. Product A > Company A Product A => Company A Product A)
+
+    """
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd

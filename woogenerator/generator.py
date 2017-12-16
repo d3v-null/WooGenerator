@@ -751,13 +751,15 @@ def do_merge_categories(matches, parsers, updates, settings):
 
     sync_handles = settings.sync_handles_cat
 
-    # if Registrar.DEBUG_TRACE:
-    #     import pudb; pudb.set_trace()
+    if Registrar.DEBUG_TRACE:
+        import pudb; pudb.set_trace()
 
     for match in matches.category.valid:
         s_object = match.s_object
         for m_object in match.m_objects:
             # m_object = match.m_objects[0]
+
+            # TODO: remove extra handles from sub_entitires like img.modified_gmt
 
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 

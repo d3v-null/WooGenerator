@@ -496,6 +496,7 @@ class ColDataAbstract(ColDataLegacy):
                 'path': handle,
                 'write': True,
                 'read': True,
+                'sync': True,
                 'type': 'string',
                 'structure': ('singular-object', ),
                 'report' : False,
@@ -562,27 +563,62 @@ class ColDataAbstract(ColDataLegacy):
         Return a list of handles whose value of `property_` in `target` is not True-ish.
         """
         exclusions = []
+        if not property_:
+            return exclusions
         for handle, value in cls.get_handles_property(property_).items():
             if not value:
-                exclusions.append(value)
+                exclusions.append(handle)
         return exclusions
 
     @classmethod
-    def get_target_path_translation(cls, target):
+    def get_properties_exclusions(cls, properties, target=None):
         """
-        Return a mapping of core paths to paths in `target` structure.
+        Return a list of handles whose value of `property_` in `target` is not True-ish.
         """
-        if target == None:
-            return
-        return cls.get_handles_property_defaults('path', target)
+        exclusions = []
+        if not properties:
+            return exclusions
+        handles_properties = [
+            cls.get_handles_property(property_, target) for property_ in properties
+        ]
+        for handle in cls.data.keys():
+            handles_values = [
+                handle_properties.get(handle) \
+                for handle_properties in handles_properties
+            ]
+            if not all(handles_values):
+                exclusions.append(handle)
+        return exclusions
 
     @classmethod
-    def get_core_path_translation(cls, target):
+    def get_target_path_translation(cls, target, excluding_properties=None):
         """
-        Return the indenty translation for core paths in target.
-        This does not change paths but excludes paths that do not exist in target.
+        Return a mapping of handles to paths in `target` structure.
+        Exclude any handles that do not have a truthy value for all excluding properties.
         """
-        exclusions = cls.get_property_exclusions('path', target)
+        if excluding_properties == None:
+            excluding_properties = []
+        if target == None:
+            return
+        path_translation = cls.get_handles_property_defaults('path', target)
+        exclusions = cls.get_properties_exclusions(excluding_properties, target)
+        return OrderedDict([
+            (handle, path) \
+            for handle, path in path_translation.items() \
+            if handle not in exclusions
+        ])
+
+    @classmethod
+    def get_core_path_translation(cls, target, excluding_properties=None):
+        """
+        Return an identity mapping of handles whose path exists in `target`.
+        Exclude any handles that do not have a truthy value for all excluding properties including path.
+        """
+        if excluding_properties == None:
+            excluding_properties = []
+        if 'path' not in excluding_properties:
+            excluding_properties = excluding_properties + ['path']
+        exclusions = cls.get_properties_exclusions(excluding_properties, target)
         path_translation = OrderedDict([
             (handle, handle) \
             for handle in cls.data.keys() \
@@ -1023,7 +1059,7 @@ class ColDataAbstract(ColDataLegacy):
         )
 
     @classmethod
-    def translate_data_from(cls, data, target):
+    def translate_data_from(cls, data, target, excluding_properties=None):
         """
         Perform a full translation of paths and types between target and core
         """
@@ -1031,10 +1067,19 @@ class ColDataAbstract(ColDataLegacy):
             return data
         if not target:
             return data
+        if excluding_properties is None:
+            excluding_properties = []
+        if 'path' not in excluding_properties:
+            excluding_properties = ['path'] + excluding_properties
+
         data = deepcopy(data)
         # split target_path_translation on which handles have sub_data
-        target_path_translation = cls.get_target_path_translation(target)
-        core_path_translation = cls.get_core_path_translation(target)
+        target_path_translation = cls.get_target_path_translation(
+            target, excluding_properties=excluding_properties
+        )
+        core_path_translation = cls.get_core_path_translation(
+            target, excluding_properties=excluding_properties
+        )
         sub_datum = cls.get_handles_property('sub_data')
         sub_data_handles = set()
         for handle, sub_data in sub_datum.items():
@@ -1046,9 +1091,11 @@ class ColDataAbstract(ColDataLegacy):
         path_translation_post = OrderedDict()
         for handle in cls.data.keys():
             if handle in sub_data_handles:
-                path_translation_pre[handle] = target_path_translation[handle]
+                if handle in target_path_translation:
+                    path_translation_pre[handle] = target_path_translation[handle]
             else:
-                path_translation_post[handle] = core_path_translation[handle]
+                if handle in core_path_translation:
+                    path_translation_post[handle] = core_path_translation[handle]
 
         # translate handles in target format which have sub_data
         data = cls.translate_types_from(
@@ -1068,7 +1115,7 @@ class ColDataAbstract(ColDataLegacy):
         return data
 
     @classmethod
-    def translate_data_to(cls, data, target):
+    def translate_data_to(cls, data, target, excluding_properties=None):
         """
         Perform a full translation of paths and types between core and target
         """
@@ -1076,10 +1123,30 @@ class ColDataAbstract(ColDataLegacy):
             return data
         if not target:
             return data
+        if excluding_properties is None:
+            excluding_properties = []
+        if 'path' not in excluding_properties:
+            excluding_properties = ['path'] + excluding_properties
+
+        data = deepcopy(data)
 
         # split target_path_translation on which handles have sub_data
-        target_path_translation = cls.get_target_path_translation(target)
-        core_path_translation = cls.get_core_path_translation(target)
+        target_path_translation = cls.get_target_path_translation(
+            target, excluding_properties=excluding_properties
+        )
+        core_path_translation = cls.get_core_path_translation(
+            target, excluding_properties=excluding_properties
+        )
+        # TODO: roll path_translation_(pre|post) into get_path_translation functions
+
+        # TODO: something like this
+
+        # data = OrderedDict([
+        #     (key, deepcopy(value)) \
+        #     for key, value in data.items() \
+        #     if key in core_path_translations.values()
+        # ])
+
         sub_datum = cls.get_handles_property('sub_data')
         sub_data_handles = set()
         for handle, sub_data in sub_datum.items():
@@ -1090,10 +1157,12 @@ class ColDataAbstract(ColDataLegacy):
         # target paths which have sub data
         path_translation_post = OrderedDict()
         for handle in cls.data.keys():
-            if handle not in sub_data_handles:
-                path_translation_pre[handle] = core_path_translation[handle]
+            if handle in sub_data_handles:
+                if handle in core_path_translation:
+                    path_translation_pre[handle] = core_path_translation[handle]
             else:
-                path_translation_post[handle] = target_path_translation[handle]
+                if handle in target_path_translation:
+                    path_translation_post[handle] = target_path_translation[handle]
 
         # translate types of non-subdata handles in core format
         data = cls.translate_types_to(
@@ -1238,6 +1307,16 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
     """
     data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(data, deepcopy(CreatedModifiedGmtMixin.data))
+    data['created_gmt'].update({
+        'wc-wp-api-v2-edit': {
+            'path': None,
+        },
+    })
+    data['modified_gmt'].update({
+        'wc-wp-api-v2-edit': {
+            'path': None,
+        },
+    })
     data = SeqUtils.combine_ordered_dicts(data, {
         'id': {
             'write': False,

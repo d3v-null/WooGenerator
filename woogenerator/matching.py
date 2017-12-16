@@ -213,6 +213,8 @@ class Match(object):
             obj_container = ObjList(indexer=(
                 lambda import_object: import_object.identifier))
 
+        # TODO: fix for product objects.
+
         if self.m_objects:
             mobjs = self.m_objects[:]
             if print_headings:
