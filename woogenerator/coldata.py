@@ -1372,6 +1372,9 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
             'wc-wp-api': {
                 'path':'src'
             },
+            'gen-csv': {
+                'write': True
+            }
         },
         'alt_text': {
             'wc-wp-api': {
@@ -3542,6 +3545,9 @@ class ColDataAttachment(ColDataWpEntity):
             'type': 'uri',
             'wp-api-v1': {
                 'path':'source'
+            },
+            'gen-csv': {
+                'write': True
             }
         },
         'alt_text': {

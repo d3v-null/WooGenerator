@@ -423,9 +423,6 @@ def do_match_images(parsers, matches, settings):
         index_fn=ImageMatcher.image_index_fn
     )
 
-    # if Registrar.DEBUG_TRACE:
-    #     import pudb; pudb.set_trace()
-
     image_matcher = ImageMatcher()
     image_matcher.clear()
     slave_imgs_attachments = OrderedDict([
@@ -702,6 +699,7 @@ def do_merge_images(matches, parsers, updates, settings):
 
     if Registrar.DEBUG_TRACE:
         import pudb; pudb.set_trace()
+        # TODO: why does ACARA.jpg not update url in master?
 
     sync_handles = settings.sync_handles_img
 
@@ -757,8 +755,6 @@ def do_merge_categories(matches, parsers, updates, settings):
     for match in matches.category.valid:
         s_object = match.s_object
         for m_object in match.m_objects:
-            # m_object = match.m_objects[0]
-
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
             sync_update.update(sync_handles)
@@ -1206,8 +1202,6 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
         results.successes.append(sync_update)
 
 def do_updates_images_master(updates, parsers, results, settings):
-    # if Registrar.DEBUG_TRACE:
-    #     import pudb; pudb.set_trace()
 
     for update in updates.image.master:
         old_master_id = update.master_id
