@@ -90,54 +90,55 @@ class ImportUser(ImportObject):
             str(self.MYOBID)
         ]))
 
-    @property
-    def act_modtime(self):
-        time_str = self.get('Edited in Act')
-        if time_str:
-            return TimeUtils.act_strp_mktime(time_str)
-
-    @property
-    def act_created(self):
-        time_str = self.get('Create Date')
-        if time_str:
-            return TimeUtils.act_strp_mktime(time_str)
-
-    @property
-    def wp_created(self):
-        time_str = self.get('Wordpress Start Date')
-        if time_str:
-            return TimeUtils.wp_strp_mktime(time_str)
-
-    @property
-    def wp_modtime(self):
-        time_str = self.get('Edited in Wordpress')
-        if time_str and time_str != u'False':
-            return TimeUtils.wp_server_to_local_time(
-                TimeUtils.wp_strp_mktime(time_str))
-
-    @property
-    def last_sale(self):
-        time_str = self.get('Last Sale')
-        if time_str:
-            return TimeUtils.act_strp_mkdate(time_str)
-
-    @property
-    def last_modtime(self):
-        times = [
-            self.act_modtime, self.wp_modtime, self.act_created,
-            self.wp_created, self.last_sale
-        ]
-        return max(times)
-
-    @property
-    def act_last_transaction(self):
-        """ effective last sale (if no last sale, use act create date) """
-        response = self.last_sale
-        if not response:
-            response = self.act_created
-        # assert response, "customer should always have a create (%s) or last sale (%s)" % (
-        #     self.act_created, self.last_sale)
-        return response
+    # TODO: rewrite these to handle datetime objects
+    # @property
+    # def act_modtime(self):
+    #     time_str = self.get('Edited in Act')
+    #     if time_str:
+    #         return TimeUtils.act_strp_mktime(time_str)
+    #
+    # @property
+    # def act_created(self):
+    #     time_str = self.get('Create Date')
+    #     if time_str:
+    #         return TimeUtils.act_strp_mktime(time_str)
+    #
+    # @property
+    # def wp_created(self):
+    #     time_str = self.get('Wordpress Start Date')
+    #     if time_str:
+    #         return TimeUtils.wp_strp_mktime(time_str)
+    #
+    # @property
+    # def wp_modtime(self):
+    #     time_str = self.get('Edited in Wordpress')
+    #     if time_str and time_str != u'False':
+    #         return TimeUtils.wp_server_to_local_time(
+    #             TimeUtils.wp_strp_mktime(time_str))
+    #
+    # @property
+    # def last_sale(self):
+    #     time_str = self.get('Last Sale')
+    #     if time_str:
+    #         return TimeUtils.act_strp_mkdate(time_str)
+    #
+    # @property
+    # def last_modtime(self):
+    #     times = [
+    #         self.act_modtime, self.wp_modtime, self.act_created,
+    #         self.wp_created, self.last_sale
+    #     ]
+    #     return max(times)
+    #
+    # @property
+    # def act_last_transaction(self):
+    #     """ effective last sale (if no last sale, use act create date) """
+    #     response = self.last_sale
+    #     if not response:
+    #         response = self.act_created
+    #     # assert response, "customer should always have a create (%s) or last sale (%s)" % (
+    #     #     self.act_created, self.last_sale)
+    #     return response
 
     def __init__(self, data, **kwargs):
         try:

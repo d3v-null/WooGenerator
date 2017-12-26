@@ -1261,13 +1261,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         "special %s is over: %s" % (special, specialto))
                 continue
 
-            special_from_string = TimeUtils.wp_time_to_string(
-                specialfrom)
-            special_to_string = TimeUtils.wp_time_to_string(
-                specialto)
             if self.DEBUG_SPECIAL:
-                self.register_message("special %s is from %s (%s) to %s (%s)" % (
-                    special, specialfrom, special_from_string, specialto, special_to_string))
+                self.register_message("special %s is from %s to %s" % (
+                    special, specialfrom, specialto))
 
             for tier in ["RNS", "RPS", "WNS", "WPS", "DNS", "DPS"]:
                 discount = specialparams.get(tier)
@@ -1314,9 +1310,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     tier_from_key = tier[:-1] + "F"
                     tier_to_key = tier[:-1] + "T"
                     for key, value in {
-                            tier_key: special_price,
-                            tier_from_key: TimeUtils.wp_local_to_server_time(specialfrom),
-                            tier_to_key: TimeUtils.wp_local_to_server_time(specialto)
+                        tier_key: special_price,
+                        tier_from_key: specialfrom,
+                        tier_to_key: specialto,
                     }.items():
                         if self.DEBUG_SPECIAL:
                             self.register_message(

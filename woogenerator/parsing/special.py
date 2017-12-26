@@ -26,15 +26,18 @@ class ImportSpecialMixin(object):
     endTimeRawKey = 'TO'
 
     def init_from_to(self, data):
-        if self.startTimeRawKey in data:
-            data[self.startTimeKey] = TimeUtils.g_drive_strp_mk_time(
-                data[self.startTimeRawKey])
+        # TODO: store these in as aware datetime objects
+        if data.get(self.startTimeRawKey):
+            data[self.startTimeKey] = TimeUtils.normalize_iso8601_gdrive(
+                data[self.startTimeRawKey]
+            )
         else:
             data[self.startTimeKey] = BLANK_CELL
 
-        if self.endTimeRawKey in data:
-            data[self.endTimeKey] = TimeUtils.g_drive_strp_mk_time(
-                data[self.endTimeRawKey])
+        if data.get(self.endTimeRawKey):
+            data[self.endTimeKey] = TimeUtils.normalize_iso8601_gdrive(
+                data[self.endTimeRawKey]
+            )
         else:
             data[self.endTimeKey] = BLANK_CELL
 

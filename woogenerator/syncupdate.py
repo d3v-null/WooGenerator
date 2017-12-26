@@ -61,12 +61,12 @@ class SyncUpdate(Registrar):
         cls.merge_mode = merge_mode
         cls.default_last_sync = default_last_sync
 
-    def __init__(self, old_m_object_gen=None, old_s_object_gen=None, lastSync=None):
+    def __init__(self, old_m_object_gen=None, old_s_object_gen=None, last_sync=None):
         super(SyncUpdate, self).__init__()
 
 
-        if not lastSync:
-            lastSync = self.default_last_sync
+        if last_sync is None:
+            last_sync = self.default_last_sync
         # print "Creating SyncUpdate: ", old_m_object_core.__repr__(),
         # old_s_object_core.__repr__()
         self.old_m_object_core = {}
@@ -85,7 +85,7 @@ class SyncUpdate(Registrar):
             self.set_old_m_object_gen(old_m_object_gen)
         if old_s_object_gen:
             self.set_old_s_object_gen(old_s_object_gen)
-        self.t_time = TimeUtils.wp_strp_mktime(lastSync)
+        self.t_time = last_sync
         self.static = True
         self.important_static = True
         self.sync_warnings_core = OrderedDict()

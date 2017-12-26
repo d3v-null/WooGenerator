@@ -4,10 +4,12 @@ import os
 import shutil
 import tempfile
 import unittest
+from datetime import datetime
 from pprint import pformat, pprint
 
 import mock
 import pytest
+import pytz
 from tabulate import tabulate
 
 from context import TESTS_DATA_DIR, woogenerator
@@ -44,8 +46,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
-    # debug = True
-
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
         self.settings.master_dialect_suggestion = "SublimeCsvTable"
@@ -60,6 +60,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.settings.do_specials = True
         self.settings.specials_mode = 'all_future'
         # self.settings.specials_mode = 'auto_next'
+        self.settings.wp_srv_offset = 7200
         self.settings.skip_special_categories = False
         self.settings.do_sync = True
         self.settings.do_categories = True
@@ -225,8 +226,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         if self.settings.do_specials:
             test_dict.update({
                 'WNS': u'74.9625',
-                'WNF': 1470924000,
-                'WNT': 32524635600,
+                'WNF': datetime(2016, 8, 12, 0, tzinfo=pytz.utc),
+                'WNT': datetime(3000, 9, 1, 0, 0, tzinfo=pytz.utc),
+                # 'WNF': 1470960000,
+                # 'WNT': 32524675200,
             })
         for key, value in test_dict.items():
             self.assertEqual(unicode(first_prod[key]), unicode(value))
@@ -1892,8 +1895,6 @@ python -m woogenerator.generator \
         unexpected_sub_img_handles = ['modified_gmt', 'created_gmt']
         expected_sub_img_cols = ['src', 'name', 'id', 'position']
         def sync_update_prod_rudiments_test(sync_update):
-            if self.debug:
-                import pudb; pudb.set_trace()
             if getattr(sync_update, 'new_s_object_core') \
             and sync_update.new_s_object_core.get('attachment_objects'):
                 new_s_core_imgs = sync_update.new_s_object_core['attachment_objects']
@@ -2599,15 +2600,21 @@ slave_updates_core:
 
             # TODO: test exact contents of get_slave_updates_native()
             # Specifically make sure that sale_price_dates_(to|from) are not datetime
+
             slave_updates_core = sync_update.get_slave_updates()
             slave_updates_native = sync_update.get_slave_updates_native()
             if self.debug:
                 print("slave_updates_native:\n%s" % pformat(slave_updates_native.items()))
                 print("slave_updates_core:\n%s" % pformat(slave_updates_core.items()))
 
+
             expected_dict = {
-                'lc_wn_sale_price_dates_from': "2016-06-13 07:00:00",
-                'lc_wn_sale_price_dates_to': "3000-06-30 13:00:00"
+                # 'lc_wn_sale_price_dates_from': datetime(
+                #     2016, 6, 13, 7, 0, 0, tzinfo=pytz.utc
+                # ),
+                'lc_wn_sale_price_dates_to': datetime(
+                    3000, 7, 1, 0, 0, 0, tzinfo=pytz.utc
+                )
             }
             for key, value in expected_dict.items():
                 expected_value = value
@@ -2646,6 +2653,13 @@ slave_updates_core:
                 expected_attachments,
                 actual_attachments
             )
+
+            for meta_object in slave_updates_native['meta_data']:
+                if meta_object['key'] == 'lc_wn_sale_price_dates_to':
+                    self.assertEqual(
+                        meta_object['value'],
+                        32519318400
+                    )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 

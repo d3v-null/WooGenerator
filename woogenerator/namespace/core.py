@@ -480,7 +480,11 @@ class SettingsNamespaceProto(argparse.Namespace):
         # Init class variables
 
         SyncUpdate.set_globals(self.merge_mode, self.last_sync)
-        TimeUtils.set_wp_srv_offset(self.wp_srv_offset)
+        TimeUtils.set_wp_srv_tz(self.wp_srv_tz)
+        TimeUtils.set_act_srv_tz(self.act_srv_tz)
+        TimeUtils.set_gdrive_tz(self.gdrive_tz)
+        TimeUtils.set_xero_tz(self.xero_tz)
+        TimeUtils.set_local_tz(self.local_tz)
 
         if Registrar.DEBUG_MESSAGE:
             Registrar.register_message(

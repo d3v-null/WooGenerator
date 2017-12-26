@@ -250,11 +250,41 @@ class ArgumentParserCommon(ArgumentParserProto):
             '--last-sync',
             help="When the last sync was run ('YYYY-MM-DD HH:MM:SS')"
         )
+        # processing_group.add_argument(
+        #     '--wp-srv-offset',
+        #     help="the offset in seconds of the wp server",
+        #     type=int,
+        #     default=0
+        # )
         processing_group.add_argument(
-            '--wp-srv-offset',
-            help="the offset in seconds of the wp server",
-            type=int,
-            default=0
+            '--wp-srv-tz',
+            help="the timezone of the wp server",
+            type=unicode,
+            default=TimeUtils._wp_srv_tz.zone
+        )
+        processing_group.add_argument(
+            '--gdrive-tz',
+            help="the timezone specified in Google Drive",
+            type=unicode,
+            default=TimeUtils._gdrive_tz.zone
+        )
+        processing_group.add_argument(
+            '--act-srv-tz',
+            help="the timezone used by the Act! Database",
+            type=unicode,
+            default=TimeUtils._act_srv_tz.zone
+        )
+        processing_group.add_argument(
+            '--xero-tz',
+            help="the timezone used by the Xero API",
+            type=unicode,
+            default=TimeUtils._xero_tz.zone
+        )
+        processing_group.add_argument(
+            '--local-tz',
+            help="Override the timezone of the local computer",
+            type=unicode,
+            default=TimeUtils._local_tz.zone
         )
         processing_group.add_argument(
             '--master-parse-limit',
