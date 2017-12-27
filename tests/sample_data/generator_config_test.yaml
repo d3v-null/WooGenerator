@@ -18,7 +18,7 @@ xero-schemas:
 
 schema: CA
 
-local_work_dir: tests/sample_data
+local-work-dir: tests/sample_data
 
 wp-api-key: tYG1tAoqjBEM
 wp-api-secret: s91fvylVrqChwzzDbEJHEWyySYtAmlIsqqYdjka1KyVDdAyB
@@ -48,3 +48,6 @@ wc-creds-store: ~/.credentials/wc-api-creds-test-local.json
 # To use new API
 wc-api-namespace: wp-json
 wc-api-version: wc/v2
+
+wp-srv-tz: Australia/Perth
+gdrive-tz: Australia/Perth

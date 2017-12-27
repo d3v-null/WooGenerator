@@ -304,13 +304,13 @@ class SyncUpdate(Registrar):
     @classmethod
     def parse_m_time(cls, raw_m_time):
         """Parse a raw master time value into a timestamp."""
-        return TimeUtils.datetime2timestamp(raw_m_time)
+        return TimeUtils.datetime2localtimestamp(raw_m_time)
         # return raw_m_time
 
     @classmethod
     def parse_s_time(cls, raw_s_time):
         """Parse a raw slave time value into a timestamp."""
-        return TimeUtils.datetime2timestamp(raw_s_time)
+        return TimeUtils.datetime2localtimestamp(raw_s_time)
         # return raw_s_time
 
     def parse_subject_time(self, raw_time, subject):

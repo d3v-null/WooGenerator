@@ -77,15 +77,17 @@ class TimeUtils(object):
         Inform a naiive datetime object of its' timezone without changing its' time.
         """
         assert isinstance(dt, datetime.datetime)
+        assert dt.tzinfo is None, "Requires a naiive datetime."
         assert isinstance(tz, datetime.tzinfo)
-        return dt.replace(tzinfo=tz)
+        return tz.localize(dt)
 
     @classmethod
     def localize_datetime(cls, dt, tz):
         """
         Localize an aware datetime object in a different timezone.
         """
-        assert dt.tzinfo, "Requires a datetime object that is aware of its timezone."
+        assert isinstance(dt, datetime.datetime)
+        assert dt.tzinfo, "Requires a datetime that is aware of its timezone."
         assert isinstance(tz, datetime.tzinfo)
         return dt.astimezone(tz)
 
@@ -144,7 +146,7 @@ class TimeUtils(object):
         if not timestamp:
             return
         if isinstance(timestamp, datetime.datetime):
-            secs = cls.datetime2timestamp(timestamp)
+            secs = cls.datetime2localtimestamp(timestamp)
         elif isinstance(timestamp, tuple):
             secs = time.mktime(timestamp)
         elif isinstance(timestamp, (Number, basestring)):
@@ -152,15 +154,26 @@ class TimeUtils(object):
         return datetime.datetime.utcfromtimestamp(secs)
 
     @classmethod
-    def datetime2timestamp(cls, dt):
+    def datetime2utctimestamp(cls, dt):
+        """
+        Return a datetime's representation as a timestamp in UTC.
+        """
+        if not dt:
+            return
+        if dt.tzinfo:
+            dt = cls.localize_datetime(dt, pytz.utc)
+        return cls.datetime2localtimestamp(dt)
+
+
+    @classmethod
+    def datetime2localtimestamp(cls, dt):
         """
         Return a datetime's representation as a timestamp in it's timezone.
         """
-        if dt:
-            if dt.tzinfo:
-                dt = cls.localize_datetime(dt, pytz.utc)
-            dt = dt.replace(tzinfo=None)
-            return int(calendar.timegm(dt.utctimetuple()))
+        if not dt:
+            return
+        dt = dt.replace(tzinfo=None)
+        return int(calendar.timegm(dt.utctimetuple()))
 
     @classmethod
     def datetime_local2gmt(cls, dt, local_tz=None):
@@ -294,7 +307,7 @@ class TimeUtils(object):
         if tz is None:
             tz = pytz.utc
         response = cls.localize_datetime(dt, tz)
-        response = cls.datetime2timestamp(response)
+        response = cls.datetime2localtimestamp(response)
         return response
 
     @classmethod
@@ -415,7 +428,7 @@ class TimeUtils(object):
         if not fmt:
             fmt = cls.wp_datetime_format
         if isinstance(time_, datetime.datetime):
-            secs = cls.datetime2timestamp(time_)
+            secs = cls.datetime2localtimestamp(time_)
         elif isinstance(time_, tuple):
             secs = time.mktime(time_)
         elif isinstance(time_, (Number, basestring)):
@@ -434,7 +447,7 @@ class TimeUtils(object):
             bool: Whether the time has happened yet according to overrides.
         """
         if isinstance(time_, datetime.datetime):
-            secs = cls.datetime2timestamp(time_)
+            secs = cls.datetime2localtimestamp(time_)
         elif isinstance(time_, tuple):
             secs = time.mktime(time_)
         elif isinstance(time_, (Number, basestring)):

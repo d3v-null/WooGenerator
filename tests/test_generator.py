@@ -36,7 +36,7 @@ from woogenerator.parsing.special import SpecialGruopList
 from woogenerator.parsing.tree import ItemList
 from woogenerator.parsing.woo import CsvParseWoo, WooProdList
 from woogenerator.parsing.xero import ApiParseXero
-from woogenerator.utils import FileUtils, Registrar, SanitationUtils
+from woogenerator.utils import FileUtils, Registrar, SanitationUtils, TimeUtils
 from woogenerator.utils.reporter import ReporterNamespace
 
 from .abstract import AbstractWooGeneratorTestCase
@@ -224,10 +224,11 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             # TODO: the rest of the meta keys
         }
         if self.settings.do_specials:
+            timezone = TimeUtils._gdrive_tz
             test_dict.update({
                 'WNS': u'74.9625',
-                'WNF': datetime(2016, 8, 12, 0, tzinfo=pytz.utc),
-                'WNT': datetime(3000, 9, 1, 0, 0, tzinfo=pytz.utc),
+                'WNF': timezone.localize(datetime(2016, 8, 12, 0)),
+                'WNT': timezone.localize(datetime(3000, 9, 1, 0, 0)),
                 # 'WNF': 1470960000,
                 # 'WNT': 32524675200,
             })
@@ -2607,14 +2608,13 @@ slave_updates_core:
                 print("slave_updates_native:\n%s" % pformat(slave_updates_native.items()))
                 print("slave_updates_core:\n%s" % pformat(slave_updates_core.items()))
 
-
             expected_dict = {
                 # 'lc_wn_sale_price_dates_from': datetime(
                 #     2016, 6, 13, 7, 0, 0, tzinfo=pytz.utc
                 # ),
-                'lc_wn_sale_price_dates_to': datetime(
-                    3000, 7, 1, 0, 0, 0, tzinfo=pytz.utc
-                )
+                'lc_wn_sale_price_dates_to': TimeUtils._gdrive_tz.localize(datetime(
+                    3000, 7, 1, 0, 0, 0
+                ))
             }
             for key, value in expected_dict.items():
                 expected_value = value
