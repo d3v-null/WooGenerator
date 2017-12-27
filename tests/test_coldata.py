@@ -228,7 +228,7 @@ class TestColDataImg(TestColData):
     def test_get_sync_cols(self):
         sync_cols = self.coldata_class.get_sync_handles('wp-api')
         expected_keys = set([
-            'width', 'height', 'title', 'post_excerpt', 'file_path'
+            'meta', 'title', 'post_excerpt', 'file_path'
         ])
         actual_keys = set(sync_cols.keys())
         if self.debug:
@@ -517,7 +517,7 @@ class TestColDataImg(TestColData):
         translated_v1 = self.coldata_class.translate_paths_from(
             api_data_v1, 'wp-api-v1'
         )
-        key_intersection = set(translated_v1.keys()).intersection(translated_v2.keys())
+        key_intersection = set(translated_v1.keys()).intersection(translated_v2.keys()) - set(['image_meta'])
         if self.debug:
             print('translated_v1:\n%s' % pformat(translated_v1))
             print('translated_v2:\n%s' % pformat(translated_v2))
@@ -729,13 +729,11 @@ class TestColDataWcProd(TestColData):
         )
 
     def test_get_col_values_native(self):
-        if self.debug:
-            import pudb; pudb.set_trace()
         col_values_native = self.coldata_class.get_col_values_native('path', target='wc-csv')
         if self.debug:
             pprint(col_values_native.items())
         self.assertTrue(
-            col_values_native.get('taxosum')
+            col_values_native.get('title')
         )
 
 if __name__ == '__main__':

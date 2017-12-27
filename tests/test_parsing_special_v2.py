@@ -60,9 +60,8 @@ class TestCSVParseSpecialV2(unittest.TestCase):
             "2018-01-01", TimeUtils.wp_date_format))
 
         eofy_special = special_parser.rule_groups.get('EOFY2016')
-        # print "start time", eofy_special.start_time
-        # print "override", TimeUtils.current_tsecs()
-        self.assertLess(eofy_special.start_time, TimeUtils.current_tsecs())
+        eofy_start_time = TimeUtils.datetime2utctimestamp(eofy_special.start_time)
+        self.assertLess(eofy_start_time, TimeUtils.current_tsecs())
         self.assertTrue(eofy_special.has_started)
         self.assertTrue(eofy_special.has_finished)
         self.assertFalse(eofy_special.is_active)

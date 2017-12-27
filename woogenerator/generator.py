@@ -72,8 +72,6 @@ python -m woogenerator.generator \
     --download-master --download-slave \
     --do-categories --do-images --do-variations --master-and-quit \
     --do-specials --specials-mode 'auto_next' \
-    --do-sync --do-problematic --auto-create-new \
-    --wp-srv-offset -36000 \
     -vvv --debug-trace
 """
 
@@ -86,8 +84,6 @@ python -m woogenerator.generator \
     --download-master --download-slave \
     --do-categories --do-images --do-variations --master-and-quit \
     --do-specials --specials-mode 'all_future' \
-    --do-sync --do-problematic --auto-create-new \
-    --wp-srv-offset -36000 \
     -vvv --debug-trace
 """
 

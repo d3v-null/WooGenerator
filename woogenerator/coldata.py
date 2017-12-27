@@ -1055,6 +1055,7 @@ class ColDataAbstract(ColDataLegacy):
             'timestamp_local': TimeUtils.denormalize_timestamp_local,
             'timestamp_wp': TimeUtils.denormalize_timestamp_wp,
             'timestamp_gdrive': TimeUtils.denormalize_timestamp_gdrive,
+            'wp_content_rendered': SanitationUtils.coerce_xml,
             'mime_type': MimeUtils.validate_mime_type,
             'currency': SanitationUtils.similar_currency_comparison,
         }.get(type_, SanitationUtils.identity)
@@ -1213,10 +1214,15 @@ class ColDataAbstract(ColDataLegacy):
             data, target, path_translation_post
         )
 
+        allowed_keys = set([
+            key.split('.')[0] for key in
+            target_path_translation.values()
+        ])
+
         data = OrderedDict([
             (key, value) \
             for key, value in data.items() \
-            if key in target_path_translation.values()
+            if key in allowed_keys
         ])
 
         return data
