@@ -4,6 +4,7 @@ import argparse
 import functools
 import io
 import re
+import os
 from collections import OrderedDict
 from string import Formatter
 
@@ -380,6 +381,9 @@ class AbstractReporter(object):
         self.html_files[name] = path
 
     def write_document_to_file(self, name, path):
+        dirname = os.path.dirname(path)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
         with io.open(path, 'w+', encoding='utf8') as rep_file:
             rep_file.write(self.get_document_unicode())
         self.add_html_file(name, path)
