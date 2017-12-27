@@ -556,10 +556,10 @@ def main():
     except npyscreen.NotEnoughSpaceForWidget as exc:
         print "not enough space for widget, try resizing terminal.", exc
         traceback.print_exception(*sys.exc_info())
-    print "cmd out value: %s <- %s" % (wg_app.command_script, wg_app.command_args)
+    override_args = SeqUtils.filter_unique_true(
+        sys.argv[1:] + wg_app.command_args.split())
+    print "cmd out value: %s <- %s" % (wg_app.command_script, override_args)
     if wg_app.command_script == 'woogenerator.generator':
-        override_args = SeqUtils.filter_unique_true(
-            sys.argv[1:] + wg_app.command_args.split())
         generator.catch_main(override_args=override_args)
     # if wg_app.command_script == 'merger.py':
     #     override_args = SeqUtils.filter_unique_true(
