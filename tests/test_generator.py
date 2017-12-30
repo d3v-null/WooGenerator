@@ -25,6 +25,7 @@ from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_updates_categories_slave,
                                     do_updates_images_master,
                                     do_updates_images_slave,
+                                    export_master_parser,
                                     populate_master_parsers,
                                     populate_slave_parsers)
 from woogenerator.images import process_images
@@ -165,6 +166,66 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             'rowcount',
             self.settings.sync_handles_cat
         )
+
+        self.settings.do_categories = False
+        self.settings.do_images = True
+        self.settings.do_specials = True
+        self.settings.do_dyns = True
+        exclude_handles = self.settings.exclude_handles
+
+        for handle in [
+            'product_categories',
+            'product_category_list'
+        ]:
+            self.assertIn(
+                handle,
+                exclude_handles
+            )
+
+        self.settings.do_categories = True
+        self.settings.do_images = False
+        self.settings.do_specials = True
+        self.settings.do_dyns = True
+        exclude_handles = self.settings.exclude_handles
+
+        for handle in ['attachment_objects']:
+            self.assertIn(
+                handle,
+                exclude_handles
+            )
+        self.settings.do_categories = True
+        self.settings.do_images = True
+        self.settings.do_specials = False
+        self.settings.do_dyns = True
+        exclude_handles = self.settings.exclude_handles
+
+        for handle in [
+            'lc_dp_sale_price', 'lc_rn_sale_price_dates_to', 'lc_dn_sale_price_dates_to', 'lc_wp_sale_price_dates_from',
+            'lc_wn_sale_price_dates_from', 'sale_price_dates_to_gmt', 'lc_rn_sale_price', 'sale_price_dates_from_gmt',
+            'specials_schedule', 'lc_rp_sale_price_dates_from', 'sale_price_dates_from', 'lc_rp_sale_price', 'lc_wn_sale_price',
+            'lc_dn_sale_price_dates_from', 'lc_rn_sale_price_dates_from', 'sale_price_dates_to', 'lc_wp_sale_price',
+            'lc_wp_sale_price_dates_to', 'lc_dp_sale_price_dates_to', 'lc_dp_sale_price_dates_from', 'sale_price',
+            'lc_wn_sale_price_dates_to', 'lc_rp_sale_price_dates_to', 'lc_dn_sale_price'
+        ]:
+            self.assertIn(
+                handle,
+                exclude_handles
+            )
+
+        self.settings.do_categories = True
+        self.settings.do_images = True
+        self.settings.do_specials = True
+        self.settings.do_dyns = False
+        exclude_handles = self.settings.exclude_handles
+
+        for handle in [
+            'dynamic_category_rulesets',
+            'dynamic_product_rulesets'
+        ]:
+            self.assertIn(
+                handle,
+                exclude_handles
+            )
 
     @pytest.mark.first
     def test_dummy_populate_master_parsers(self):
@@ -374,6 +435,10 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                     pformat(dir(first_group))
                 )
             )
+
+    def test_dummy_export_master_parsers(self):
+        self.populate_master_parsers()
+        export_master_parser(self.settings, self.parsers)
 
     @pytest.mark.first
     def test_dummy_populate_slave_parsers(self):
@@ -1196,7 +1261,8 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             )
             self.assertEqual(
                 bool(self.settings.do_images),
-                'image' in sync_update.new_s_object_core
+                'image' in sync_update.new_s_object_core,
+                "images should be excluded from new slave objects if do_images disabled, contrapositive is true"
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)

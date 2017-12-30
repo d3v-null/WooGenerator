@@ -31,6 +31,7 @@ class ImportObject(OrderedDict, Registrar):
 
     rowcount_key = 'rowcount'
     row_key = '_row'
+    coldata_gen_target = 'gen-csv'
 
     def __init__(self, *args, **kwargs):
         if self.DEBUG_ABSTRACT:
@@ -73,6 +74,24 @@ class ImportObject(OrderedDict, Registrar):
 
     def to_dict(self):
         return OrderedDict(self)
+
+    def to_target_type(self, **kwargs):
+        """
+        Return the object as a dictionary which has had types converted to
+        `coldata_target` format.
+        """
+        coldata_class = kwargs.get('coldata_class')
+        if not coldata_class:
+            coldata_class = self.coldata_class
+        coldata_target = kwargs.get('coldata_target')
+        if not coldata_target:
+            coldata_target = self.coldata_target
+        # translate data without deleting unknown columns
+        return coldata_class.translate_data_from_to_simple(
+            self.to_dict(),
+            self.coldata_gen_target,
+            coldata_target
+        )
 
     # TODO: refactor to get rid of row property, rename _row to row
     @property
@@ -201,6 +220,8 @@ class ObjList(list, Registrar):
 
     objList_type = 'objects'
     supported_type = ImportObject
+    coldata_class = ColDataAbstract
+    coldata_target = 'wc-csv'
 
     def __init__(self, objects=None, indexer=None):
         list.__init__(self)
@@ -330,14 +351,20 @@ class ObjList(list, Registrar):
                 "cannot tabulate Objlist: there are no objects")
             return ""
 
-    def export_items(self, file_path, col_names, dialect=None,
-                     encoding="utf8"):
+    def export_items(
+        self, file_path, col_names, dialect=None, encoding="utf8",
+        coldata_target=None, coldata_class=None
+    ):
         """
         Export the items in the object list to a csv file in the given file path.
         """
         assert file_path, "needs a filepath"
         assert col_names, "needs col_names"
         assert self.objects, "meeds items"
+        if coldata_class is None:
+            coldata_class = self.coldata_class
+        if coldata_target is None:
+            coldata_target = self.coldata_target
         with open(file_path, 'w+') as out_file:
             if dialect is None:
                 csvdialect = UnicodeCsvDialectUtils.ActOut
@@ -347,14 +374,23 @@ class ObjList(list, Registrar):
             if self.DEBUG_ABSTRACT:
                 self.register_message(
                     UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
+            # import pudb; pudb.set_trace()
             dictwriter = unicodecsv.DictWriter(
                 out_file,
                 dialect=csvdialect,
-                fieldnames=col_names.keys(),
+                fieldnames=col_names.values(),
                 encoding=encoding,
-                extrasaction='ignore', )
+                extrasaction='ignore'
+            )
             dictwriter.writerow(col_names)
-            dictwriter.writerows(self.objects)
+            objects = [
+                object_.to_target_type(
+                    coldata_class=coldata_class,
+                    coldata_target=coldata_target
+                )
+                for object_ in self.objects
+            ]
+            dictwriter.writerows(objects)
         self.register_message("WROTE FILE: %s" % file_path)
 
     report_cols = OrderedDict([('_row', {'label': 'Row'}), ('index', {})])

@@ -423,11 +423,6 @@ class ArgumentParserCommon(ArgumentParserProto):
             default=False,
             action='store_true'
         )
-        report_group.add_argument(
-            '--exclude-cols',
-            help='exclude these columns from the reports',
-            default=[]
-        )
         group = report_group.add_mutually_exclusive_group()
         group.add_argument(
             '--do-mail',

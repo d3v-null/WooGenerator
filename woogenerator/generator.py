@@ -46,7 +46,6 @@ python -m woogenerator.generator \
     --download-master --download-slave \
     --do-categories --do-images --do-specials \
     --do-sync --update-slave --do-problematic --auto-create-new --ask-before-update \
-    --wp-srv-offset -36000 \
     -vvv --debug-trace
 """
 
@@ -60,7 +59,6 @@ python -m woogenerator.generator \
     --do-categories --do-specials \
     --do-images --do-resize-images \
     --do-sync --update-slave --do-problematic --auto-create-new --ask-before-update \
-    --wp-srv-offset -36000 \
     -vvv --debug-trace
 """
 
@@ -309,7 +307,9 @@ def export_master_parser(settings, parsers):
     """Export key information from master parser to csv."""
     Registrar.register_progress("Exporting Master info to disk")
 
-    product_colnames = settings.coldata_class.get_col_values_native('path', target='wc-csv')
+    export_target = 'wc-csv'
+
+    product_colnames = settings.coldata_class.get_col_values_native('path', target=export_target)
 
     for col in settings.exclude_cols:
         if col in product_colnames:
@@ -325,7 +325,10 @@ def export_master_parser(settings, parsers):
     container = parsers.master.product_container.container
 
     product_list = container(parsers.master.products.values())
-    product_list.export_items(settings.fla_path, product_colnames)
+    product_list.export_items(
+        settings.fla_path, product_colnames,
+        coldata_target=export_target
+    )
 
     # TODO: stop exporting modified_gmt to spreadsheet
 
@@ -342,14 +345,18 @@ def export_master_parser(settings, parsers):
         if settings.do_variations and parsers.master.variations:
 
             variation_list = variation_container(parsers.master.variations.values())
-            variation_list.export_items(settings.flv_path, variation_col_names)
+            variation_list.export_items(
+                settings.flv_path, variation_col_names,
+                coldata_target=export_target
+            )
 
             updated_variations = parsers.master.updated_variations.values()
 
             if updated_variations:
                 updated_variations_list = variation_container(updated_variations)
                 updated_variations_list.export_items(
-                    settings.flvu_path, variation_col_names
+                    settings.flvu_path, variation_col_names,
+                    coldata_target=export_target
                 )
 
         # categories
@@ -364,7 +371,10 @@ def export_master_parser(settings, parsers):
                 category for category in parsers.master.categories.values()
                 if category.members
             ])
-            category_list.export_items(settings.cat_path, category_col_names)
+            category_list.export_items(
+                settings.cat_path, category_col_names,
+                coldata_target=export_target
+            )
 
         # specials
         if settings.do_specials and settings.current_special_id:
@@ -372,20 +382,23 @@ def export_master_parser(settings, parsers):
             if special_products:
                 special_product_list = container(special_products)
                 special_product_list.export_items(
-                    settings.fls_path, product_colnames
+                    settings.fls_path, product_colnames,
+                    coldata_target=export_target
                 )
             special_variations = parsers.master.onspecial_variations.values()
             if special_variations:
                 sp_variation_list = variation_container(special_variations)
                 sp_variation_list.export_items(
-                    settings.flvs_path, variation_col_names
+                    settings.flvs_path, variation_col_names,
+                    coldata_target=export_target
                 )
 
         updated_products = parsers.master.updated_products.values()
         if updated_products:
             updated_product_list = container(updated_products)
             updated_product_list.export_items(
-                settings.flu_path, product_colnames
+                settings.flu_path, product_colnames,
+                coldata_target=export_target
             )
 
     Registrar.register_progress("CSV Files have been created.")
@@ -747,9 +760,15 @@ AssertionError: can't add match m_object 550|VTS-S.png <ImportWooImg> : m_index 
                 if match.type in ['pure', 'duplicate']:
                     matches.image.valid += [match]
                 elif match.type == 'masterless':
-                    matches.image.masterless.add_matches([match])
+                    try:
+                        matches.image.masterless.add_matches([match])
+                    except AssertionError as exc:
+                        Registrar.register_warning(exc)
                 elif match.type == 'slaveless':
-                    matches.image.slaveless.add_matches([match])
+                    try:
+                        matches.image.slaveless.add_matches([match])
+                    except AssertionError as exc:
+                        Registrar.register_warning(exc)
             else:
                 exc = UserWarning(
                     (

@@ -241,24 +241,24 @@ class ImportShopMixin(object):
         gen_data = self.to_dict()
         if self.is_category:
             coldata_class = self.coldata_cat_class
-            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
+            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
             if self.parent and self.parent.wpid:
                 api_data['term_parent_id'] = self.parent.wpid
             api_data = coldata_class.translate_data_to(core_data, target_api)
         elif self.is_variation:
             coldata_class = self.coldata_var_class
-            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
+            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
             if self.parent and self.parent.wpid:
                 api_data['parent_id'] = self.parent.wpid
             api_data = coldata_class.translate_data_to(core_data, target_api)
         elif getattr(self, 'is_image'):
             coldata_class = self.coldata_img_class
-            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
+            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
             api_data = coldata_class.translate_data_to(core_data, target_api)
         else:
             assert self.is_product
             coldata_class = self.coldata_class
-            core_data = coldata_class.translate_data_from(gen_data, 'gen-csv')
+            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
             variations = []
             for variation in self.variations.values():
                 variation_data = variation.to_api_data(coldata_class, target_api)

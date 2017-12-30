@@ -408,50 +408,62 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def exclude_cols(self):
-        # TODO: convert these to their handles
+    def exclude_properties(self):
         response = []
         if not self.do_images:
-            response.extend(['Images', 'imgsum', 'image'])
+            response.append('image')
         if not self.do_categories:
-            response.extend(['catsum', 'catlist', 'categories'])
+            response.append('category')
         if not self.do_dyns:
-            response.extend([
-                'DYNCAT', 'DYNPROD', 'spsum', 'dprclist', 'dprplist', 'dprcIDlist',
-                'dprpIDlist', 'dprcsum', 'dprpsum', 'pricing_rules'
-            ])
+            response.append('dynamic')
         if not self.do_specials:
-            response.extend([
-                'SCHEDULE', 'sale_price', 'sale_price_dates_from',
-                'sale_price_dates_to', 'RNS', 'RNF', 'RNT', 'RPS', 'RPF', 'RPT',
-                'WNS', 'WNF', 'WNT', 'WPS', 'WPF', 'WPT', 'DNS', 'DNF', 'DNT',
-                'DPS', 'DPF', 'DPT'
-            ])
+            response.append('special')
         return response
+
+    @property
+    def exclude_cols(self):
+        """
+        The generator columns which have been configured to be ignored in products.
+        """
+        return self.coldata_class.translate_handle_seq(
+            self.exclude_handles, self.coldata_gen_target_write
+        )
 
     @property
     def exclude_handles(self):
-        return self.coldata_class_cat.translate_col_seq(
-            self.exclude_cols, self.coldata_gen_target_write
-        )
+        """
+        The handles which have been configured to be ignored in products.
+        """
+        response = set()
+        for property_ in self.exclude_properties:
+            response.update(self.coldata_class.get_property_inclusions(property_))
+        return list(response)
 
     @property
     def exclude_cols_cat(self):
-        # TODO: convert these to their handles
-        response = ['post_status', 'rowcount']
-        if not self.do_images:
-            response.extend(['image'])
-        return response
-
-    @property
-    def exclude_handles_cat(self):
-        return self.coldata_class_cat.translate_col_seq(
-            self.exclude_cols_cat, self.coldata_gen_target_write
+        """
+        The Generator columns which have been configured to be ignored in categories.
+        """
+        return self.coldata_class_cat.translate_handle_seq(
+            self.exclude_handles_cat, self.coldata_gen_target_write
         )
 
     @property
+    def exclude_handles_cat(self):
+        """
+        The handles which have been configured to be ignored in categories.
+        """
+        response = set(['post_status', 'menu_order'])
+        for property_ in self.exclude_properties:
+            response.update(self.coldata_class_cat.get_property_inclusions(property_))
+        return list(response)
+
+    @property
     def exclude_handles_img(self):
-        return ['post_status', 'meta', 'file_name']
+        """
+        The handles which have been configured to be ignored in images.
+        """
+        return set(['post_status', 'menu_order', 'meta', 'file_name'])
 
     @property
     def master_parser_class(self):

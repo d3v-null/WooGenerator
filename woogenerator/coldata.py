@@ -292,6 +292,18 @@ class ColDataLegacy(object):
         return target_paths.get(handle, handle)
 
     @classmethod
+    def translate_handle_seq(cls, handles, target):
+        """
+        Return the `path`s associated with `handle`s in `target`.
+        """
+        target_paths = cls.get_handles_property_defaults('path', target)
+        response = []
+        for handle in handles:
+            target_path = target_paths.get(handle, handle)
+            response.append(target_path)
+        return response
+
+    @classmethod
     def translate_col_seq(cls, cols, target):
         """
         Return the `handle`s associated with the sequence of paths `cols` in `target`.
@@ -589,6 +601,26 @@ class ColDataAbstract(ColDataLegacy):
         return response
 
     @classmethod
+    def get_properties_inclusions(cls, properties, target=None):
+        """
+        Return a list of handles whose value of `property_` in `target` is True-ish.
+        """
+        inclusions = []
+        if not properties:
+            return inclusions
+        handles_properties = [
+            cls.get_handles_property_defaults(property_, target) for property_ in properties
+        ]
+        for handle in cls.data.keys():
+            handles_values = [
+                handle_properties.get(handle) \
+                for handle_properties in handles_properties
+            ]
+            if all(handles_values):
+                inclusions.append(handle)
+        return inclusions
+
+    @classmethod
     def get_properties_exclusions(cls, properties, target=None):
         """
         Return a list of handles whose value of `property_` in `target` is not True-ish.
@@ -681,7 +713,7 @@ class ColDataAbstract(ColDataLegacy):
         if re.match(cls.re_simple_path, path):
             data[path] = value
             return data
-        if ' ' in path:
+        if ' ' in path or ':' in path:
             path = '"%s"' % path
         updater = jsonpath_ng.parse(path)
         return JSONPathUtils.blank_update(updater, data, value)
@@ -1099,6 +1131,11 @@ class ColDataAbstract(ColDataLegacy):
             path_translation
         )
 
+    # @classmethod
+    # def translate_types_from_to(cls, data, target_from, target_to, path_translation=None):
+    #     data = cls.translate_types_from(data, target_from, path_translation)
+    #     return cls.translate_types_to(data, target_to, path_translation)
+
     @classmethod
     def translate_data_from(cls, data, target, excluding_properties=None):
         """
@@ -1225,6 +1262,32 @@ class ColDataAbstract(ColDataLegacy):
             if key in allowed_keys
         ])
 
+        return data
+
+    @classmethod
+    def translate_data_from_to(cls, data, from_target, to_target, excluding_properties=None):
+        data = cls.translate_data_from(data, from_target, excluding_properties)
+        return cls.translate_data_to(data, to_target, excluding_properties)
+
+    @classmethod
+    def translate_data_from_to_simple(cls, data, from_target, to_target, excluding_properties=None):
+        """
+        Does naiive data translation that doesn't look at sub entities and
+        doesn't delete unrecognised keys.
+        """
+        data = deepcopy(data)
+        data = cls.translate_paths_from(
+            data, from_target
+        )
+        data = cls.translate_types_from(
+            data, from_target
+        )
+        data = cls.translate_types_to(
+            data, to_target
+        )
+        data = cls.translate_paths_to(
+            data, to_target
+        )
         return data
 
     @classmethod
@@ -1912,7 +1975,8 @@ class ColDataWcProdCategory(ColDataWcTerm):
             'gen-api': {
                 'path': 'attachment_object',
                 'structure': ('singular-object', )
-            }
+            },
+            'image': True,
         }
     })
 
@@ -2564,7 +2628,8 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'category': True
         },
         'product_category_list': {
             'path': None,
@@ -2580,6 +2645,7 @@ class ColDataProduct(ColDataWpEntity):
                 'type': 'heirarchical_pipe_array',
                 # 'structure': ('listed-values'),
             },
+            'category': True,
         },
         'featured': {
             'type': bool,
@@ -2670,7 +2736,8 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'special': True
         },
         'sale_price_dates_from': {
             'type': 'datetime',
@@ -2692,7 +2759,8 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'special': True
         },
         'sale_price_dates_from_gmt': {
             'type': 'datetime',
@@ -2703,7 +2771,8 @@ class ColDataProduct(ColDataWpEntity):
             },
             'wc-wp-api-v1': {
                 'path': None
-            }
+            },
+            'special': True
         },
         'sale_price_dates_to': {
             'type': 'datetime',
@@ -2725,7 +2794,8 @@ class ColDataProduct(ColDataWpEntity):
             },
             'xero-api': {
                 'path': None
-            }
+            },
+            'special': True
         },
         'sale_price_dates_to_gmt': {
             'type': 'datetime',
@@ -2736,15 +2806,16 @@ class ColDataProduct(ColDataWpEntity):
             },
             'wc-wp-api-v1': {
                 'path': None
-            }
+            },
+            'special': True
         },
-        'price_html': {
-            'write': False,
-            'path': None,
-            'wc-api': {
-                'path': 'price_html'
-            }
-        },
+        # 'price_html': {
+        #     'write': False,
+        #     'path': None,
+        #     'wc-api': {
+        #         'path': 'price_html'
+        #     }
+        # },
         'on_sale': {
             'write': False,
             'path': None,
@@ -3198,7 +3269,8 @@ class ColDataProduct(ColDataWpEntity):
                 'path': 'attachment_objects',
                 'type': None,
                 'structure': ('listed-objects', )
-            }
+            },
+            'image': True,
         },
         'attributes': {
             'path': None,
@@ -3360,21 +3432,24 @@ class ColDataMeridianEntityMixin(object):
             'gen-csv': {
                 'path': 'SCHEDULE',
                 'default': ''
-            }
+            },
+            'special': True
         },
         'dynamic_product_rulesets': {
             'path': None,
             'gen-csv': {
                 'path': 'DYNPROD',
                 'default': ''
-            }
+            },
+            'dynamic': True
         },
         'dynamic_category_rulesets': {
             'path': None,
             'gen-csv': {
                 'path': 'DYNCAT',
                 'default': ''
-            }
+            },
+            'dynamic': True
         },
         'product_attributes': {
             'path': None,
@@ -3466,14 +3541,15 @@ class ColDataMeridianEntityMixin(object):
                     'path': None
                 },
                 'static': static,
+                'special': special,
             }
-        ) for (tier, (field_slug, field, import_, type_, static)) in itertools.product(
+        ) for (tier, (field_slug, field, import_, type_, static, special)) in itertools.product(
             ['rn', 'rp', 'wn', 'wp', 'dn', 'dp'],
             [
-                ('r', 'regular_price', True, 'currency', True),
-                ('s', 'sale_price', False, 'currency', False),
-                ('f', 'sale_price_dates_from', False, 'timestamp_wp', False),
-                ('t', 'sale_price_dates_to', False, 'timestamp_wp', False)
+                ('r', 'regular_price', True, 'currency', True, False),
+                ('s', 'sale_price', False, 'currency', False, True),
+                ('f', 'sale_price_dates_from', False, 'timestamp_wp', False, True),
+                ('t', 'sale_price_dates_to', False, 'timestamp_wp', False, True)
             ]
         )
     ])
