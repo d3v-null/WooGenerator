@@ -1335,8 +1335,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 'sale_price_dates_to': object_data.get('RNT')
         }.items():
             if value is not None:
-                object_data[key] = TimeUtils.wp_time_to_string(
-                    TimeUtils.server_to_local_time(value))
+                object_data[key] = value
 
     def post_process_updated(self, object_data):
         object_data.inherit_key('Updated')
@@ -1532,25 +1531,9 @@ class CsvParseTT(CsvParseMeridian):
         extra_cols = ['RNRC', 'RPRC', 'WNRC', 'WPRC', 'DNRC', 'DPRC']
         extra_defaults = OrderedDict([])
         extra_taxo_subs = OrderedDict([
-            # ('TechnoTan After Care', 'Tan Care > After Care'),
-            # ('TechnoTan Pre Tan', 'Tan Care > Pre Tan'),
-            # ('TechnoTan Tan Enhancement', 'Tan Care > Tan Enhancement'),
-            # ('TechnoTan Hair Care', 'Tan Care > Hair Care'),
-            # ('TechnoTan Application Equipment', 'Equipment > Application Equipment'),
-            # ('TechnoTan Tanning Booths', 'Equipment > Tanning Booths'),
             ('TechnoTan Literature', 'Marketing > Literature'),
             ('TechnoTan Signage', 'Marketing > Signage'),
             ('TechnoTan Spray Tanning Packages', 'Packages'),
-            # ('TechnoTan Solution', 'Solution'),
-            # ('TechnoTan After Care', 'After Care'),
-            # ('TechnoTan Pre Tan', 'Pre Tan'),
-            # ('TechnoTan Tan Enhancement', 'Tan Enhancement'),
-            # ('TechnoTan Hair Care', 'Hair Care'),
-            # ('TechnoTan Tanning Accessories', 'Tanning Accessories'),
-            # ('TechnoTan Technician Accessories', 'Technician Accessories'),
-            # ('TechnoTan Application Equipment', 'Application Equipment'),
-            # ('TechnoTan Tanning Booths', 'Tanning Booths'),
-            # ('TechnoTan Apparel', 'Apparel'),
             ('TechnoTan ', ''),
         ])
         extra_item_subs = OrderedDict()
@@ -1608,25 +1591,9 @@ class CsvParseVT(CsvParseMeridian):
         extra_cols = ['RNRC', 'RPRC', 'WNRC', 'WPRC', 'DNRC', 'DPRC']
         extra_defaults = OrderedDict([])
         extra_taxo_subs = OrderedDict([
-            # ('VuTan After Care', 'Tan Care > After Care'),
-            # ('VuTan Pre Tan', 'Tan Care > Pre Tan'),
-            # ('VuTan Tan Enhancement', 'Tan Care > Tan Enhancement'),
-            # ('VuTan Hair Care', 'Tan Care > Hair Care'),
-            # ('VuTan Application Equipment', 'Equipment > Application Equipment'),
-            # ('VuTan Tanning Booths', 'Equipment > Tanning Booths'),
             ('VuTan Literature', 'Marketing > Literature'),
             ('VuTan Signage', 'Marketing > Signage'),
             ('VuTan Spray Tanning Packages', 'Packages'),
-            # ('VuTan Solution', 'Solution'),
-            # ('VuTan After Care', 'After Care'),
-            # ('VuTan Pre Tan', 'Pre Tan'),
-            # ('VuTan Tan Enhancement', 'Tan Enhancement'),
-            # ('VuTan Hair Care', 'Hair Care'),
-            # ('VuTan Tanning Accessories', 'Tanning Accessories'),
-            # ('VuTan Technician Accessories', 'Technician Accessories'),
-            # ('VuTan Application Equipment', 'Application Equipment'),
-            # ('VuTan Tanning Booths', 'Tanning Booths'),
-            # ('VuTan Apparel', 'Apparel'),
             ('VuTan ', ''),
         ])
         extra_item_subs = OrderedDict()
