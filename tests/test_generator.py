@@ -33,7 +33,7 @@ from woogenerator.matching import ProductMatcher
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import ApiParseWoo
-from woogenerator.parsing.special import SpecialGruopList
+from woogenerator.parsing.special import SpecialGruopList, CsvParseSpecial
 from woogenerator.parsing.tree import ItemList
 from woogenerator.parsing.woo import CsvParseWoo, WooProdList
 from woogenerator.parsing.xero import ApiParseXero

@@ -984,13 +984,9 @@ class DescriptorUtils(object):
     @classmethod
     def safe_key_property(cls, key):
         def getter(self):
-            # assert key in self.keys(), "{} must be set before get in {}".format(
-            #     key, repr(type(self)))
             return self.get(key)
 
         def setter(self, value):
-            assert isinstance(value, basestring), "{} must be set with string not {}".format(
-                key, type(value))
             self[key] = value
 
         return cls.DescriptorPropertySafe(getter, setter)

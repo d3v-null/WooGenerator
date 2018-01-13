@@ -1020,7 +1020,27 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     def process_object(self, object_data):
         if self.DEBUG_WOO:
             self.register_message(object_data.index)
-        super(CsvParseWoo, self).process_object(object_data)
+        try:
+            super(CsvParseWoo, self).process_object(object_data)
+        except AssertionError as exc:
+            if hasattr(object_data, 'parent') and object_data.parent.namesum == self.specials_category_name:
+                raise UserWarning(
+                    (
+                        "Could not add specials category %s.\n%s\n"
+                        "Make sure the specials category '%s' exists at the bottom "
+                        "of the generator file"
+                    ) % (
+                        str(object_data),
+                        str(exc),
+                        object_data.namesum
+                    )
+                )
+            raise UserWarning(
+                "could not refresh stack with %s.\n%s" % (
+                    str(object_data),
+                    str(exc)
+                )
+            )
         assert issubclass(
             object_data.__class__, ImportWooObject), "object_data should subclass ImportWooObject not %s" % object_data.__class__.__name__
         self.process_categories(object_data)
