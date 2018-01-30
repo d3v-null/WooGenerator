@@ -374,7 +374,6 @@ class ObjList(list, Registrar):
             if self.DEBUG_ABSTRACT:
                 self.register_message(
                     UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
-            # import pudb; pudb.set_trace()
             dictwriter = unicodecsv.DictWriter(
                 out_file,
                 dialect=csvdialect,
@@ -382,7 +381,10 @@ class ObjList(list, Registrar):
                 encoding=encoding,
                 extrasaction='ignore'
             )
-            dictwriter.writerow(col_names)
+            header_row = OrderedDict([
+                (value, key) for key, value in col_names.items()
+            ])
+            dictwriter.writerow(header_row)
             objects = [
                 object_.to_target_type(
                     coldata_class=coldata_class,
