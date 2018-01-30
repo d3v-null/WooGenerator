@@ -382,7 +382,7 @@ class ObjList(list, Registrar):
                 extrasaction='ignore'
             )
             header_row = OrderedDict([
-                (value, key) for key, value in col_names.items()
+                (value, value) for key, value in col_names.items()
             ])
             dictwriter.writerow(header_row)
             objects = [
