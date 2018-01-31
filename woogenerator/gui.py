@@ -84,7 +84,7 @@ class WooGenerator(npyscreen.NPSAppManaged):
 
 
 class SyncSelectOne(npyscreen.SelectOne):
-    """ Widget which tracks command particle info """
+    """ Select Widget which tracks command particle info. """
 
     def __init__(self, *args, **kwargs):
         command_particles = kwargs.pop('cmd_particles', [])
@@ -99,12 +99,32 @@ class SyncSelectOne(npyscreen.SelectOne):
         returns that active particle of this widget given the user selection
         """
         logging.debug(
-            "getting active particle. value: %s "
+            "getting active particle. value: %s ", self.value
         )
         answer_index = self.value[0]
         if self.command_particles \
                 and len(self.command_particles) > answer_index:
             return self.command_particles[answer_index]
+
+class SyncTitleText(npyscreen.TitleText):
+    """ Text Widget which tracks command particle info. """
+
+    def __init__(self, *args, **kwargs):
+        command_particle = kwargs.pop('cmd_particle')
+        super(SyncTitleText, self).__init__(*args, **kwargs)
+        self.command_particle = command_particle
+
+    @property
+    def active_particle(self):
+        """
+        returns that active particle of this widget given the user selection
+        """
+        logging.debug(
+            "getting active particle. value: %s ", self.value
+        )
+
+        if self.value:
+            return "%s '%s'" % (self.command_particle, self.value)
 
 
 class SyncForm(npyscreen.ActionFormV2):  # pylint: disable=too-many-ancestors
@@ -272,14 +292,24 @@ class SyncForm(npyscreen.ActionFormV2):  # pylint: disable=too-many-ancestors
         selections
         """
         for _, widget in self.widgets_by_id.items():
-            if isinstance(widget, SyncSelectOne):
-                logging.warning(
-                    "found compatible widget: %s, value: %s, particles:  %s",
+            if hasattr(widget, 'active_particle'):
+                log_warning = "found compatible widget: %s, value: %s"
+                log_args = [
                     widget.name,
                     widget.value,
-                    widget.command_particles
-                )
+                ]
+                if hasattr(widget, 'command_particles'):
+                    log_warning += ", particles:  %s"
+                    log_args += [widget.command_particles]
+                if hasattr(widget, 'command_particle'):
+                    log_warning += ", particle:  %s"
+                    log_args += [widget.command_particle]
                 active_particle = widget.active_particle
+                log_warning += ", active_particle: %s"
+                log_args += [active_particle]
+                logging.warning(
+                    log_warning, *log_args
+                )
                 if active_particle:
                     yield widget.active_particle
 
@@ -333,28 +363,28 @@ class ProductsForm(SyncForm):
             values=[
                 "No Specials",
                 "Auto Next Special",
+                "Override",
                 # "All Future Specials"
             ],
             cmd_particles=[
                 '--skip-specials',
                 '--do-specials --specials-mode=auto_next',
+                '--do-specials --specials-mode=override',
                 # '--future-specials'
             ],
             value=0
         )
 
-        # with self.increase_indent():
-        #     # indent process_specials questions
-        #     self.add_paragraph(
-        #         ["What is the specials override?"],
-        #         hidden=True
-        #     )
-        #     self.specials_override = self.add(
-        #         npyscreen.Textfield,
-        #         name="Specials Override",
-        #         scroll_exit=True,
-        #         hidden=True
-        #     )
+        with self.increase_indent():
+            # indent process_specials questions
+            self.specials_override = self.add(
+                SyncTitleText,
+                name="Specials Override",
+                cmd_particle='--current-special',
+                scroll_exit=True,
+                hidden=True,
+                value=''
+            )
 
         self.process_categories = self.add_simple_question(
             name="Process Categories",
@@ -362,6 +392,14 @@ class ProductsForm(SyncForm):
             value=0,
             cmd_particles=['--skip-categories', '--do-categories']
         )
+
+        with self.increase_indent():
+            self.process_specials_categories = self.add_simple_question(
+                name="Process Special Categories",
+                help_str="Would you like to add special categories?",
+                value=1,
+                cmd_particles=['--skip-special-categories', '']
+            )
 
         self.process_variations = self.add_simple_question(
             name="Process Variations",
@@ -376,6 +414,29 @@ class ProductsForm(SyncForm):
             value=0,
             cmd_particles=['--skip-images', '--do-images']
         )
+
+    @overrides(npyscreen.proto_fm_screen_area.ScreenArea)
+    def refresh(self):
+        super(ProductsForm, self).refresh()
+        logging.debug("refreshing form")
+        process_specials_widget = None
+        specials_override_widget = None
+        for _, widget in self.widgets_by_id.items():
+            if widget.name == "Process Specials":
+                process_specials_widget = widget
+            if widget.name == "Specials Override":
+                specials_override_widget = widget
+        if not (process_specials_widget and specials_override_widget):
+            return
+
+        process_specials_value = process_specials_widget.value
+        if isinstance(process_specials_value, list):
+            process_specials_value = process_specials_value[0]
+        specials_override_widget.hidden = \
+            process_specials_widget.values[process_specials_value] != 'Override'
+
+        logging.debug("value of process specials widget: %s", process_specials_value)
+        logging.debug("hidden of specials override widget: %s", specials_override_widget.hidden)
 
 
 class CustomersForm(SyncForm):
