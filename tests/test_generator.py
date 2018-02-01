@@ -2866,8 +2866,6 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
     def test_super_dummy_populate_master_parsers(self):
         self.populate_master_parsers()
 
-        #number of objects:
-
         prod_container = self.parsers.master.product_container.container
         prod_list = prod_container(self.parsers.master.products.values())
         if self.debug:
@@ -2957,6 +2955,70 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
 
         for key, value in test_dict.items():
             self.assertEqual(unicode(first_variation[key]), unicode(value))
+
+    def test_super_dummy_to_target_type(self):
+        """
+        test the to_target_type functionality of master objects.
+        """
+
+        self.populate_master_parsers()
+
+        prod_container = self.parsers.master.product_container.container
+        prod_list = prod_container(self.parsers.master.products.values())
+
+        first_prod = prod_list[0]
+        first_variation = first_prod.variations.values()[0]
+        coldata_target = 'wc-csv'
+        coldata_class = ColDataProductMeridian
+
+
+        first_prod_csv = first_prod.to_target_type_with_attributes(
+            coldata_class=coldata_class,
+            coldata_target=coldata_target
+        )
+
+        test_dict = {
+            'attribute:pa_material': 'Cotton',
+            'attribute:quantity': '5',
+            'attribute:size': 'Small|Medium|Large|XLarge',
+            'attribute_data:pa_material': '0|1|0',
+            'attribute_data:quantity': '0|1|0',
+            'attribute_data:size': '0|1|1',
+            'attribute_default:pa_material': '',
+            'attribute_default:quantity': '',
+            'attribute_default:size': u'Small',
+            'post_title': u'Cotton Glove Pack x5 Pairs',
+        }
+
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(first_prod_csv[key]), unicode(value))
+
+        first_variation_csv = first_variation.to_target_type_with_attributes(
+            coldata_class=coldata_class,
+            coldata_target=coldata_target
+        )
+
+        test_dict = {
+            'meta:lc_dn_regular_price': u'3.85',
+            'meta:lc_dp_regular_price': u'3.85',
+            'meta:lc_rn_regular_price': u'',
+            'meta:lc_rp_regular_price': u'',
+            'meta:lc_wn_regular_price': u'5.50',
+            'meta:lc_wp_regular_price': u'4.95',
+            'height': u'25',
+            'length': u'100',
+            'width': u'250',
+            'weight': u'0.10',
+            'attribute:pa_material': 'Cotton',
+            'attribute:quantity': '5',
+            'attribute:size': 'Small',
+        }
+
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(first_variation_csv[key]), unicode(value))
+
+
+
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd

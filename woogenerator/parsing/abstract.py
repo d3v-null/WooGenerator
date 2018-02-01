@@ -87,11 +87,30 @@ class ImportObject(OrderedDict, Registrar):
         if not coldata_target:
             coldata_target = self.coldata_target
         # translate data without deleting unknown columns
-        return coldata_class.translate_data_from_to_simple(
+        data = coldata_class.translate_data_from_to_simple(
             self.to_dict(),
             self.coldata_gen_target,
             coldata_target
         )
+
+        return data
+
+    def to_target_type_with_attributes(self, **kwargs):
+        """
+        Return the object as a dictionary which has had types converted to
+        `coldata_target` format. and also preserve any key that begins with attribute.
+        """
+        preserve_columns = []
+        for key in self.keys():
+            if key.startswith('attribute'):
+                preserve_columns.append(key)
+
+        data = self.to_target_type(**kwargs)
+
+        for key in preserve_columns:
+            data[key] = self[key]
+
+        return data
 
     # TODO: refactor to get rid of row property, rename _row to row
     @property
@@ -388,7 +407,7 @@ class ObjList(list, Registrar):
             objects = []
             for object_ in self.objects:
                 objects.append(
-                    object_.to_target_type(
+                    object_.to_target_type_with_attributes(
                         coldata_class=coldata_class,
                         coldata_target=coldata_target
                     )
