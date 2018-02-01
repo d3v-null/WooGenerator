@@ -385,13 +385,14 @@ class ObjList(list, Registrar):
                 (value, value) for key, value in col_names.items()
             ])
             dictwriter.writerow(header_row)
-            objects = [
-                object_.to_target_type(
-                    coldata_class=coldata_class,
-                    coldata_target=coldata_target
+            objects = []
+            for object_ in self.objects:
+                objects.append(
+                    object_.to_target_type(
+                        coldata_class=coldata_class,
+                        coldata_target=coldata_target
+                    )
                 )
-                for object_ in self.objects
-            ]
             dictwriter.writerows(objects)
         self.register_message("WROTE FILE: %s" % file_path)
 

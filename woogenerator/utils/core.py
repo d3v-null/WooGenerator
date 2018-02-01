@@ -713,6 +713,8 @@ class SanitationUtils(object):
 
     @classmethod
     def similar_currency_comparison(cls, string):
+        if string == '':
+            return cls.coerce_unicode('')
         return cls.compose(
             cls.round_currency,
             cls.coerce_float,
