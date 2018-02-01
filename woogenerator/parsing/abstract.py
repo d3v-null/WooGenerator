@@ -93,10 +93,10 @@ class ImportObject(OrderedDict, Registrar):
             coldata_target
         )
         extra_colnames = kwargs.get('extra_colnames', OrderedDict())
-        for col, name in extra_colnames.items():
-            if col in self:
-                data[name] = self[col]
-
+        if extra_colnames:
+            for col, name in extra_colnames.items():
+                if col in self:
+                    data[name] = self[col]
         return data
 
     # def to_target_type_with_attributes(self, **kwargs):
