@@ -315,19 +315,22 @@ def export_master_parser(settings, parsers):
         if col in product_colnames:
             del product_colnames[col]
 
+    extra_colnames = OrderedDict()
     if settings.schema_is_woo and settings.do_attributes:
-        attribute_colnames = settings.coldata_class.get_attribute_colnames_native(
-            parsers.master.attributes, parsers.master.vattributes)
-        product_colnames = SeqUtils.combine_ordered_dicts(
-            product_colnames, attribute_colnames
+        extra_colnames = settings.coldata_class.get_attribute_colnames_native(
+            parsers.master.attributes, parsers.master.vattributes
         )
+    product_colnames = SeqUtils.combine_ordered_dicts(
+        product_colnames, extra_colnames
+    )
 
     container = parsers.master.product_container.container
 
     product_list = container(parsers.master.products.values())
     product_list.export_items(
         settings.fla_path, product_colnames,
-        coldata_target=export_target
+        coldata_target=export_target,
+        extra_colnames=extra_colnames
     )
 
     # TODO: stop exporting modified_gmt to spreadsheet
@@ -337,17 +340,19 @@ def export_master_parser(settings, parsers):
         variation_container = settings.master_parser_class.variation_container.container
         # variation_cols = settings.coldata_class_var.get_col_data_native('write', target='wc-csv')
         variation_col_names = settings.coldata_class_var.get_col_values_native('path', target='wc-csv')
-        attribute_meta_col_names = settings.coldata_class_var.get_attribute_meta_colnames_native(
-            parsers.master.vattributes)
+        extra_variation_col_names = settings.coldata_class_var.get_attribute_meta_colnames_native(
+            parsers.master.vattributes
+        )
         variation_col_names = SeqUtils.combine_ordered_dicts(
-            variation_col_names, attribute_meta_col_names
+            variation_col_names, extra_variation_col_names
         )
         if settings.do_variations and parsers.master.variations:
 
             variation_list = variation_container(parsers.master.variations.values())
             variation_list.export_items(
                 settings.flv_path, variation_col_names,
-                coldata_target=export_target
+                coldata_target=export_target,
+                extra_colnames=extra_variation_col_names
             )
 
             updated_variations = parsers.master.updated_variations.values()
@@ -356,7 +361,8 @@ def export_master_parser(settings, parsers):
                 updated_variations_list = variation_container(updated_variations)
                 updated_variations_list.export_items(
                     settings.flvu_path, variation_col_names,
-                    coldata_target=export_target
+                    coldata_target=export_target,
+                    extra_colnames=extra_variation_col_names
                 )
 
         # categories
@@ -383,14 +389,16 @@ def export_master_parser(settings, parsers):
                 special_product_list = container(special_products)
                 special_product_list.export_items(
                     settings.fls_path, product_colnames,
-                    coldata_target=export_target
+                    coldata_target=export_target,
+                    extra_colnames=extra_colnames
                 )
             special_variations = parsers.master.onspecial_variations.values()
             if special_variations:
                 sp_variation_list = variation_container(special_variations)
                 sp_variation_list.export_items(
                     settings.flvs_path, variation_col_names,
-                    coldata_target=export_target
+                    coldata_target=export_target,
+                    extra_colnames=extra_variation_col_names
                 )
 
         updated_products = parsers.master.updated_products.values()
@@ -398,8 +406,11 @@ def export_master_parser(settings, parsers):
             updated_product_list = container(updated_products)
             updated_product_list.export_items(
                 settings.flu_path, product_colnames,
-                coldata_target=export_target
+                coldata_target=export_target,
+                extra_colnames=extra_colnames
             )
+
+            # TODO; updated variations
 
     Registrar.register_progress("CSV Files have been created.")
 

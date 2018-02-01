@@ -557,7 +557,9 @@ class ArgumentParserProd(ArgumentParserCommon):
         group.add_argument(
             '--do-attributes',
             help='sync attributes',
-            action="store_true")
+            action="store_true",
+            default=True,
+        )
         group.add_argument(
             '--skip-attributes',
             help='don\'t sync attributes',

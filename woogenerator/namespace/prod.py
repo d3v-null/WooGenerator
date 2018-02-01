@@ -715,7 +715,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         if self.do_remeta_images:
             raise UserWarning("remeta deprecated")
         if self.do_attributes:
-            raise UserWarning("Automatic attribute sync not implemented yet.")
+            exc = UserWarning("Automatic attribute sync not implemented yet.")
+            Registrar.register_warning(exc)
 
         if self.do_specials:
             if self['specials_mode'] == 'all_future':

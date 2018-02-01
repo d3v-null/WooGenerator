@@ -2913,8 +2913,6 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
             'attribute_data:pa_material': '0|1|0',
             'attribute_data:quantity': '0|1|0',
             'attribute_data:size': '0|1|1',
-            'attribute_default:pa_material': '',
-            'attribute_default:quantity': '',
             'attribute_default:size': u'Small',
             'title': u'Cotton Glove Pack x5 Pairs',
             'CA': u'V',
@@ -2971,10 +2969,14 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
         coldata_target = 'wc-csv'
         coldata_class = ColDataProductMeridian
 
+        extra_colnames = self.settings.coldata_class.get_attribute_colnames_native(
+            self.parsers.master.attributes, self.parsers.master.vattributes
+        )
 
-        first_prod_csv = first_prod.to_target_type_with_attributes(
+        first_prod_csv = first_prod.to_target_type(
             coldata_class=coldata_class,
-            coldata_target=coldata_target
+            coldata_target=coldata_target,
+            extra_colnames=extra_colnames
         )
 
         test_dict = {
@@ -2984,8 +2986,6 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
             'attribute_data:pa_material': '0|1|0',
             'attribute_data:quantity': '0|1|0',
             'attribute_data:size': '0|1|1',
-            'attribute_default:pa_material': '',
-            'attribute_default:quantity': '',
             'attribute_default:size': u'Small',
             'post_title': u'Cotton Glove Pack x5 Pairs',
         }
@@ -2993,9 +2993,14 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
         for key, value in test_dict.items():
             self.assertEqual(unicode(first_prod_csv[key]), unicode(value))
 
-        first_variation_csv = first_variation.to_target_type_with_attributes(
+        extra_variation_col_names = self.settings.coldata_class_var.get_attribute_meta_colnames_native(
+            self.parsers.master.vattributes
+        )
+
+        first_variation_csv = first_variation.to_target_type(
             coldata_class=coldata_class,
-            coldata_target=coldata_target
+            coldata_target=coldata_target,
+            extra_colnames=extra_variation_col_names
         )
 
         test_dict = {
@@ -3009,16 +3014,17 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
             'length': u'100',
             'width': u'250',
             'weight': u'0.10',
-            'attribute:pa_material': 'Cotton',
-            'attribute:quantity': '5',
-            'attribute:size': 'Small',
+            'meta:attribute_size': 'Small',
         }
 
         for key, value in test_dict.items():
             self.assertEqual(unicode(first_variation_csv[key]), unicode(value))
 
-
-
+    # def test_super_dummy_attributes(self):
+    #     self.populate_master_parsers()
+    #
+    #     attributes = self.parsers.master.attributes
+    #     vattributes = self.parsers.master.vattributes
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd

@@ -92,25 +92,29 @@ class ImportObject(OrderedDict, Registrar):
             self.coldata_gen_target,
             coldata_target
         )
+        extra_colnames = kwargs.get('extra_colnames', OrderedDict())
+        for col, name in extra_colnames.items():
+            if col in self:
+                data[name] = self[col]
 
         return data
 
-    def to_target_type_with_attributes(self, **kwargs):
-        """
-        Return the object as a dictionary which has had types converted to
-        `coldata_target` format. and also preserve any key that begins with attribute.
-        """
-        preserve_columns = []
-        for key in self.keys():
-            if key.startswith('attribute'):
-                preserve_columns.append(key)
-
-        data = self.to_target_type(**kwargs)
-
-        for key in preserve_columns:
-            data[key] = self[key]
-
-        return data
+    # def to_target_type_with_attributes(self, **kwargs):
+    #     """
+    #     Return the object as a dictionary which has had types converted to
+    #     `coldata_target` format. and also preserve any key that begins with attribute.
+    #     """
+    #     preserve_columns = []
+    #     for key in self.keys():
+    #         if key.startswith('attribute'):
+    #             preserve_columns.append(key)
+    #
+    #     data = self.to_target_type(**kwargs)
+    #
+    #     for key in preserve_columns:
+    #         data[key] = self[key]
+    #
+    #     return data
 
     # TODO: refactor to get rid of row property, rename _row to row
     @property
@@ -372,7 +376,7 @@ class ObjList(list, Registrar):
 
     def export_items(
         self, file_path, col_names, dialect=None, encoding="utf8",
-        coldata_target=None, coldata_class=None
+        coldata_target=None, coldata_class=None, extra_colnames=None
     ):
         """
         Export the items in the object list to a csv file in the given file path.
@@ -407,9 +411,10 @@ class ObjList(list, Registrar):
             objects = []
             for object_ in self.objects:
                 objects.append(
-                    object_.to_target_type_with_attributes(
+                    object_.to_target_type(
                         coldata_class=coldata_class,
-                        coldata_target=coldata_target
+                        coldata_target=coldata_target,
+                        extra_colnames=extra_colnames
                     )
                 )
             dictwriter.writerows(objects)

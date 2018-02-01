@@ -353,11 +353,13 @@ class ColDataLegacy(object):
         all_attrs = SeqUtils.combine_lists(
             attributes.keys(), vattributes.keys())
         for attr in all_attrs:
-            new_keys = ['attribute:' + attr]
+            new_keys = [
+                'attribute:' + attr,
+                'attribute_data:' + attr
+            ]
             if attr in vattributes.keys():
                 new_keys.extend([
                     'attribute_default:' + attr,
-                    'attribute_data:' + attr
                 ])
             for key in new_keys:
                 attribute_cols[key] = key
