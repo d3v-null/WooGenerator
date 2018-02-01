@@ -2828,8 +2828,135 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
      - variations
      - attributes
      - collapsable categories (e.g. Product A > Company A Product A => Company A Product A)
-
     """
+    settings_namespace_class = SettingsNamespaceProd
+    config_file = "generator_config_test.yaml"
+
+    def setUp(self):
+        super(TestGeneratorSuperDummy, self).setUp()
+        self.settings.master_dialect_suggestion = "SublimeCsvTable"
+        self.settings.download_master = False
+        self.settings.master_file = os.path.join(
+            TESTS_DATA_DIR, "generator_master_super_dummy.csv"
+        )
+        self.settings.master_and_quit = True
+        self.settings.do_specials = False
+        self.settings.do_categories = True
+        self.settings.do_images = True
+        self.settings.report_matching = True
+        self.settings.auto_create_new = True
+        self.settings.update_slave = False
+        self.settings.do_problematic = True
+        self.settings.do_report = True
+        self.settings.do_remeta_images = False
+        self.settings.do_resize_images = True
+        self.settings.do_delete_images = False
+        self.settings.schema = "CA"
+        self.settings.skip_unattached_images = True
+        self.settings.init_settings(self.override_args)
+
+    def populate_master_parsers(self):
+        if self.parsers.master:
+            return
+        if self.debug:
+            print("regenerating master")
+        populate_master_parsers(self.parsers, self.settings)
+
+    @pytest.mark.first
+    def test_super_dummy_populate_master_parsers(self):
+        self.populate_master_parsers()
+
+        #number of objects:
+
+        prod_container = self.parsers.master.product_container.container
+        prod_list = prod_container(self.parsers.master.products.values())
+        if self.debug:
+            print(
+                (
+                    "%d objects\n"
+                    "%d items\n"
+                    "%d products:\n"
+                ) % (
+                    len(self.parsers.master.objects.values()),
+                    len(self.parsers.master.items.values()),
+                    len(prod_list)
+                )
+            )
+            print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
+
+        self.assertEqual(len(self.parsers.master.objects.values()), 8)
+        self.assertEqual(len(self.parsers.master.items.values()), 5)
+        self.assertEqual(len(prod_list), 1)
+
+        first_prod = prod_list[0]
+        if self.debug:
+            print("pformat@first_prod:\n%s" % pformat(first_prod.to_dict()))
+            print("first_prod.categories: %s" % pformat(first_prod.categories))
+            print("first_prod.to_dict().get('attachment_objects'): %s" % pformat(first_prod.to_dict().get('attachment_objects')))
+        self.assertEqual(first_prod.codesum, "AGL-CP5")
+        self.assertEqual(first_prod.parent.codesum, "AGL")
+        self.assertEqual(
+            set([attachment.file_name for attachment in first_prod.to_dict().get('attachment_objects')]),
+            set(["AGL-CP5.png"])
+        )
+        self.assertEqual(first_prod.depth, 3)
+        self.assertTrue(first_prod.is_item)
+        self.assertTrue(first_prod.is_product)
+        self.assertFalse(first_prod.is_category)
+        self.assertFalse(first_prod.is_root)
+        self.assertFalse(first_prod.is_taxo)
+        self.assertTrue(first_prod.is_variable)
+        self.assertFalse(first_prod.is_variation)
+
+        test_dict = {
+            'attribute:pa_material': 'Cotton',
+            'attribute:quantity': '5',
+            'attribute:size': 'Small|Medium|Large|XLarge',
+            'attribute_data:pa_material': '0|1|0',
+            'attribute_data:quantity': '0|1|0',
+            'attribute_data:size': '0|1|1',
+            'attribute_default:pa_material': '',
+            'attribute_default:quantity': '',
+            'attribute_default:size': u'Small',
+            'title': u'Cotton Glove Pack x5 Pairs',
+            'CA': u'V',
+        }
+
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(first_prod[key]), unicode(value))
+
+        self.assertEqual(
+            set([variation.codesum for variation in first_prod.variations.values()]),
+            set([
+                "AGL-CP5S",
+                "AGL-CP5M",
+                "AGL-CP5L",
+                "AGL-CP5XL",
+            ])
+        )
+
+        first_variation = first_prod.variations.values()[0]
+
+        test_dict = {
+            'DNR': u'3.85',
+            'DPR': u'3.85',
+            'RNR': u'',
+            'RPR': u'',
+            'WNR': u'5.50',
+            'WPR': u'4.95',
+            'height': u'25',
+            'length': u'100',
+            'width': u'250',
+            'weight': u'0.10',
+            'attribute:pa_material': 'Cotton',
+            'attribute:quantity': '5',
+            'attribute:size': 'Small',
+            'meta:attribute_size': 'Small',
+            'CA': u'I',
+        }
+
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(first_variation[key]), unicode(value))
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
