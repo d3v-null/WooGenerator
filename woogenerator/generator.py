@@ -315,10 +315,16 @@ def export_master_parser(settings, parsers):
         if col in product_colnames:
             del product_colnames[col]
 
-    extra_colnames = OrderedDict()
+    extra_colnames = OrderedDict([
+        ('title_1', 'meta:title_1'),
+        ('title_2', 'meta:title_2')
+    ])
     if settings.schema_is_woo and settings.do_attributes:
-        extra_colnames = settings.coldata_class.get_attribute_colnames_native(
-            parsers.master.attributes, parsers.master.vattributes
+        extra_colnames = SeqUtils.combine_ordered_dicts(
+            extra_colnames,
+            settings.coldata_class.get_attribute_colnames_native(
+                parsers.master.attributes, parsers.master.vattributes
+            )
         )
     product_colnames = SeqUtils.combine_ordered_dicts(
         product_colnames, extra_colnames
@@ -327,6 +333,7 @@ def export_master_parser(settings, parsers):
     container = parsers.master.product_container.container
 
     product_list = container(parsers.master.products.values())
+
     product_list.export_items(
         settings.fla_path, product_colnames,
         coldata_target=export_target,
