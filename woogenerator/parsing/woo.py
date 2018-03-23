@@ -204,17 +204,20 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         ancestors_self = self.taxo_ancestors + [self]
         fullname_ancestor = None
         code_ancestor = None
+
         for ancestor in ancestors_self:
-            if ancestor.fullname:
+            if not fullname_ancestor and ancestor.fullname:
                 fullname_ancestor = ancestor
-            if ancestor.code:
+            if not code_ancestor and ancestor.code:
                 code_ancestor = ancestor
             if fullname_ancestor and code_ancestor:
                 break
         if fullname_ancestor:
-            components[self.fullname_key] = ' '.join([fullname_ancestor.fullname, specials_name])
+            fullname_component = ' '.join([fullname_ancestor.fullname, specials_name])
         if code_ancestor:
-            components[self.code_key] = code_ancestor.code
+            code_component = code_ancestor.code
+        components[self.fullname_key] = fullname_component
+        components[self.code_key] = code_component
         return components
 
     def to_dict(self):
