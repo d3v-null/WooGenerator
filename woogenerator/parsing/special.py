@@ -262,6 +262,8 @@ class CsvParseSpecial(CsvParseTree):
         out = "\n"
         for index, rule_group in self.rule_groups.items():
             out += "-> %s\n" % index
+            out += "START: %s\n" % rule_group.start_time
+            out += "END: %s\n" % rule_group.end_time
             rule_list = SpecialRuleList(rule_group.children)
             out += SanitationUtils.coerce_bytes(
                 rule_list.tabulate(tablefmt='simple'))
