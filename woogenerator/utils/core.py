@@ -360,7 +360,7 @@ class SanitationUtils(object):
 
     @classmethod
     def safe_print(cls, *args):
-        print " ".join([cls.coerce_bytes(arg) for arg in args])
+        print " ".join([cls.coerce_ascii(arg) for arg in args])
 
     @classmethod
     def normalize_val(cls, thing):
@@ -1374,11 +1374,11 @@ class Registrar(object):
         try:
             index = str(index)
         except:
-            index = SanitationUtils.coerce_bytes(index)
+            index = SanitationUtils.coerce_ascii(index)
         try:
             thing = str(thing)
         except:
-            thing = SanitationUtils.coerce_bytes(thing)
+            thing = SanitationUtils.coerce_ascii(thing)
         return u"%50s %s %s" % (index, delimeter, thing)
 
     @classmethod
