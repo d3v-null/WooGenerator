@@ -1915,6 +1915,10 @@ class ColDataWcTerm(ColDataTerm):
             'gen-csv': {
                 'path': 'rowcount',
                 'write': False,
+            },
+            'wc-csv': {
+                'path': 'menu_order',
+                'write': False,
             }
         }
     })

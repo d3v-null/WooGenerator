@@ -303,6 +303,11 @@ class ArgumentParserCommon(ArgumentParserProto):
             help="quit after exporting master parsers, don't process slave",
             action="store_true",
         )
+        processing_group.add_argument(
+            '--skip-export-master',
+            help="quit after exporting master parsers, don't process slave",
+            action="store_true",
+        )
 
         current_tsecs = TimeUtils.current_tsecs()
         year_tsecs = 60 * 60 * 24 * 365.25
@@ -447,6 +452,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--wc-api-secret', type=str)
         self.add_suppressed_argument('--wc-api-version', type=str)
         self.add_suppressed_argument('--wc-api-namespace', type=str)
+        self.add_suppressed_argument('--wc-api-timeout', type=str, default=30)
         self.add_suppressed_argument('--wc-callback', type=str)
         self.add_suppressed_argument('--wc-creds-store', type=str)
         self.add_suppressed_argument('--store-url', type=str)
@@ -693,17 +699,26 @@ class ArgumentParserProd(ArgumentParserCommon):
     def add_update_options(self, update_group):
         super(ArgumentParserProd, self).add_update_options(update_group)
         update_group.add_argument(
-            '--slave-timeout',
-            help='timeout when using the slave api')
-        update_group.add_argument(
             '--slave-limit',
             help='limit per page when using the slave api')
         update_group.add_argument(
             '--slave-offset',
             help='offset when using the slave api (for debugging)')
 
-    # def add_report_options(self, report_group):
-    #     super(ArgumentParserProd, self).add_report_options(report_group)
+    def add_report_options(self, report_group):
+        super(ArgumentParserProd, self).add_report_options(report_group)
+        report_group.add_argument(
+            '--report-matched-categories',
+            help='generating CSV file of categories with their corresponding term_ids',
+            action="store_true",
+            default=False
+        )
+        report_group.add_argument(
+            '--report-matched-products',
+            help='generating CSV file of products with their corresponding IDs',
+            action="store_true",
+            default=False
+        )
 
     def add_other_options(self):
         super(ArgumentParserProd, self).add_other_options()

@@ -303,6 +303,22 @@ def populate_slave_parsers(parsers, settings):
 
     return parsers
 
+def export_categories(settings, parser, csv_file, export_target):
+    # category_cols = settings.coldata_class_cat.get_col_data_native('write', target=export_target)
+    category_col_names = settings.coldata_class_cat.get_col_values_native('path', target=export_target)
+    for col in settings.exclude_cols_cat:
+        if col in category_col_names:
+            del category_col_names[col]
+    category_container = settings.master_parser_class.category_container.container
+    category_list = category_container([
+        category for category in parser.categories.values()
+        if category.members
+    ])
+    category_list.export_items(
+        csv_file, category_col_names,
+        coldata_target=export_target
+    )
+
 def export_master_parser(settings, parsers):
     """Export key information from master parser to csv."""
     Registrar.register_progress("Exporting Master info to disk")
@@ -346,7 +362,7 @@ def export_master_parser(settings, parsers):
         # variations
         variation_container = settings.master_parser_class.variation_container.container
         # variation_cols = settings.coldata_class_var.get_col_data_native('write', target='wc-csv')
-        variation_col_names = settings.coldata_class_var.get_col_values_native('path', target='wc-csv')
+        variation_col_names = settings.coldata_class_var.get_col_values_native('path', target=export_target)
         extra_variation_col_names = settings.coldata_class_var.get_attribute_meta_colnames_native(
             parsers.master.vattributes
         )
@@ -374,20 +390,7 @@ def export_master_parser(settings, parsers):
 
         # categories
         if settings.do_categories and parsers.master.categories:
-            # category_cols = settings.coldata_class_cat.get_col_data_native('write', target='wc-csv')
-            category_col_names = settings.coldata_class_cat.get_col_values_native('path', target='wc-csv')
-            for col in settings.exclude_cols_cat:
-                if col in category_col_names:
-                    del category_col_names[col]
-            category_container = settings.master_parser_class.category_container.container
-            category_list = category_container([
-                category for category in parsers.master.categories.values()
-                if category.members
-            ])
-            category_list.export_items(
-                settings.cat_path, category_col_names,
-                coldata_target=export_target
-            )
+            export_categories(settings, parsers.master, settings.cat_path, export_target)
 
         # specials
         if settings.do_specials and settings.current_special_id:
@@ -1960,7 +1963,7 @@ def main(override_args=None, settings=None):
     if settings.schema_is_woo and settings.do_images:
         process_images(settings, parsers)
 
-    if parsers.master.objects:
+    if parsers.master.objects and settings.do_export_master:
         export_master_parser(settings, parsers)
 
     if settings.master_and_quit:
@@ -2009,6 +2012,9 @@ def main(override_args=None, settings=None):
         check_warnings(settings)
         if not settings.report_and_quit:
             do_updates_categories_master(updates, parsers, results, settings)
+            if settings.report_matched_categories:
+                export_categories(settings, parsers.master, settings.rep_matched_cat_path, 'wc-csv')
+                reporters.cat.add_csv_file('matched_cat', settings.rep_matched_cat_path)
             try:
                 do_updates_categories_slave(updates, parsers, results, settings)
             except (SystemExit, KeyboardInterrupt) as exc:

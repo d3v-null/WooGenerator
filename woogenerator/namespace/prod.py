@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import os
 import urlparse
+from copy import copy
 
 from ..client.core import SyncClientGDrive, SyncClientNull
 from ..client.img import ImgSyncClientWP
@@ -46,6 +47,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.img_raw_dir = getattr(self, 'img_raw_dir', None)
         self.img_raw_extra_dir = getattr(self, 'img_raw_extra_dir', None)
         self.img_cmp_dir = getattr(self, 'img_cmp_dir', None)
+        self.do_export_master = getattr(self, 'do_export_master', None)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
     @property
@@ -346,6 +348,15 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
+    def rep_matched_cat_path(self):
+        response = '%ssync_report_matched_cat%s.csv' % (
+            self.file_prefix, self.file_suffix
+        )
+        if self.report_dir_full:
+            response = os.path.join(self.report_dir_full, response)
+        return response
+
+    @property
     def rep_web_path(self):
         response = os.path.basename(self.rep_main_path)
         if self.get('web_dir'):
@@ -457,7 +468,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """
         The handles which have been configured to be ignored in categories.
         """
-        response = set(['post_status', 'menu_order'])
+        response = set(['post_status'])
         for property_ in self.exclude_properties:
             response.update(self.coldata_class_cat.get_property_inclusions(property_))
         return list(response)
@@ -607,7 +618,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = {}
         if self['download_slave']:
             if self.schema_is_woo:
-                response['connect_params'] = self.slave_wc_api_params
+                response['connect_params'] = copy(self.slave_wc_api_params)
+                response['connect_params']['limit'] = self.slave_parse_limit
             elif self.schema_is_xero:
                 response['connect_params'] = self.slave_xero_api_params
         return response
