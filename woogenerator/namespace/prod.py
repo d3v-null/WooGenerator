@@ -47,7 +47,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.img_raw_dir = getattr(self, 'img_raw_dir', None)
         self.img_raw_extra_dir = getattr(self, 'img_raw_extra_dir', None)
         self.img_cmp_dir = getattr(self, 'img_cmp_dir', None)
-        self.do_export_master = getattr(self, 'do_export_master', None)
+        self.do_export_master = getattr(self, 'do_export_master', True)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
     @property
