@@ -1049,6 +1049,7 @@ class ColDataAbstract(ColDataLegacy):
             'timestamp_utc': TimeUtils.normalize_timestamp_utc,
             'timestamp_local': TimeUtils.normalize_timestamp_local,
             'timestamp_wp': TimeUtils.normalize_timestamp_wp,
+            'gmt_timestamp_wp': TimeUtils.normalize_gmt_timestamp_wp,
             'timestamp_gdrive': TimeUtils.normalize_timestamp_gdrive,
             'wp_content_rendered': SanitationUtils.normalize_wp_rendered_content,
             'wp_content_raw': SanitationUtils.normalize_wp_raw_content,
@@ -1088,6 +1089,7 @@ class ColDataAbstract(ColDataLegacy):
             'timestamp_utc': TimeUtils.denormalize_timestamp_utc,
             'timestamp_local': TimeUtils.denormalize_timestamp_local,
             'timestamp_wp': TimeUtils.denormalize_timestamp_wp,
+            'gmt_timestamp_wp': TimeUtils.denormalize_gmt_timestamp_wp,
             'timestamp_gdrive': TimeUtils.denormalize_timestamp_gdrive,
             'wp_content_rendered': SanitationUtils.coerce_xml,
             'mime_type': MimeUtils.validate_mime_type,
@@ -3533,20 +3535,25 @@ class ColDataMeridianEntityMixin(object):
                 'variation': True,
                 'pricing': True,
                 'type': root_type,
+                'wp-api': {
+                    'type': wc_type
+                },
+                'wc-api': {
+                    'type': wc_type
+                },
                 'wp-sql': {
                     'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
                     'type': wc_type
                 },
                 'wc-wp-api': {
                     'path': 'meta_data.lc_%s_%s.meta_value' % (tier, field),
-                    'type': wc_type
                 },
                 'wc-legacy-api': {
                     'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
-                    'type': wc_type
                 },
                 'gen-csv': {
                     'path': ''.join([tier.upper(), field_slug.upper()]),
+                    'type': gen_type,
                     'write': False
                 },
                 'wc-csv': {
@@ -3559,13 +3566,13 @@ class ColDataMeridianEntityMixin(object):
                 'static': static,
                 'special': special,
             }
-        ) for (tier, (field_slug, field, import_, root_type, wc_type, static, special)) in itertools.product(
+        ) for (tier, (field_slug, field, import_, root_type, wc_type, gen_type, static, special)) in itertools.product(
             ['rn', 'rp', 'wn', 'wp', 'dn', 'dp'],
             [
-                ('r', 'regular_price', True, 'currency', 'currency', True, False),
-                ('s', 'sale_price', False, 'currency', 'currency', False, True),
-                ('f', 'sale_price_dates_from', False, 'datetime', 'timestamp_utc', False, True),
-                ('t', 'sale_price_dates_to', False, 'datetime', 'timestamp_utc', False, True)
+                ('r', 'regular_price', True, 'currency', 'currency', 'currency', True, False),
+                ('s', 'sale_price', False, 'currency', 'currency', 'currency', False, True),
+                ('f', 'sale_price_dates_from', False, 'datetime', 'gmt_timestamp_wp', 'iso8601_gdrive', False, True),
+                ('t', 'sale_price_dates_to', False, 'datetime', 'gmt_timestamp_wp', 'iso8601_gdrive', False, True)
                 # Note: Wordpress definitely reads time in UTC timestamp.
             ]
         )

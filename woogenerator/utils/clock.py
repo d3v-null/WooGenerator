@@ -208,12 +208,12 @@ class TimeUtils(object):
         Given `string` in iso8601 format, return the datetime object
         in timezone `tz` which it represents.
         """
+        if string is '' or string is None:
+            return
         if tz is None:
             tz = pytz.utc
         if fmt is None:
             fmt = TimeUtils.iso8601_datetime_format
-        if not string:
-            return
         response = cls.star_strp_datetime(string, fmt)
         response = cls.inform_datetime(response, tz)
         return response
@@ -223,6 +223,8 @@ class TimeUtils(object):
         """
         Given datetime `dt`, return the iso8601 representation in timezone `tz`.
         """
+        if dt is None:
+            return
         if tz is None:
             tz = pytz.utc
         if fmt is None:
@@ -325,6 +327,22 @@ class TimeUtils(object):
     @classmethod
     def denormalize_timestamp_wp(cls, dt):
         return cls.denormalize_timestamp(dt, cls._wp_srv_tz)
+
+    @classmethod
+    def normalize_gmt_timestamp_wp(cls, dt):
+        """
+        Timezone of source is wp_srv_tz but gives gmt timestamps anyway.
+        """
+        dt = cls.normalize_timestamp(dt, pytz.utc)
+        if dt is not None:
+            return dt.astimezone(cls._wp_srv_tz)
+
+    @classmethod
+    def denormalize_gmt_timestamp_wp(cls, dt):
+        """
+        Timezone of source is wp_srv_tz but gives gmt timestamps anyway.
+        """
+        return cls.denormalize_timestamp(dt, pytz.utc)
 
     @classmethod
     def normalize_timestamp_act(cls, dt):
