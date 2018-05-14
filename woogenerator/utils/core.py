@@ -1237,10 +1237,9 @@ class DebugUtils(object):
         try:
             procedure = inspect.stack()[level][3]
             # return procedure
-            path = inspect.stack()[level][1]
-            basename = 'source/' + os.path.basename(path)
+            path = os.path.relpath(os.path.realpath(inspect.stack()[level][1]))
             line = inspect.stack()[level][2]
-            baseline = "%s:%s" % (basename, line)
+            baseline = "%s:%s" % (path, line)
             return ".".join([baseline, str(procedure)])
         except BaseException:
             return None
@@ -1438,7 +1437,7 @@ class Registrar(object):
             index = DebugUtils.get_caller_procedures()
         error_string = SanitationUtils.coerce_unicode(error)
         if cls.DEBUG_ERROR:
-            Registrar.print_anything(index, error_string, '!')
+            Registrar.print_anything(index, "\n\n%s\n\n" % error_string, '!')
         cls.register_anything(
             error_string,
             Registrar.errors,
@@ -1459,7 +1458,7 @@ class Registrar(object):
             index = DebugUtils.get_caller_procedures()
         error_string = SanitationUtils.coerce_unicode(message)
         if cls.DEBUG_WARN:
-            Registrar.print_anything(index, error_string, '|')
+            Registrar.print_anything(index, "\n\n%s\n\n" % error_string, '|')
         cls.register_anything(
             error_string,
             Registrar.warnings,

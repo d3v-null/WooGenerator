@@ -201,9 +201,22 @@ def populate_master_parsers(parsers, settings):
                     specials_mode=settings.specials_mode,
                     current_special=settings.current_special
                 )
-                if Registrar.DEBUG_SPECIAL:
+
+                if settings.current_special_groups:
                     Registrar.register_message(
-                        "current_special_groups: %s" % settings.current_special_groups
+                        "current_special_groups: \n%s" % (
+                            parsers.special.taxo_container.container(
+                                settings.current_special_groups
+                            ).tabulate()
+                        )
+                    )
+                else:
+                    Registrar.register_warning(
+                        "No special groups were found, here are the latest specials: \n%s" % (
+                            parsers.special.taxo_container.container(
+                                parsers.special.last_5()
+                            ).tabulate()
+                        )
                     )
 
         master_parser_args = settings.master_parser_args

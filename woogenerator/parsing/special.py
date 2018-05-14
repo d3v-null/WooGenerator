@@ -10,11 +10,28 @@ from .tree import (CsvParseTree, ImportTreeItem, ImportTreeObject,
 
 
 class SpecialGruopList(TaxoList):
-    pass
+    def tabulate(self, tablefmt=None, **_):
+        if not tablefmt:
+            tablefmt = "simple"
+
+        out = "\n"
+        for rule_group in self.objects:
+            index = rule_group.special_id
+            out += "-> %s\n" % index
+            out += "START: %s\n" % rule_group.start_time
+            out += "END: %s\n" % rule_group.end_time
+            rule_list = self.child_container(rule_group.children)
+            out += SanitationUtils.coerce_bytes(
+                rule_list.tabulate(tablefmt='simple'))
+            out += '\n'
+
+        return out
 
 
 class SpecialRuleList(ItemList):
     pass
+
+SpecialGruopList.child_container = SpecialRuleList
 
 
 class ImportSpecialMixin(object):
@@ -225,6 +242,12 @@ class CsvParseSpecial(CsvParseTree):
             lambda sa, sb: cmp(sa.start_time, sb.end_time)))
         return all_future
 
+    def last_5(self):
+        all_specials = self.rule_groups.values()
+        all_specials = sorted(all_specials, cmp=(
+            lambda sa, sb: cmp(sa.start_time, sb.end_time)))
+        return all_specials[-5:]
+
     #
     def determine_current_spec_grps(
             self, specials_mode, current_special=None):
@@ -255,18 +278,6 @@ class CsvParseSpecial(CsvParseTree):
         return SanitationUtils.sanitize_special_cell(cell)
 
     def tabulate(self, tablefmt=None, **_):
-        if not tablefmt:
-            tablefmt = "simple"
-        #
-
-        out = "\n"
-        for index, rule_group in self.rule_groups.items():
-            out += "-> %s\n" % index
-            out += "START: %s\n" % rule_group.start_time
-            out += "END: %s\n" % rule_group.end_time
-            rule_list = SpecialRuleList(rule_group.children)
-            out += SanitationUtils.coerce_bytes(
-                rule_list.tabulate(tablefmt='simple'))
-            out += '\n'
-
-        return out
+        return self.taxo_container.container(
+            self.rule_groups.values()
+        ).tabulate(tablefmt, **_)
