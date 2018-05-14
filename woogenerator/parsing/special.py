@@ -215,7 +215,8 @@ class CsvParseSpecial(CsvParseTree):
         if rule_data.start_time and rule_data.end_time \
         and rule_data.end_time <= rule_data.start_time:
             Registrar.register_error(
-                "error registering rule in rule group '%s': start time (%s) later than end time (%s)" % (
+                "error registering rule '%s' in rule group '%s': start time (%s) later than end time (%s)" % (
+                    rule_data.special_id,
                     rule_data.parent.special_id if rule_data.parent else "UNKN",
                     rule_data.start_time,
                     rule_data.end_time
