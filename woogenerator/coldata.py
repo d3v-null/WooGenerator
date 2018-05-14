@@ -2763,6 +2763,9 @@ class ColDataProduct(ColDataWpEntity):
             'gen-csv': {
                 'read': False,
             },
+            'wc-csv': {
+                'type': 'iso8601_wp',
+            },
             'xero-api': {
                 'path': None
             },
@@ -2796,7 +2799,10 @@ class ColDataProduct(ColDataWpEntity):
                 'type': 'timestamp_wp'
             },
             'gen-csv': {
-                'read': False,
+                'read': False
+            },
+            'wc-csv': {
+                'type': 'iso8601_wp',
             },
             'xero-api': {
                 'path': None
@@ -3526,15 +3532,18 @@ class ColDataMeridianEntityMixin(object):
                 'read': import_,
                 'variation': True,
                 'pricing': True,
-                'type': type_,
+                'type': root_type,
                 'wp-sql': {
                     'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
+                    'type': wc_type
                 },
                 'wc-wp-api': {
                     'path': 'meta_data.lc_%s_%s.meta_value' % (tier, field),
+                    'type': wc_type
                 },
                 'wc-legacy-api': {
                     'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
+                    'type': wc_type
                 },
                 'gen-csv': {
                     'path': ''.join([tier.upper(), field_slug.upper()]),
@@ -3542,6 +3551,7 @@ class ColDataMeridianEntityMixin(object):
                 },
                 'wc-csv': {
                     'path': 'meta:lc_%s_%s' % (tier, field),
+                    'type': wc_type
                 },
                 'xero-api': {
                     'path': None
@@ -3549,13 +3559,14 @@ class ColDataMeridianEntityMixin(object):
                 'static': static,
                 'special': special,
             }
-        ) for (tier, (field_slug, field, import_, type_, static, special)) in itertools.product(
+        ) for (tier, (field_slug, field, import_, root_type, wc_type, static, special)) in itertools.product(
             ['rn', 'rp', 'wn', 'wp', 'dn', 'dp'],
             [
-                ('r', 'regular_price', True, 'currency', True, False),
-                ('s', 'sale_price', False, 'currency', False, True),
-                ('f', 'sale_price_dates_from', False, 'timestamp_wp', False, True),
-                ('t', 'sale_price_dates_to', False, 'timestamp_wp', False, True)
+                ('r', 'regular_price', True, 'currency', 'currency', True, False),
+                ('s', 'sale_price', False, 'currency', 'currency', False, True),
+                ('f', 'sale_price_dates_from', False, 'datetime', 'timestamp_utc', False, True),
+                ('t', 'sale_price_dates_to', False, 'datetime', 'timestamp_utc', False, True)
+                # Note: Wordpress definitely reads time in UTC timestamp.
             ]
         )
     ])
