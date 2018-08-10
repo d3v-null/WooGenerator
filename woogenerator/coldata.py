@@ -1098,6 +1098,15 @@ class ColDataAbstract(ColDataLegacy):
             'api_currency': SanitationUtils.denormalize_api_currency,
         }.get(type_, SanitationUtils.identity)
 
+    # @classmethod
+    # def translate_type_from(cls, handle, value, target):
+    #     """
+    #     Perform a single type translation between `target` and core for `value`
+    #     """
+    #     type_ = cls.get_handles_property('type', target).get('handle')
+    #     morph_function = cls.get_normalizer(type_)
+    #     return morph_function(value)
+
     @classmethod
     def translate_types_from(cls, data, target, path_translation=None):
         """
@@ -3018,7 +3027,7 @@ class ColDataProduct(ColDataWpEntity):
         #     },
         # },
         'stock_quantity': {
-            'type': 'optional_int',
+            'type': 'optional_int_none',
             'xero-api': {
                 'path': 'QuantityOnHand',
                 'type': 'optional_float',

@@ -136,7 +136,7 @@ class SyncClientAbstract(ClientAbstract):
         """
         raise NotImplementedError()
 
-    def upload_changes(self, pkey, updates=None):
+    def upload_changes(self, pkey, updates=None, **kwargs):
         """
         Abstract method for updating data with `changes`
         """
@@ -144,11 +144,11 @@ class SyncClientAbstract(ClientAbstract):
             assert pkey, "must have a valid primary key"
             assert self.connection_ready, "connection should be ready"
 
-    def create_item(self, data):
+    def create_item(self, data, **kwargs):
         if data:
             assert self.connection_ready, "connection should be ready"
 
-    def upload_changes_core(self, pkey=None, updates_core=None):
+    def upload_changes_core(self, pkey=None, updates_core=None, **kwargs):
         """
         Translate a dict of changes in core format to api format and upload.
         """
@@ -157,13 +157,13 @@ class SyncClientAbstract(ClientAbstract):
         updates_api = self.coldata_class.translate_data_to(
             updates_core, self.coldata_target_write
         )
-        return self.upload_changes(pkey, updates_api)
+        return self.upload_changes(pkey, updates_api, **kwargs)
 
-    def create_item_core(self, core_data):
+    def create_item_core(self, core_data, **kwargs):
         api_data = self.coldata_class.translate_data_to(
             core_data, self.coldata_target_write
         )
-        return self.create_item(api_data)
+        return self.create_item(api_data, **kwargs)
 
 
 class SyncClientNull(SyncClientAbstract):
@@ -190,25 +190,28 @@ class SyncClientNull(SyncClientAbstract):
     def __exit__(self, exit_type, value, traceback):
         pass
 
-    def upload_changes(self, pkey, updates=None):
-        super(SyncClientNull, self).upload_changes(pkey)
+    def upload_changes(self, pkey, updates=None, **kwargs):
+        super(SyncClientNull, self).upload_changes(pkey, **kwargs)
         native_pkey = self.coldata_class.translate_handle(
             self.primary_key_handle, self.coldata_target
         )
         updates.update({
             native_pkey: pkey
         })
+        # This is a expensive way of cleaning data that i don't think is necessary
         updates_core = self.coldata_class.translate_data_from(
             updates, self.coldata_target_write
         )
         updates_api = self.coldata_class.translate_data_to(
             updates_core, self.coldata_target
         )
+
+        updates_api = updates
         response = requests.Response()
         response._content = SanitationUtils.encode_json(updates_api)
         return response
 
-    def upload_changes_core(self, pkey=None, updates_core=None):
+    def upload_changes_core(self, pkey=None, updates_core=None, **kwargs):
         if getattr(self, 'file_path_handle', None):
             file_path = updates_core.pop(self.file_path_handle, None)
             if file_path:
@@ -216,7 +219,7 @@ class SyncClientNull(SyncClientAbstract):
                     updates_core.update({
                         self.source_url_handle: file_path
                     })
-                response_raw = super(SyncClientNull, self).create_item_core(updates_core)
+                response_raw = super(SyncClientNull, self).create_item_core(updates_core, **kwargs)
                 response_api = response_raw.json()
                 if self.page_nesting:
                     response_api = response_api.get(self.endpoint_singular)
@@ -227,7 +230,7 @@ class SyncClientNull(SyncClientAbstract):
                 updates_core.update({
                     self.file_path_handle: file_path
                 })
-        return super(SyncClientNull, self).upload_changes_core(pkey, updates_core)
+        return super(SyncClientNull, self).upload_changes_core(pkey, updates_core, **kwargs)
 
     def create_item(self, data, **kwargs):
         native_pkey = self.coldata_class.translate_handle(
@@ -254,14 +257,14 @@ class SyncClientNull(SyncClientAbstract):
         response._content = SanitationUtils.encode_json(data_api)
         return response
 
-    def create_item_core(self, core_data):
+    def create_item_core(self, core_data, **kwargs):
         if getattr(self, 'file_path_handle', None):
             file_path = core_data.get(self.file_path_handle, None)
             if file_path:
                 if getattr(self, 'source_url_handle', None):
                     core_data[self.source_url_handle] = file_path
                 return self.upload_changes_core(None, core_data)
-        return super(SyncClientNull, self).create_item_core(core_data)
+        return super(SyncClientNull, self).create_item_core(core_data, **kwargs)
 
 class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
@@ -782,7 +785,7 @@ class SyncClientRest(SyncClientAbstract):
                         Registrar.register_message('reached limit, exiting')
                     return
 
-    def get_single_endpoint(self, pkey):
+    def get_single_endpoint(self, pkey, **kwargs):
         try:
             pkey = int(pkey)
         except ValueError:
@@ -811,8 +814,8 @@ class SyncClientRest(SyncClientAbstract):
         ), "response has errors: %s" % str(response.json()['errors'])
         return response
 
-    def upload_changes(self, pkey, data=None):
-        service_endpoint = self.get_single_endpoint(pkey)
+    def upload_changes(self, pkey, data=None, **kwargs):
+        service_endpoint = self.get_single_endpoint(pkey, **kwargs)
         data = dict([(key, value) for key, value in data.items()])
         # print "service version: %s, data:%s" % (self.service.version, data)
         if self.page_nesting:
@@ -855,14 +858,16 @@ class SyncClientRest(SyncClientAbstract):
             total_items_key=self.total_items_key,
         )
 
-    def get_page_generator(self):
+    def get_page_generator(self, endpoint=None):
         """
         Get a generator for endpoint items.
         """
+        if endpoint is None:
+            endpoint = self.endpoint_plural
         # import pudb; pudb.set_trace()
         return itertools.chain(
             (page[self.endpoint_plural] if self.page_nesting else page)
-            for page in self.get_iterator(self.endpoint_plural)
+            for page in self.get_iterator(endpoint)
         )
 
     def create_item(self, data, **kwargs):

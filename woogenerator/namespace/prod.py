@@ -10,7 +10,8 @@ from ..client.core import SyncClientGDrive, SyncClientNull
 from ..client.img import ImgSyncClientWP
 from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
                            ProdSyncClientWC, ProdSyncClientWCLegacy,
-                           ProdSyncClientXero)
+                           ProdSyncClientXero, VarSyncClientWC,
+                           VarSyncClientWCLegacy)
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataWcProdCategory)
 from ..conf.core import DEFAULT_LOCAL_PROD_PATH, DEFAULT_LOCAL_PROD_TEST_PATH
@@ -668,6 +669,22 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def slave_img_sync_client_args(self):
         return {
             'connect_params': self.slave_wp_api_params
+        }
+
+    @property
+    def slave_var_sync_client_class(self):
+        response = self.local_client_class
+        if self.download_slave:
+            if self.wc_api_is_legacy:
+                response = VarSyncClientWCLegacy
+            else:
+                response = VarSyncClientWC
+        return response
+
+    @property
+    def slave_var_sync_client_args(self):
+        return {
+            'connect_params': self.slave_wc_api_params
         }
 
 

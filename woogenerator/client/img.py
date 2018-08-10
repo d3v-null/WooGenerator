@@ -17,6 +17,7 @@ class ImgSyncClientWP(SyncClientWP):
     file_path_handle = 'file_path'
 
     def __init__(self, connect_params, **kwargs):
+        # TODO: turn on oauth1a_3leg
         connect_params['user_auth'] = True
         connect_params['basic_auth'] = True
         connect_params['query_string_auth'] = False

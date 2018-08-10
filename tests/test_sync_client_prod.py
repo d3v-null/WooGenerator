@@ -168,8 +168,11 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
 
 # TODO: mock these tests
 @pytest.mark.local
-class TestProdSyncClientDestructive(TestProdSyncClient):
-    # debug = True
+class TestProdSyncClientSimple(TestProdSyncClient):
+    """
+    Test cases for products, type = simple
+    """
+    dataset_has_variable = False
 
     def test_read(self):
         response = []
@@ -231,9 +234,10 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 prod_list.tabulate(tablefmt='simple')
             ))
         var_list = ShopProdList(product_parser.variations.values())
-        # This is no longer necessarily true
-        # TODO: add test data for analysing variable products
-        # self.assertTrue(var_list)
+
+        # TODO: implement var_list?
+        # if self.dataset_has_variable:
+        #     self.assertTrue(var_list)
         if self.debug:
              print(SanitationUtils.coerce_bytes(
                  var_list.tabulate(tablefmt='simple')
@@ -246,7 +250,9 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             ))
         attr_list = product_parser.attributes.items()
         # TODO: implement and test parsing.api.ApiParseWoo.process_api_attribute_gen
-        # self.assertTrue(attr_list)
+
+        # if self.dataset_has_variable:
+            # self.assertTrue(attr_list)
         if self.debug:
             print(SanitationUtils.coerce_bytes(
                 tabulate(attr_list, headers='keys', tablefmt="simple")
@@ -406,7 +412,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             new_sku = "%s-%02x" % (first_prod_sku, random.randrange(0,255))
             first_prod_core['sku'] = new_sku
             new_prod_raw = client.coldata_class.translate_data_to(
-                first_prod_core, client.coldata_target
+                first_prod_core, client.coldata_target_write
             )
 
             # TODO: should this go in client.create_item?
@@ -425,26 +431,6 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             self.assertTrue(response)
             self.assertTrue(hasattr(response, 'json'))
 
-    def test_upload_product_images_attach_remove(self):
-        """
-        Get the first image from the api and attach it to the first product.
-        Remove attachment when complete.
-        """
-
-        sub_entity_handle = 'attachment_objects'
-
-        cat_client_class = self.settings.slave_img_sync_client_class
-        cat_client_args = self.settings.slave_img_sync_client_args
-
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
-
-        with cat_client_class(**cat_client_args) as sub_client, \
-        product_client_class(**product_client_args) as client:
-            self.sub_entity_join_leave(
-                client, sub_client, sub_entity_handle
-            )
-
     def test_upload_product_categories_join_leave(self):
         sub_entity_handle = 'product_categories'
 
@@ -460,10 +446,53 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 client, sub_client, sub_entity_handle
             )
 
+
+class TestProdSyncClientSimpleWP(TestProdSyncClientSimple):
+    """
+    Perform tests with WPTest dataset
+    """
+    def test_upload_product_images_attach_remove(self):
+        """
+        Get the first image from the api and attach it to the first product.
+        Remove attachment when complete.
+
+        Only works with WPTest dataset
+        """
+        #TODO: update WCTest config so this works
+
+        sub_entity_handle = 'attachment_objects'
+
+        cat_client_class = self.settings.slave_img_sync_client_class
+        cat_client_args = self.settings.slave_img_sync_client_args
+
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+
+        with cat_client_class(**cat_client_args) as sub_client, \
+        product_client_class(**product_client_args) as client:
+            self.sub_entity_join_leave(
+                client, sub_client, sub_entity_handle
+            )
+
 @pytest.mark.local
-class TestVarSyncClient(TestProdSyncClient):
+class TestProdSyncClientSimpleWC(TestProdSyncClientSimple):
+    """
+    Perform tests with WCTest dataset
+    """
+    config_file = "generator_config_wctest.yaml"
+    dataset_has_variable = True
 
     @unittest.skip("not implemented yet")
+    def test_upload_product_variation_attach_remove(self):
+        pass
+
+@pytest.mark.local
+class TestVarSyncClientWC(TestProdSyncClient):
+    """
+    These tests only work on WCTest dataset
+    """
+    config_file = "generator_config_wctest.yaml"
+    # @unittest.skip("not implemented yet")
     def test_upload_changes_variation(self):
 
         delta_handle = 'weight'
@@ -476,9 +505,8 @@ class TestVarSyncClient(TestProdSyncClient):
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
-            # TODO: cycle through products until reach variable product
-            # TODO: probably need to move variation tests to a new class which reads the wctest api
-            first_prod_raw = client.get_first_endpoint_item()
+            first_prod_raw = client.get_first_variable_product()
+            self.assertTrue(first_prod_raw)
             if self.debug:
                 print("first prod raw:\n%s" % pformat(first_prod_raw.items()))
             first_prod_core = client.coldata_class.translate_data_from(
@@ -493,7 +521,7 @@ class TestVarSyncClient(TestProdSyncClient):
         var_client_class = self.settings.slave_var_sync_client_class
         var_client_args = self.settings.slave_var_sync_client_args
         with var_client_class(**var_client_args) as client:
-            first_var_raw = client.get_first_endpoint_item()
+            first_var_raw = client.get_first_variation(first_prod_pkey)
             if self.debug:
                 print("first var raw:\n%s" % pformat(first_var_raw.items()))
             first_var_core = client.coldata_class.translate_data_from(
@@ -507,7 +535,7 @@ class TestVarSyncClient(TestProdSyncClient):
             first_var_delta = first_var_core.get(delta_handle)
 
             first_response_raw = client.upload_changes_core(
-                first_prod_pkey, first_var_pkey,  updates_core
+                first_prod_pkey, updates_core, var_pkey=first_var_pkey
             ).json()
             if self.debug:
                 print("first response raw:\n%s" % pformat(first_response_raw.items()))
@@ -528,8 +556,8 @@ class TestVarSyncClient(TestProdSyncClient):
             updates_core[delta_handle] = first_var_delta
 
             second_response_raw = client.upload_changes_core(
-                first_prod_pkey, first_var_pkey,  updates_core
-            )
+                first_prod_pkey, updates_core, var_pkey=first_var_pkey
+            ).json()
             if self.debug:
                 print("second response raw:\n%s" % pformat(second_response_raw.items()))
             second_response_core = client.coldata_class.translate_data_from(
@@ -605,8 +633,16 @@ class TestCatSyncClient(TestProdSyncClient):
                 self.assertTrue(page)
                 # print page
 
+    # TODO: this
+    @unittest.skip("probably implemented")
+    def test_upload_create_delete_cat(self):
+        pass
+
 @pytest.mark.local
 class TestImgSyncClient(TestProdSyncClient):
+    """
+    These test cases only work on the wptest dataset
+    """
 
     def test_get_first_img(self):
         img_client_class = self.settings.slave_img_sync_client_class
