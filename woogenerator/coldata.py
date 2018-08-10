@@ -3359,6 +3359,11 @@ class ColDataProductVariation(ColDataProduct):
             'path': None
         }
     })
+    data['product_type'].update({
+        'wc-csv': {
+            'path': None
+        }
+    })
     data = SeqUtils.combine_ordered_dicts(
         data,
         OrderedDict([
