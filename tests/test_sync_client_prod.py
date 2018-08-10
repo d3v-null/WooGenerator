@@ -232,6 +232,7 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
             ))
         var_list = ShopProdList(product_parser.variations.values())
         # This is no longer necessarily true
+        # TODO: add test data for analysing variable products
         # self.assertTrue(var_list)
         if self.debug:
              print(SanitationUtils.coerce_bytes(
@@ -244,7 +245,8 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
                 cat_list.tabulate(tablefmt='simple')
             ))
         attr_list = product_parser.attributes.items()
-        self.assertTrue(attr_list)
+        # TODO: implement and test parsing.api.ApiParseWoo.process_api_attribute_gen
+        # self.assertTrue(attr_list)
         if self.debug:
             print(SanitationUtils.coerce_bytes(
                 tabulate(attr_list, headers='keys', tablefmt="simple")
@@ -387,14 +389,31 @@ class TestProdSyncClientDestructive(TestProdSyncClient):
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
-            first_item = client.get_first_endpoint_item()
+            first_prod_raw = client.get_first_endpoint_item()
             if self.debug:
-                print("first prod:\n%s" % pformat(first_item))
-            first_item = client.strip_item_readonly(first_item)
-            first_sku = client.get_item_core(first_item, 'sku')
-            new_sku = "%s-%02x" % (first_sku, random.randrange(0,255))
-            first_item = client.set_item_core(first_item, 'sku', new_sku)
-            response = client.create_item(first_item)
+                print("first prod:\n%s" % pformat(first_prod_raw))
+
+            if self.debug:
+                print("first prod raw:\n%s" % pformat(first_prod_raw.items()))
+            first_prod_core = client.coldata_class.translate_data_from(
+                first_prod_raw, client.coldata_target
+            )
+            if self.debug:
+                print("first prod core:\n%s" % pformat(first_prod_core.items()))
+            first_prod_sku = first_prod_core.get('sku')
+            if self.debug:
+                print("first prod sku:%s" % first_prod_sku)
+            new_sku = "%s-%02x" % (first_prod_sku, random.randrange(0,255))
+            first_prod_core['sku'] = new_sku
+            new_prod_raw = client.coldata_class.translate_data_to(
+                first_prod_core, client.coldata_target
+            )
+
+            # TODO: should this go in client.create_item?
+            new_prod_raw = client.strip_item_readonly(new_prod_raw)
+
+            response = client.create_item(new_prod_raw)
+
             self.assertTrue(response)
             if self.debug:
                 print("response: %s" % response.text)

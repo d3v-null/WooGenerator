@@ -723,6 +723,14 @@ class SanitationUtils(object):
             cls.coerce_unicode,
         )(string)
 
+
+    @classmethod
+    def denormalize_api_currency(cls, string):
+        return cls.compose(
+            cls.coerce_unicode,
+            cls.similar_currency_comparison,
+        )(string)
+
     @classmethod
     def make_safe_class(cls, string):
         return cls.compose(

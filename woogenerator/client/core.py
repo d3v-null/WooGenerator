@@ -1034,7 +1034,7 @@ class SyncClientRest(SyncClientAbstract):
             if key in item:
                 del(item[key])
         for key, sub_keys in readonly_keys.items():
-            if isinstance(item[key], list):
+            if isinstance(item.get(key), list):
                 new_list = []
                 for list_item in item[key]:
                     for sub_key in sub_keys:
@@ -1043,7 +1043,7 @@ class SyncClientRest(SyncClientAbstract):
                     new_list.append(list_item)
             else:
                 for sub_key in sub_keys:
-                    if sub_key in item[key]:
+                    if key in item and sub_key in item[key]:
                         del(item[key][sub_key])
         return item
 

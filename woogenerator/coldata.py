@@ -1063,6 +1063,7 @@ class ColDataAbstract(ColDataLegacy):
             'file_basename': FileUtils.get_path_basename,
             'mime_type': MimeUtils.validate_mime_type,
             'currency': SanitationUtils.similar_currency_comparison,
+            'wc_api_default_attribute_list': SanitationUtils.identity,
         }.get(type_, SanitationUtils.coerce_unicode)
 
     @classmethod
@@ -1094,6 +1095,7 @@ class ColDataAbstract(ColDataLegacy):
             'wp_content_rendered': SanitationUtils.coerce_xml,
             'mime_type': MimeUtils.validate_mime_type,
             'currency': SanitationUtils.similar_currency_comparison,
+            'api_currency': SanitationUtils.denormalize_api_currency,
         }.get(type_, SanitationUtils.identity)
 
     @classmethod
@@ -2712,6 +2714,9 @@ class ColDataProduct(ColDataWpEntity):
         'price': {
             'type': 'currency',
             'write': False,
+            'api': {
+                'type': 'api_currency'
+            },
             'wp-sql': {
                 'path': 'meta._price',
             },
@@ -2724,6 +2729,9 @@ class ColDataProduct(ColDataWpEntity):
         },
         'regular_price': {
             'type': 'currency',
+            'api': {
+                'type': 'api_currency'
+            },
             'wp-sql': {
                 'path': 'meta._regular_price'
             },
@@ -2736,6 +2744,9 @@ class ColDataProduct(ColDataWpEntity):
         },
         'sale_price': {
             'type': 'currency',
+            'api': {
+                'type': 'api_currency'
+            },
             'wp-sql': {
                 'path': 'meta._sale_price'
             },
@@ -3574,8 +3585,8 @@ class ColDataMeridianEntityMixin(object):
         ) for (tier, (field_slug, field, import_, root_type, wc_type, gen_type, static, special)) in itertools.product(
             ['rn', 'rp', 'wn', 'wp', 'dn', 'dp'],
             [
-                ('r', 'regular_price', True, 'currency', 'currency', 'currency', True, False),
-                ('s', 'sale_price', False, 'currency', 'currency', 'currency', False, True),
+                ('r', 'regular_price', True, 'currency', 'api_currency', 'currency', True, False),
+                ('s', 'sale_price', False, 'currency', 'api_currency', 'currency', False, True),
                 ('f', 'sale_price_dates_from', False, 'datetime', 'gmt_timestamp_wp', 'iso8601_gdrive', False, True),
                 ('t', 'sale_price_dates_to', False, 'datetime', 'gmt_timestamp_wp', 'iso8601_gdrive', False, True)
                 # Note: Wordpress definitely reads time in UTC timestamp.
