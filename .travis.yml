@@ -7,14 +7,15 @@ python:
     # - "3.6"
 install:
     - pip install -r requirements.txt
-    - pip install coverage
+    - pip install coverage pytest
     - python setup.py install
 # before_script:
 #     - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
 #     - chmod +x ./cc-test-reporter
 #     - ./cc-test-reporter before-build
 script:
-    - coverage run setup.py test
+    - pytest --run-slow
+    # - coverage run setup.py test
 # after_script:
 #     - coverage report -m
 #     - coverage xml

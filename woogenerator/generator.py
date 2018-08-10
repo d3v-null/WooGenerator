@@ -339,7 +339,10 @@ def export_master_parser(settings, parsers):
     export_target = 'wc-csv'
 
     # Create output directory if not exist
-    os.makedirs(settings.out_dir_full)
+    try:
+        os.makedirs(settings.out_dir_full)
+    except OSError:
+        pass
 
     product_colnames = settings.coldata_class.get_col_values_native('path', target=export_target)
 
