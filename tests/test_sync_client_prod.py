@@ -492,7 +492,6 @@ class TestVarSyncClientWC(TestProdSyncClient):
     These tests only work on WCTest dataset
     """
     config_file = "generator_config_wctest.yaml"
-    # @unittest.skip("not implemented yet")
     def test_upload_changes_variation(self):
 
         delta_handle = 'weight'

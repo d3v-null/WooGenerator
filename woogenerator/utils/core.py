@@ -16,6 +16,7 @@ import time
 import traceback
 import unicodedata
 import unidecode
+from six import integer_types, string_types
 from collections import Counter, OrderedDict
 from HTMLParser import HTMLParser
 from urlparse import parse_qs, urlparse
@@ -304,25 +305,25 @@ class SanitationUtils(object):
         return 'instock' if bool_ else 'outofstock'
 
     @classmethod
+    def coerce_int(cls, thing, default=None):
+        if any([
+            thing is None,
+            (isinstance(thing, string_types) and not thing)
+        ]):
+            return default
+        return int(thing)
+
+    @classmethod
     def normalize_optional_int_minus_1(cls, thing):
-        if thing is not None and thing is not '':
-            return int(thing)
-        else:
-            return -1
+        return cls.coerce_int(thing, -1)
 
     @classmethod
     def normalize_optional_int_zero(cls, thing):
-        if thing is not None and thing is not '':
-            return int(thing)
-        else:
-            return 0
+        return cls.coerce_int(thing, 0)
 
     @classmethod
     def normalize_optional_int_none(cls, thing):
-        if thing is not None and thing is not '':
-            return int(thing)
-        else:
-            return None
+        return cls.coerce_int(thing)
 
     @classmethod
     def limit_string(cls, length):
