@@ -191,6 +191,21 @@ to test all:
 pytest
 ```
 
+to perform local tests (tests that require extra setup of test WooCommerce install):
+```bash
+--run-local
+```
+
+to perform slow tests (tests that take more than a minute to complete):
+```bash
+--run-slow
+```
+
+to add extra debugging information to test output
+```bash
+-s --verbose --debug
+```
+
 Usage
 ====
 If you want to run the gui:

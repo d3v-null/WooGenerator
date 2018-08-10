@@ -658,8 +658,8 @@ class TestImgSyncClient(TestProdSyncClient):
             img_id = client.coldata_class.get_from_path(
                 response_core, client.primary_key_handle
             )
-            if self.debug:
-                import pudb; pudb.set_trace()
+            # if self.debug:
+            #     import pudb; pudb.set_trace()
             response = client.upload_changes_core(img_id, new_img_core)
             if self.debug:
                 print("upload changes response: %s" % pformat(response.json()))

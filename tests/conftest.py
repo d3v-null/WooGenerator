@@ -13,7 +13,7 @@ from woogenerator.utils import Registrar, TimeUtils
 def pytest_addoption(parser):
     # parser.addoption("--enable-debug", action="store_true", default=False, help="debug tests")
     parser.addoption("--run-slow", action="store_true", default=False, help="run slow tests")
-    parser.addoption("--run-local", action="store_true", default=False, help="run slow tests")
+    parser.addoption("--run-local", action="store_true", default=False, help="run local tests")
 
 def pytest_collection_modifyitems(config, items):
     skip_slow = pytest.mark.skip(reason="need --runslow option to run")
