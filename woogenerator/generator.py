@@ -338,6 +338,9 @@ def export_master_parser(settings, parsers):
 
     export_target = 'wc-csv'
 
+    # Create output directory if not exist
+    os.makedirs(settings.out_dir_full)
+
     product_colnames = settings.coldata_class.get_col_values_native('path', target=export_target)
 
     for col in settings.exclude_cols:
