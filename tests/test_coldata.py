@@ -10,7 +10,7 @@ from context import woogenerator
 from woogenerator.coldata import (ColDataAbstract, ColDataAttachment,
                                   ColDataProductMeridian,
                                   ColDataWcProdCategory,
-                                  ColDataWpPost)
+                                  ColDataWpPost, ColDataSubMeta)
 from woogenerator.utils import Registrar
 
 from .abstract import AbstractWooGeneratorTestCase
@@ -735,6 +735,21 @@ class TestColDataWcProd(TestColData):
         self.assertTrue(
             col_values_native.get('title')
         )
+
+class TestColDataSubMeta(TestColData):
+    coldata_class = ColDataSubMeta
+
+    def test_translate_paths_from(self):
+
+        wc_wp_api_v2_data = {
+            u'key': u'_upsell_skus', u'id': 26196, u'value': []
+        }
+
+        self.assertEquals(
+            self.coldata_class.translate_paths_from(wc_wp_api_v2_data, 'wc-wp-api-v2'),
+            {u'meta_key': u'_upsell_skus', u'meta_id': 26196, u'meta_value': []}
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

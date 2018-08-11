@@ -1171,6 +1171,12 @@ class JSONPathUtils(object):
         pass
 
     @classmethod
+    def quote_jsonpath(cls, path):
+        if ' ' in path or ':' in path and not re.match(r"^([\"']).*\1$", path):
+            return "\"%s\"" % path
+        return path
+
+    @classmethod
     def blank_get_field_datum(cls, path, datum, field):
         """
         Emulate jsonpath.Fields.get_field_datum but create the field in path

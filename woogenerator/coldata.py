@@ -8,7 +8,7 @@ from __future__ import absolute_import
 import functools
 import itertools
 import re
-from collections import OrderedDict
+from collections import OrderedDict, Mapping
 from copy import copy, deepcopy
 from pprint import pformat, pprint
 
@@ -572,6 +572,14 @@ class ColDataAbstract(ColDataLegacy):
         return response
 
     @classmethod
+    def get_handle_in_target(cls, path, target=None):
+        if target is None:
+            return path
+        for handle, path_ in cls.get_target_path_translation(target).items():
+            if path_ == path:
+                return handle
+
+    @classmethod
     def get_property_inclusions(cls, property_, target=None):
         """
         Return a list of handles in which the value of `property_` in the context
@@ -689,25 +697,41 @@ class ColDataAbstract(ColDataLegacy):
     #     return getter.find(data)
 
     @classmethod
-    def get_from_path(cls, data, path):
+    def get_from_path(cls, data, path, target=None):
         """
-        Tries to get the path from data, throws exceptions
+        Get the value at `path` from `data`, assuming structure given by `target`.
         """
         # TODO: get defaults necessary here?
         if not path:
             return
         if data is None:
             return
-        if re.match(cls.re_simple_path, path):
-            return data[path]
-        if ' ' in path:
-            path = '"%s"' % path
-        getter = jsonpath_ng.parse(path)
-        results = getter.find(data)
-        return results[0].value
+        path_components = path.split('.', 1)
+        path_head, path_tail = path_components[0], ''
+        if len(path_components) > 1:
+            path_tail = path_components[1]
+
+        # Get subdata value and class from path head
+        sub_data_cls = None
+        if re.match(cls.re_simple_path, path_head):
+            handle = cls.get_handle_in_target(path_head, target)
+            sub_data = data[path_head]
+            sub_data_cls = cls.get_handle_property(handle, 'sub_data', target)
+        else:
+            # It could be a jsonpath expression
+            getter = jsonpath_ng.parse(JSONPathUtils.quote_jsonpath(path_head))
+            sub_data = getter.find(data)[0].value
+        if path_tail:
+            if not isinstance(sub_data, Mapping):
+                raise IndexError("sub path %s does not exist in sub data %s" % (
+                    path_tail, sub_data
+                ))
+            sub_data_cls = sub_data_cls or cls
+            return sub_data_cls.get_from_path(sub_data, path_tail)
+        return sub_data
 
     @classmethod
-    def update_in_path(cls, data, path, value):
+    def update_in_path(cls, data, path, value, target=None):
         if not path:
             return data
         if data is None:
@@ -715,9 +739,7 @@ class ColDataAbstract(ColDataLegacy):
         if re.match(cls.re_simple_path, path):
             data[path] = value
             return data
-        if ' ' in path or ':' in path:
-            path = '"%s"' % path
-        updater = jsonpath_ng.parse(path)
+        updater = jsonpath_ng.parse(JSONPathUtils.quote_jsonpath(path))
         return JSONPathUtils.blank_update(updater, data, value)
 
     @classmethod

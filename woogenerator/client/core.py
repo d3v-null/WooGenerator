@@ -956,23 +956,25 @@ class SyncClientRest(SyncClientAbstract):
         )
 
     @classmethod
-    def get_item_meta(cls, item, key):
+    def get_item_meta(cls, item, key, default=None):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
         if cls.meta_listed:
             for meta in item[cls.meta_get_key]:
                 if meta['key'] == key:
                     return meta['value']
         else:
-            return item[cls.meta_get_key].get(key)
+            return item[cls.meta_get_key].get(key, default)
+        return default
 
     @classmethod
-    def get_data_meta(cls, data, key):
+    def get_data_meta(cls, data, key, default=None):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
             functools.partial(
                 cls.get_item_meta,
-                key=key
+                key=key,
+                default=default
             )
         )
 
