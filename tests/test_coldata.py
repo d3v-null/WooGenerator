@@ -736,17 +736,111 @@ class TestColDataWcProd(TestColData):
             col_values_native.get('title')
         )
 
+    def test_get_from_core_meta_path(self):
+        core_data = {
+            'meta': [
+                {'meta_key': 'key_1', 'meta_value': 'value_1'},
+                {'meta_key': 'key_2', 'meta_value': {'id': 2}},
+            ]
+        }
+
+        self.assertEqual(
+            self.coldata_class.get_from_path(core_data, 'meta.key_1'),
+            'value_1'
+        )
+        self.assertEqual(
+            self.coldata_class.get_from_path(core_data, 'meta.key_2.id'),
+            2
+        )
+
+    def test_get_from_api_meta_path(self):
+        api_data = {
+            'meta_data': {
+                'key_1': 'value_1',
+                'key_2': {
+                    'id': 2
+                }
+            }
+        }
+        target = 'wp-api-v1'
+
+        self.assertEqual(
+            self.coldata_class.get_from_path(api_data, 'meta_data.key_1', target),
+            'value_1'
+        )
+        self.assertEqual(
+            self.coldata_class.get_from_path(api_data, 'meta_data.key_2.id', target),
+            2
+        )
+
+    def test_update_in_core_meta_path(self):
+        expected = {
+            'meta': [
+                {'meta_key': 'key_1', 'meta_value': 'value_1'},
+                {'meta_key': 'key_2', 'meta_value': 'value_2'},
+            ]
+        }
+
+        # import pudb; pudb.set_trace()
+
+        data = self.coldata_class.update_in_path({}, 'meta.key_1', 'value_1')
+        data = self.coldata_class.update_in_path(data, 'meta.key_2', 'value_2')
+        self.assertEquals(data, expected)
+
+    def test_update_in_api_meta_path(self):
+        expected = {
+            'meta_data': [
+                {'meta_key': 'key_1', 'meta_value': 'value_1'},
+                {'meta_key': 'key_2', 'meta_value': 'value_2'},
+            ]
+        }
+        target = 'wc-wp-api-v2'
+
+        data = self.coldata_class.update_in_path({}, 'meta_data.key_1', 'value_1', target)
+        data = self.coldata_class.update_in_path(data, 'meta_data.key_2', 'value_2', target)
+
+        self.assertEquals(
+            data, expected
+        )
+
+        expected = {
+            'meta_data' : {
+                'key_1': 'value_1',
+                'key_2': 'value_2'
+            }
+        }
+        target = 'wp-api-v1'
+
+        data = self.coldata_class.update_in_path({}, 'meta_data.key_1', 'value_1', target)
+        data = self.coldata_class.update_in_path(data, 'meta_data.key_2', 'value_2', target)
+
+        self.assertEquals(
+            data, expected
+        )
+
+    def test_translate_data_complex(self):
+        api_data = {
+            'meta_data':[
+                {'key':'lc_wn_regular_price', 'value':'1.23'}
+            ]
+        }
+        core_data = self.coldata_class.translate_data_from(api_data, 'wc-wp-api')
+        self.assertEqual(core_data['lc_wn_regular_price'], '1.23')
+        gen_data = self.coldata_class.translate_data_to(core_data, 'gen-api')
+        # self.assertEqual(core_data['WNR'], '1.23')
+
+
 class TestColDataSubMeta(TestColData):
     coldata_class = ColDataSubMeta
 
     def test_translate_paths_from(self):
 
-        wc_wp_api_v2_data = {
+        api_meta_obj = {
             u'key': u'_upsell_skus', u'id': 26196, u'value': []
         }
 
         self.assertEquals(
-            self.coldata_class.translate_paths_from(wc_wp_api_v2_data, 'wc-wp-api-v2'),
+            self.coldata_class.translate_paths_from(api_meta_obj, 'wc-wp-api-v2'),
             {u'meta_key': u'_upsell_skus', u'meta_id': 26196, u'meta_value': []}
         )
 

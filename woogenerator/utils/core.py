@@ -1167,8 +1167,22 @@ class SeqUtils(object):
         return all(first == rest for rest in iterator)
 
 class JSONPathUtils(object):
+    re_simple_path = r'^[A-Za-z0-9_-]+$'
+
     class NonSingularPathError(UserWarning):
         pass
+
+    @classmethod
+    def split_subpath(cls, path):
+        path_components = path.split('.', 1)
+        path_head, path_tail = path_components[0], ''
+        if len(path_components) > 1:
+            path_tail = path_components[1]
+        return path_head, path_tail
+
+    @classmethod
+    def is_simple_path(cls, path):
+        return re.match(cls.re_simple_path, path)
 
     @classmethod
     def quote_jsonpath(cls, path):
@@ -1244,16 +1258,14 @@ class JSONPathUtils(object):
             for datum in cls.blank_find(path.left, data):
                 cls.blank_update(path.right, datum.value, val)
             return data
-
-        if isinstance(path, jsonpath.Fields):
+        elif isinstance(path, jsonpath.Fields):
             for field in cls.blank_reified_fields(path, data):
                 if field in data and hasattr(val, '__call__'):
                     val(data[field], data, field)
                     continue
                 data[field] = val
             return data
-
-        if isinstance(path, jsonpath.JSONPath):
+        elif isinstance(path, jsonpath.JSONPath):
             raise cls.NonSingularPathError(
                 "path is not made of singular jsonpath objects"
             )
@@ -1267,9 +1279,6 @@ class JSONPathUtils(object):
         #     if isinstance(leaf, jsonpath.Fields):
         #         descendants.append(leaf.fields[0])
         #     path_traverse = path_traverse.getattr('left', None)
-
-
-
 
 
 class DebugUtils(object):

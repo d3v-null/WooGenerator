@@ -445,7 +445,6 @@ class ColDataAbstract(ColDataLegacy):
     handle_cache = OrderedDict()
     handles_cache = OrderedDict()
     structure_morph_cache = OrderedDict()
-    re_simple_path = r'^[A-Za-z_]+$'
 
     @classmethod
     def get_target_ancestors(cls, targets=None, target=None):
@@ -576,7 +575,7 @@ class ColDataAbstract(ColDataLegacy):
         if target is None:
             return path
         for handle, path_ in cls.get_target_path_translation(target).items():
-            if path_ == path:
+            if path_ == path or handle == path:
                 return handle
 
     @classmethod
@@ -706,28 +705,27 @@ class ColDataAbstract(ColDataLegacy):
             return
         if data is None:
             return
-        path_components = path.split('.', 1)
-        path_head, path_tail = path_components[0], ''
-        if len(path_components) > 1:
-            path_tail = path_components[1]
+        if not isinstance(data, Mapping):
+            raise IndexError(
+                "%s.get_from_path only handles mapping types not %s" % (
+                    cls.__name__,
+                    data.__class__.__name__
+                )
+            )
+        path_head, path_tail = JSONPathUtils.split_subpath(path)
 
         # Get subdata value and class from path head
         sub_data_cls = None
-        if re.match(cls.re_simple_path, path_head):
-            handle = cls.get_handle_in_target(path_head, target)
+        if JSONPathUtils.is_simple_path(path_head):
             sub_data = data[path_head]
-            sub_data_cls = cls.get_handle_property(handle, 'sub_data', target)
         else:
             # It could be a jsonpath expression
             getter = jsonpath_ng.parse(JSONPathUtils.quote_jsonpath(path_head))
             sub_data = getter.find(data)[0].value
         if path_tail:
-            if not isinstance(sub_data, Mapping):
-                raise IndexError("sub path %s does not exist in sub data %s" % (
-                    path_tail, sub_data
-                ))
-            sub_data_cls = sub_data_cls or cls
-            return sub_data_cls.get_from_path(sub_data, path_tail)
+            handle = cls.get_handle_in_target(path_head, target)
+            sub_data_cls = cls.get_handle_property(handle, 'sub_data', target) or cls
+            return sub_data_cls.get_from_path(sub_data, path_tail, target)
         return sub_data
 
     @classmethod
@@ -736,14 +734,45 @@ class ColDataAbstract(ColDataLegacy):
             return data
         if data is None:
             return data
-        if re.match(cls.re_simple_path, path):
-            data[path] = value
+        if not isinstance(data, Mapping):
+            raise IndexError(
+                "%s.update_in_path only handles mapping types not %s" % (
+                    cls.__name__,
+                    data.__class__.__name__
+                )
+            )
+        path_head, path_tail = JSONPathUtils.split_subpath(path)
+
+        if path_tail:
+            handle = cls.get_handle_in_target(path_head, target)
+            sub_structure = cls.get_handle_property(handle, 'structure', target)
+            sub_data_cls = cls.get_handle_property(handle, 'sub_data', target) or cls
+
+            try:
+                sub_data = sub_data_cls.get_from_path(data, path_head, target)
+            except (IndexError, KeyError) as exc:
+                sub_data = {}
+                if sub_structure:
+                    if sub_structure[0].startswith('listed'):
+                        sub_data = []
+
+            tail_value = sub_data_cls.update_in_path(
+                sub_data, path_tail, value, target
+            )
+        else:
+            tail_value = value
+
+
+        if JSONPathUtils.is_simple_path(path_head):
+            data[path_head] = tail_value
             return data
-        updater = jsonpath_ng.parse(JSONPathUtils.quote_jsonpath(path))
-        return JSONPathUtils.blank_update(updater, data, value)
+        else:
+            updater = jsonpath_ng.parse(JSONPathUtils.quote_jsonpath(path_head))
+            return JSONPathUtils.blank_update(updater, data, tail_value)
+
 
     @classmethod
-    def morph_data(cls, data, morph_functions, path_translation):
+    def morph_data(cls, data, morph_functions, path_translation, target=None):
         """
         Translate the data using functions preserving paths.
         """
@@ -752,7 +781,7 @@ class ColDataAbstract(ColDataLegacy):
                 target_path = path_translation.get(handle)
                 try:
                     target_value = deepcopy(cls.get_from_path(
-                        data, target_path
+                        data, target_path, target
                     ))
                 except (IndexError, KeyError):
                     continue
@@ -761,27 +790,29 @@ class ColDataAbstract(ColDataLegacy):
                 except (TypeError, ):
                     continue
                 data = cls.update_in_path(
-                    data, target_path, target_value
+                    data, target_path, target_value, target
                 )
         return data
 
     @classmethod
-    def translate_paths_from(cls, data, target):
+    def translate_paths_from(cls, data, target, translation=None):
         """
         Translate the path structure of data from `target` to core.
         """
-        translation = cls.get_target_path_translation(target)
+        if translation is None:
+            translation = cls.get_target_path_translation(target)
         if translation:
             response = OrderedDict()
             for handle, target_path in translation.items():
                 if target_path is None:
                     continue
                 try:
-                    target_value = cls.get_from_path(data, target_path)
+                    target_value = cls.get_from_path(data, target_path, target)
                     response = cls.update_in_path(
                         response,
                         handle,
-                        deepcopy(target_value)
+                        deepcopy(target_value),
+                        target
                     )
                 except (IndexError, KeyError):
                     pass
@@ -789,22 +820,24 @@ class ColDataAbstract(ColDataLegacy):
         return deepcopy(data)
 
     @classmethod
-    def translate_paths_to(cls, data, target):
+    def translate_paths_to(cls, data, target, translation=None):
         """
         Translate the path structure of data from core to `target`.
         """
-        translation = cls.get_target_path_translation(target)
+        if translation is None:
+            translation = cls.get_target_path_translation(target)
         if translation:
             response = OrderedDict()
             for handle, target_path in translation.items():
                 if target_path is None:
                     continue
                 try:
-                    target_value = cls.get_from_path(data, handle)
+                    target_value = cls.get_from_path(data, handle, target)
                     response = cls.update_in_path(
                         response,
                         target_path,
-                        deepcopy(target_value)
+                        deepcopy(target_value),
+                        target
                     )
                 except (IndexError, KeyError):
                     pass
@@ -815,6 +848,7 @@ class ColDataAbstract(ColDataLegacy):
     def deconstruct_sub_entity(
         cls, sub_data, target, target_structure=None, forced_mapping_handle=None, excluding_properties=None
     ):
+        # TODO: get rid of target_structure and forced_mapping_handle since they can be obained using target
         if target_structure is None:
             target_structure = cls.get_property_default('structure')
         path_translation = cls.get_target_path_translation(target)
@@ -834,7 +868,8 @@ class ColDataAbstract(ColDataLegacy):
                     cls.update_in_path(
                         {},
                         target_value_path,
-                        sub_data
+                        sub_data,
+                        target
                     ),
                     target,
                     excluding_properties=excluding_properties
@@ -847,7 +882,8 @@ class ColDataAbstract(ColDataLegacy):
                     cls.update_in_path(
                         {},
                         target_value_path,
-                        sub_value
+                        sub_value,
+                        target
                     ),
                     target,
                     excluding_properties=excluding_properties
@@ -872,10 +908,12 @@ class ColDataAbstract(ColDataLegacy):
                         cls.update_in_path(
                             {},
                             target_key_path,
-                            sub_key
+                            sub_key,
+                            target
                         ),
                         target_value_path,
-                        sub_value
+                        sub_value,
+                        target
                     ),
                     target,
                     excluding_properties=excluding_properties
@@ -889,7 +927,8 @@ class ColDataAbstract(ColDataLegacy):
                     cls.update_in_path(
                         sub_value,
                         target_key_path,
-                        sub_key
+                        sub_key,
+                        target
                     ),
                     target,
                     excluding_properties=excluding_properties
@@ -899,7 +938,7 @@ class ColDataAbstract(ColDataLegacy):
             mapping = {}
             for object_ in objects:
                 try:
-                    mapping_key = cls.get_from_path(object_, forced_mapping_handle)
+                    mapping_key = cls.get_from_path(object_, forced_mapping_handle, target)
                 except (IndexError, KeyError):
                     continue
                 mapping[mapping_key] = object_
@@ -914,6 +953,7 @@ class ColDataAbstract(ColDataLegacy):
         """
         The inverse of deconstruct_sub_entity.
         """
+        # TODO: get rid of target_structure and forced_mapping_handle since they can be obained using target
         if target_structure is None:
             target_structure = cls.get_property_default('structure')
         path_translation = cls.get_target_path_translation(target)
@@ -932,7 +972,8 @@ class ColDataAbstract(ColDataLegacy):
                     target,
                     excluding_properties=excluding_properties
                 ),
-                target_value_path
+                target_value_path,
+                target
             )
         else:
             objects = sub_data
@@ -947,7 +988,8 @@ class ColDataAbstract(ColDataLegacy):
                     object_ = cls.update_in_path(
                         object_,
                         forced_mapping_handle,
-                        mapping_key
+                        mapping_key,
+                        target
                     )
                     objects.append(object_)
             # TODO: finish this
@@ -986,8 +1028,8 @@ class ColDataAbstract(ColDataLegacy):
                 ]
                 return OrderedDict([
                     (
-                        cls.get_from_path(translated_object, target_key_path),
-                        cls.get_from_path(translated_object, target_value_path)
+                        cls.get_from_path(translated_object, target_key_path, target),
+                        cls.get_from_path(translated_object, target_value_path, target)
                     ) for translated_object in translated_objects
                 ])
             return objects
@@ -1038,7 +1080,7 @@ class ColDataAbstract(ColDataLegacy):
         Translate the Sub-entity structures in data between `target` and core.
         """
         morph_functions = cls.get_structure_morph_functions(target, 'from', excluding_properties)
-        return cls.morph_data(data, morph_functions, path_translation)
+        return cls.morph_data(data, morph_functions, path_translation, target)
 
     @classmethod
     def translate_structure_to(cls, data, target, path_translation=None, excluding_properties=None):
@@ -1046,7 +1088,7 @@ class ColDataAbstract(ColDataLegacy):
         Translate the Sub-entity structures in data between core and `target`.
         """
         morph_functions = cls.get_structure_morph_functions(target, 'to', excluding_properties)
-        return cls.morph_data(data, morph_functions, path_translation)
+        return cls.morph_data(data, morph_functions, path_translation, target)
 
     @classmethod
     def get_normalizer(cls, type_):
@@ -1153,7 +1195,8 @@ class ColDataAbstract(ColDataLegacy):
         return cls.morph_data(
             data,
             morph_functions,
-            path_translation
+            path_translation,
+            target
         )
 
     @classmethod
@@ -1173,7 +1216,8 @@ class ColDataAbstract(ColDataLegacy):
         return cls.morph_data(
             data,
             morph_functions,
-            path_translation
+            path_translation,
+            target
         )
 
     # @classmethod
@@ -1205,33 +1249,49 @@ class ColDataAbstract(ColDataLegacy):
         )
 
         sub_data_handles = cls.get_property_inclusions('sub_data')
-        # target paths which have sub_data
-        path_translation_pre = OrderedDict()
-        # core paths which don't have sub_data
-        path_translation_post = OrderedDict()
-        for handle in cls.data.keys():
-            if handle in sub_data_handles:
-                if handle in target_path_translation:
-                    path_translation_pre[handle] = target_path_translation[handle]
-            else:
-                if handle in core_path_translation:
-                    path_translation_post[handle] = core_path_translation[handle]
+        # non_sub_data_handles = set(cls.data.keys()) - sub_data_handles
+        # # target paths which have sub_data
+        # path_translation_pre = OrderedDict()
+        # # core paths which don't have sub_data
+        # path_translation_post = OrderedDict()
+        # for handle in cls.data.keys():
+        #     if handle in sub_data_handles:
+        #         if handle in target_path_translation:
+        #             path_translation_pre[handle] = target_path_translation[handle]
+        #     else:
+        #         if handle in core_path_translation:
+        #             path_translation_post[handle] = core_path_translation[handle]
+        target_sub_data_path_translation = OrderedDict([
+            (key, value) for key, value in target_path_translation.items() \
+            if key in sub_data_handles
+        ])
+        target_non_sub_data_path_translation = OrderedDict([
+            (key, value) for key, value in target_path_translation.items() \
+            if key not in sub_data_handles
+        ])
 
-        # translate handles in target format which have sub_data
+        # translate types of handles in target format which have sub_data
         data = cls.translate_types_from(
-            data, target, path_translation_pre
+            data, target, target_sub_data_path_translation
         )
 
-        # translate structure
+        # translate structure of handles in target format which have a path in target
         data = cls.translate_structure_from(
             data, target, target_path_translation, excluding_properties
         )
+        # translate paths of handles into format in the order: non_sub_data, sub_data
+        target_path_translation = OrderedDict(
+            target_non_sub_data_path_translation.items()
+            + target_sub_data_path_translation.items()
+        )
         data = cls.translate_paths_from(
-            data, target
+            data, target, target_path_translation
         )
+        # translate the rest of the types
         data = cls.translate_types_from(
-            data, target, path_translation_post
+            data, target, core_path_translation
         )
+
 
         data = OrderedDict([
             (key, value) \
@@ -1775,13 +1835,11 @@ class ColDataSubMeta(ColDataSubEntity):
     data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(data, {
         'meta_id': {
-            'path': None,
             'wc-api': {
                 'path': 'id'
             },
         },
         'meta_key': {
-            'path': None,
             'wc-api': {
                 'path': 'key'
             },
@@ -1793,7 +1851,6 @@ class ColDataSubMeta(ColDataSubEntity):
             }
         },
         'meta_value': {
-            'path': None,
             'wc-api': {
                 'path': 'value'
             },
@@ -1805,6 +1862,81 @@ class ColDataSubMeta(ColDataSubEntity):
             }
         }
     })
+
+    @classmethod
+    def get_from_path(cls, data, path, target=None):
+        if not isinstance(data, list):
+            return super(ColDataSubMeta, cls).get_from_path(data, path, target)
+
+        path_head, path_tail = JSONPathUtils.split_subpath(path)
+        if not JSONPathUtils.is_simple_path(path_head):
+            raise UserWarning(
+                "complex jsonpath %s not supported for meta" % path
+            )
+        # handles_paths = cls.get_handles_property('path', target)
+        # This is only called after transform structure, so core path
+        handles_paths = cls.get_handles_property('path', None)
+        path_key = handles_paths.get('meta_key') or 'meta_key'
+        value_key = handles_paths.get('meta_value') or 'meta_value'
+        value_index = None
+        for index, sub_data in enumerate(data):
+            if sub_data.get(path_key) == path_head:
+                value_index = index
+                break
+        if value_index is None:
+            raise IndexError("No key %s in data %s" % (
+                path_head, data
+            ))
+        value = data[value_index].get(value_key)
+        if path_tail:
+            return cls.get_from_path(value, path_tail, target)
+        return value
+
+
+    @classmethod
+    def update_in_path(cls, data, path, value, target=None):
+        if not isinstance(data, list):
+            return super(ColDataSubMeta, cls).update_in_path(data, path, value, target)
+
+        path_head, path_tail = JSONPathUtils.split_subpath(path)
+
+        if not JSONPathUtils.is_simple_path(path_head):
+            raise UserWarning(
+                "complex jsonpath %s not supported for meta" % path
+            )
+
+        if path_tail:
+            handle = cls.get_handle_in_target(path_head, target)
+            sub_structure = cls.get_handle_property(handle, 'structure', target)
+            sub_data_cls = cls.get_handle_property(handle, 'sub_data', target) or cls
+            sub_data = sub_data_cls.get_from_path(data, path_head, target)
+            tail_value = sub_data_cls.update_in_path(
+                sub_data, path_tail, value, target
+            )
+        else:
+            tail_value = value
+
+        # handles_paths = cls.get_handles_property('path', target)
+        # This is only called before transform structure, so core path
+        handles_paths = cls.get_handles_property('path', None)
+        path_key = handles_paths.get('meta_key') or 'meta_key'
+        value_key = handles_paths.get('meta_value') or 'meta_value'
+        value_index = None
+        for index, sub_data in enumerate(data):
+            if sub_data.get(path_key) == path_head:
+                value_index = index
+                break
+        if value_index is None:
+            value_index = len(data)
+            data.append({
+                path_key: path_head,
+                value_key: tail_value
+            })
+        else:
+            data[path_head] = tail_value
+        return data
+
+
 
 class ColDataSubDownload(ColDataSubEntity):
     data = deepcopy(ColDataSubEntity.data)
@@ -2413,22 +2545,20 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
         },
         'meta': {
             'sub_data': ColDataSubMeta,
-            'force_mapping': 'meta_key',
+            # 'force_mapping': 'meta_key',
+            'structure': ('listed-objects', ),
             'wp-api': {
-                'path': 'meta',
-                'structure': ('listed-objects', )
+                'path': 'meta'
             },
             'wp-api-v1': {
                 'path': 'post_meta',
                 'structure': ('mapping-value', ('meta_key', 'meta_value'))
             },
             'wc-api': {
-                'path': 'meta_data',
-                'structure': ('listed-objects', )
+                'path': 'meta_data'
             },
             'wc-legacy-api': {
-                'path': 'custom_meta',
-                'structure': ('listed-objects', )
+                'path': 'custom_meta'
             },
             'wp-sql':{
                 'path': None,
@@ -3440,7 +3570,7 @@ class ColDataMeridianEntityMixin(object):
         'wootan_danger': {
             'type': 'danger',
             'wc-api': {
-                'path': 'meta_data.wootan_danger.meta_value',
+                'path': 'meta_data.wootan_danger',
             },
             'wp-sql': {
                 'path': 'meta.wootan_danger',
@@ -3459,7 +3589,7 @@ class ColDataMeridianEntityMixin(object):
         'commissionable_value': {
             'type': float,
             'wc-api': {
-                'path': 'meta_data.commissionable_value.meta_value'
+                'path': 'meta_data.commissionable_value'
             },
             'wp-sql': {
                 'path': 'meta.commissionable_value'
@@ -3603,14 +3733,14 @@ class ColDataMeridianEntityMixin(object):
                     'type': wc_type
                 },
                 'wp-sql': {
-                    'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
+                    'path': 'meta.lc_%s_%s' % (tier, field),
                     'type': wc_type
                 },
                 'wc-wp-api': {
-                    'path': 'meta_data.lc_%s_%s.meta_value' % (tier, field),
+                    'path': 'meta_data.lc_%s_%s' % (tier, field),
                 },
                 'wc-legacy-api': {
-                    'path': 'meta.lc_%s_%s.meta_value' % (tier, field),
+                    'path': 'meta.lc_%s_%s' % (tier, field),
                 },
                 'gen-csv': {
                     'path': ''.join([tier.upper(), field_slug.upper()]),
