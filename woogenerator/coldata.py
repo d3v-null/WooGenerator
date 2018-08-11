@@ -745,11 +745,11 @@ class ColDataAbstract(ColDataLegacy):
             )
         path_head, path_tail = JSONPathUtils.split_subpath(path)
 
-        handle = cls.get_handle_in_target(path_head, target)
-        sub_structure = cls.get_handle_property(handle, 'structure', target)
-        sub_data_cls = cls.get_handle_property(handle, 'sub_data', target) or cls
-
         if path_tail:
+            handle = cls.get_handle_in_target(path_head, target)
+            sub_structure = cls.get_handle_property(handle, 'structure', target)
+            sub_data_cls = cls.get_handle_property(handle, 'sub_data', target) or cls
+
             try:
                 sub_data = sub_data_cls.get_from_path(data, path_head, target)
             except (IndexError, KeyError) as exc:
