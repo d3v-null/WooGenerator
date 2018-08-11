@@ -1055,9 +1055,12 @@ class ColDataAbstract(ColDataLegacy):
             'wp_content_raw': SanitationUtils.normalize_wp_raw_content,
             'yesno': SanitationUtils.yesno2bool,
             'stock_status': SanitationUtils.stock_status2bool,
+            'mandatory_int': SanitationUtils.normalize_mandatory_int,
             'optional_int_minus_1': SanitationUtils.normalize_optional_int_minus_1,
             'optional_int_zero': SanitationUtils.normalize_optional_int_zero,
             'optional_int_none': SanitationUtils.normalize_optional_int_none,
+            'optional_float_none': SanitationUtils.normalize_optional_float_none,
+            'optional_float_zero': SanitationUtils.normalize_optional_float_zero,
             'php_array_associative': PHPUtils.unserialize_mapping,
             'php_array_indexed': PHPUtils.unserialize_list,
             'file_basename': FileUtils.get_path_basename,
@@ -1096,6 +1099,11 @@ class ColDataAbstract(ColDataLegacy):
             'mime_type': MimeUtils.validate_mime_type,
             'currency': SanitationUtils.similar_currency_comparison,
             'api_currency': SanitationUtils.denormalize_api_currency,
+            # 'optional_int_minus_1': SanitationUtils.coerce_unicode,
+            # 'optional_int_zero': SanitationUtils.coerce_unicode,
+            # 'optional_int_none': SanitationUtils.coerce_unicode,
+            # 'optional_float_none': SanitationUtils.coerce_unicode,
+            # 'optional_float_zero': SanitationUtils.coerce_unicode,
         }.get(type_, SanitationUtils.identity)
 
     # @classmethod
@@ -1338,7 +1346,7 @@ class ColDataSubVariation(ColDataSubEntity):
         'id': {
             'write': False,
             'unique': True,
-            'type': 'optional_int_none',
+            'type': 'mandatory_int',
             'xero-api': {
                 'path': None,
             },
@@ -1355,6 +1363,7 @@ class ColDataSubVariation(ColDataSubEntity):
                 'path': 'Wordpress ID',
             },
             'gen-csv': {
+                'type': 'optional_int_none',
                 'path': 'ID',
                 'read': False,
             },
@@ -1451,7 +1460,7 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
         'id': {
             'write': False,
             'unique': True,
-            'type': 'optional_int_none',
+            'type': 'mandatory_int',
             'api': {
                 'path': 'id'
             },
@@ -1460,6 +1469,9 @@ class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
             },
             'wp-sql': {
                 'path': 'ID',
+            },
+            'gen-csv': {
+                'type': 'optional_int_none',
             },
             'gen-api': {
                 'path': 'ID'
@@ -1529,7 +1541,7 @@ class ColDataTermMixin(object):
         'term_id': {
             'write': False,
             'unique': True,
-            'type': 'optional_int_none',
+            'type': 'mandatory_int',
             'wc-api': {
                 'path': 'id'
             },
@@ -1541,6 +1553,7 @@ class ColDataTermMixin(object):
             },
             'gen-csv': {
                 'path': 'ID',
+                'type': 'optional_int_none',
                 'write': True,
             },
             'report': True
@@ -3030,7 +3043,7 @@ class ColDataProduct(ColDataWpEntity):
             'type': 'optional_int_none',
             'xero-api': {
                 'path': 'QuantityOnHand',
-                'type': 'optional_float',
+                'type': 'optional_float_none',
             },
             'csv': {
                 'path': 'stock',
@@ -3118,6 +3131,7 @@ class ColDataProduct(ColDataWpEntity):
             },
         },
         'weight': {
+            # 'type': 'optional_float_none',
             'wp-sql': {
                 'path': 'meta._weight'
             },

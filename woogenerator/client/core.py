@@ -924,6 +924,7 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def apply_to_data_item(cls, data, function, wrap_response=None):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         if cls.page_nesting:
             if data:
                 endpoint_singular, item = data.items()[0]
@@ -940,10 +941,12 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def get_item_core(cls, item, key):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         return item.get(key)
 
     @classmethod
     def get_data_core(cls, data, key):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
             functools.partial(
@@ -954,6 +957,7 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def get_item_meta(cls, item, key):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         if cls.meta_listed:
             for meta in item[cls.meta_get_key]:
                 if meta['key'] == key:
@@ -963,6 +967,7 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def get_data_meta(cls, data, key):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
             functools.partial(
@@ -973,11 +978,13 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def set_item_core(cls, item, key, value):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         item[key] = value
         return item
 
     @classmethod
     def set_data_core(cls, data, key, value):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
             functools.partial(
@@ -990,6 +997,7 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def set_item_meta(cls, item, meta):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         if cls.meta_listed:
             if not cls.meta_set_key in item:
                 item[cls.meta_set_key] = []
@@ -1006,6 +1014,7 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def set_data_meta(cls, data, meta):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
             functools.partial(
@@ -1017,10 +1026,12 @@ class SyncClientRest(SyncClientAbstract):
 
     @classmethod
     def delete_item_meta(cls, item, meta_key):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.set_item_meta(item, {meta_key:''})
 
     @classmethod
     def delete_data_meta(cls, data, meta_key):
+        # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
             functools.partial(

@@ -13,8 +13,14 @@ class ImgSyncClientWP(SyncClientWP):
     endpoint_plural = 'media'
     pagination_limit_key = None
     coldata_class = ColDataAttachment
-    primary_key_handle = 'id'
     file_path_handle = 'file_path'
+
+    @property
+    def primary_key_handle(self):
+        # TODO: check for wp/v1 and return 'ID'
+        # if self.settings.wp_api_version == 'wp/v1':
+        #     id_key = 'ID'
+        return 'id'
 
     def __init__(self, connect_params, **kwargs):
         # TODO: turn on oauth1a_3leg

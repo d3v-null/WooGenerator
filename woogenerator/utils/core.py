@@ -16,6 +16,7 @@ import time
 import traceback
 import unicodedata
 import unidecode
+import numbers
 from six import integer_types, string_types
 from collections import Counter, OrderedDict
 from HTMLParser import HTMLParser
@@ -314,6 +315,15 @@ class SanitationUtils(object):
         return int(thing)
 
     @classmethod
+    def coerce_float(cls, thing, default=None):
+        if any([
+            thing is None,
+            (isinstance(thing, string_types) and not thing)
+        ]):
+            return default
+        return float(thing)
+
+    @classmethod
     def normalize_optional_int_minus_1(cls, thing):
         return cls.coerce_int(thing, -1)
 
@@ -324,6 +334,23 @@ class SanitationUtils(object):
     @classmethod
     def normalize_optional_int_none(cls, thing):
         return cls.coerce_int(thing)
+
+    @classmethod
+    def normalize_mandatory_int(cls, thing):
+        if any([
+            thing,
+            isinstance(thing, numbers.Real)
+        ]):
+            return cls.coerce_int(thing)
+        raise UserWarning("Int required, found %s <%s> instead" % (thing, type(thing)))
+
+    @classmethod
+    def normalize_optional_float_zero(cls, thing):
+        return cls.coerce_float(thing, 0.0)
+
+    @classmethod
+    def normalize_optional_float_none(cls, thing):
+        return cls.coerce_float(thing)
 
     @classmethod
     def limit_string(cls, length):
