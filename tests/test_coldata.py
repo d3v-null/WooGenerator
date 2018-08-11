@@ -547,6 +547,46 @@ class TestColDataImg(TestColData):
             denormalized
         )
 
+    def test_update_in_path(self):
+        data = self.coldata_class.update_in_path({}, 'title.raw', 'blah title', 'wp-api-v2-edit')
+        self.assertEqual(
+            data['title']['raw'],
+            'blah title'
+        )
+        data = self.coldata_class.update_in_path({}, 'caption.raw', 'blah caption', 'wp-api-v2-edit')
+        self.assertEqual(
+            data['caption']['raw'],
+            'blah caption'
+        )
+
+    def test_translate_data_to(self):
+        title = "Range A - Style 2 - 1Litre"
+        content = (
+            "Company A have developed a range of unique blends in 16 shades "
+            "to suit all use cases. All Company A's products are created "
+            "using the finest naturally derived botanical and certified "
+            "organic ingredients."
+        )
+
+        img_core = OrderedDict([
+            ('title', title),
+            ('post_excerpt', content),
+            ('post_content', content),
+            ('menu_order', 14),
+            ('alt_text', title),
+            ('file_path', 'tests/sample_data/imgs_raw/ACARA-CCL.png')
+        ])
+
+        if self.debug:
+            import pudb; pudb.set_trace()
+        img_api = self.coldata_class.translate_data_to(img_core, 'wp-api-v2-edit')
+
+        self.assertEqual(img_api['alt_text'], title)
+        self.assertEqual(img_api['caption']['raw'], content)
+        self.assertEqual(img_api['description']['raw'], content)
+        self.assertEqual(img_api['title']['raw'], title)
+
+
 
 class TestColDataWpPost(TestColData):
     coldata_class = ColDataWpPost
@@ -841,7 +881,7 @@ class TestColDataWcProd(TestColData):
         core_data = self.coldata_class.translate_data_from(api_data, 'wc-wp-api')
         self.assertEqual(core_data['lc_wn_regular_price'], '1.23')
         gen_data = self.coldata_class.translate_data_to(core_data, 'gen-api')
-        # self.assertEqual(core_data['WNR'], '1.23')
+        self.assertEqual(gen_data['WNR'], '1.23')
 
 
 class TestColDataSubMeta(TestColData):

@@ -520,6 +520,8 @@ class ColDataAbstract(ColDataLegacy):
         """
         Return the value of a handle's property in the context of target. Cache for performace.
         """
+        if handle is None or property_ is None:
+            return
         cache_key = (cls.__name__, handle, property_, target)
         if cache_key in cls.handle_cache:
             return copy(cls.handle_cache[cache_key])
@@ -743,11 +745,11 @@ class ColDataAbstract(ColDataLegacy):
             )
         path_head, path_tail = JSONPathUtils.split_subpath(path)
 
-        if path_tail:
-            handle = cls.get_handle_in_target(path_head, target)
-            sub_structure = cls.get_handle_property(handle, 'structure', target)
-            sub_data_cls = cls.get_handle_property(handle, 'sub_data', target) or cls
+        handle = cls.get_handle_in_target(path_head, target)
+        sub_structure = cls.get_handle_property(handle, 'structure', target)
+        sub_data_cls = cls.get_handle_property(handle, 'sub_data', target) or cls
 
+        if path_tail:
             try:
                 sub_data = sub_data_cls.get_from_path(data, path_head, target)
             except (IndexError, KeyError) as exc:
@@ -1249,47 +1251,42 @@ class ColDataAbstract(ColDataLegacy):
         )
 
         sub_data_handles = cls.get_property_inclusions('sub_data')
-        # non_sub_data_handles = set(cls.data.keys()) - sub_data_handles
-        # # target paths which have sub_data
-        # path_translation_pre = OrderedDict()
-        # # core paths which don't have sub_data
-        # path_translation_post = OrderedDict()
-        # for handle in cls.data.keys():
-        #     if handle in sub_data_handles:
-        #         if handle in target_path_translation:
-        #             path_translation_pre[handle] = target_path_translation[handle]
-        #     else:
-        #         if handle in core_path_translation:
-        #             path_translation_post[handle] = core_path_translation[handle]
-        target_sub_data_path_translation = OrderedDict([
+
+        # target paths which have sub_data
+        sub_data_target_path_translation = OrderedDict([
             (key, value) for key, value in target_path_translation.items() \
             if key in sub_data_handles
         ])
-        target_non_sub_data_path_translation = OrderedDict([
+        # target paths which don't sub_data
+        non_sub_data_target_path_translation = OrderedDict([
             (key, value) for key, value in target_path_translation.items() \
+            if key not in sub_data_handles
+        ])
+        # core paths which don't have sub_data
+        non_sub_data_core_path_translation = OrderedDict([
+            (key, value) for key, value in core_path_translation.items() \
             if key not in sub_data_handles
         ])
 
         # translate types of handles in target format which have sub_data
         data = cls.translate_types_from(
-            data, target, target_sub_data_path_translation
+            data, target, sub_data_target_path_translation
         )
-
         # translate structure of handles in target format which have a path in target
         data = cls.translate_structure_from(
             data, target, target_path_translation, excluding_properties
         )
-        # translate paths of handles into format in the order: non_sub_data, sub_data
-        target_path_translation = OrderedDict(
-            target_non_sub_data_path_translation.items()
-            + target_sub_data_path_translation.items()
+        # translate paths of handles into format in the order non_sub_data, sub_data
+        ordered_target_path_translation = OrderedDict(
+            non_sub_data_target_path_translation.items()
+            + sub_data_target_path_translation.items()
         )
         data = cls.translate_paths_from(
-            data, target, target_path_translation
+            data, target, ordered_target_path_translation
         )
         # translate the rest of the types
         data = cls.translate_types_from(
-            data, target, core_path_translation
+            data, target, non_sub_data_core_path_translation
         )
 
 
@@ -1327,25 +1324,34 @@ class ColDataAbstract(ColDataLegacy):
         # TODO: roll path_translation_(pre|post) into get_path_translation functions
 
         sub_data_handles = cls.get_property_inclusions('sub_data')
-        # core paths which do not have sub data
-        path_translation_pre = OrderedDict()
-        # target paths which have sub data
-        path_translation_post = OrderedDict()
-        for handle in cls.data.keys():
-            if handle in sub_data_handles:
-                if handle in core_path_translation:
-                    path_translation_post[handle] = target_path_translation[handle]
-            else:
-                if handle in target_path_translation:
-                    path_translation_pre[handle] = core_path_translation[handle]
+        # target paths which have sub_data
+        sub_data_target_path_translation = OrderedDict([
+            (key, value) for key, value in target_path_translation.items() \
+            if key in sub_data_handles
+        ])
+        # target paths which don't sub_data
+        non_sub_data_target_path_translation = OrderedDict([
+            (key, value) for key, value in target_path_translation.items() \
+            if key not in sub_data_handles
+        ])
+        # core paths which don't have sub_data
+        non_sub_data_core_path_translation = OrderedDict([
+            (key, value) for key, value in core_path_translation.items() \
+            if key not in sub_data_handles
+        ])
+
+        ordered_target_path_translation = OrderedDict(
+            non_sub_data_target_path_translation.items()
+            + sub_data_target_path_translation.items()
+        )
 
         # translate types of non-subdata handles in core format
         data = cls.translate_types_to(
-            data, target, path_translation_pre
+            data, target, non_sub_data_core_path_translation
         )
         # Translate all paths
         data = cls.translate_paths_to(
-            data, target
+            data, target, ordered_target_path_translation
         )
         # translate subdata structure
         data = cls.translate_structure_to(
@@ -1353,7 +1359,7 @@ class ColDataAbstract(ColDataLegacy):
         )
         # translate types of subdata handles in target format
         data = cls.translate_types_to(
-            data, target, path_translation_post
+            data, target, sub_data_target_path_translation
         )
 
         allowed_keys = set([
@@ -3860,6 +3866,13 @@ class ColDataAttachment(ColDataWpEntity):
         }
     })
     data = SeqUtils.combine_ordered_dicts(data, {
+        # '_caption': {
+        #     'path': None,
+        #     'wp-api-v1': {
+        #         'path': 'caption',
+        #         'type': object
+        #     }
+        # },
         'source_url': {
             'write': False,
             'type': 'uri',
