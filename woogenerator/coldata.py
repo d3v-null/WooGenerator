@@ -1933,7 +1933,7 @@ class ColDataSubMeta(ColDataSubEntity):
                 value_key: tail_value
             })
         else:
-            data[path_head] = tail_value
+            data[value_index][value_key] = tail_value
         return data
 
 

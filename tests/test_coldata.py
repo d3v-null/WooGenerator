@@ -798,7 +798,12 @@ class TestColDataWcProd(TestColData):
 
         data = self.coldata_class.update_in_path({}, 'meta_data.key_1', 'value_1', target)
         data = self.coldata_class.update_in_path(data, 'meta_data.key_2', 'value_2', target)
+        self.assertEquals(
+            data, expected
+        )
 
+        expected['meta_data'][1]['meta_value'] = 'value_3'
+        data = self.coldata_class.update_in_path(data, 'meta_data.key_2', 'value_3', target)
         self.assertEquals(
             data, expected
         )
@@ -817,6 +822,15 @@ class TestColDataWcProd(TestColData):
         self.assertEquals(
             data, expected
         )
+
+        expected['meta_data']['key_2'] = 'value_3'
+        data = self.coldata_class.update_in_path(data, 'meta_data.key_2', 'value_3', target)
+        self.assertEquals(
+            data, expected
+        )
+
+
+
 
     def test_translate_data_complex(self):
         api_data = {
