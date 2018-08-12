@@ -994,20 +994,20 @@ class ColDataAbstract(ColDataLegacy):
                         target
                     )
                     objects.append(object_)
-            # TODO: finish this
-            # if target_structure[0] == 'listed-values':
-            #     target_value_handle = target_structure[1]
-            #     target_value_path = path_translation.get(target_value_handle, target_value_handle)
-            #     return [
-            #         cls.get_from_path(
-            #             cls.translate_data_to(
-            #                 sub_object,
-            #                 target,
-            #                 excluding_properties=excluding_properties
-            #             ),
-            #             target_value_path
-            #         ) for sub_object in objects
-            #     ]
+            if target_structure[0] == 'listed-values':
+                target_value_handle = target_structure[1]
+                target_value_path = path_translation.get(target_value_handle, target_value_handle)
+                return [
+                    cls.get_from_path(
+                        cls.translate_data_to(
+                            sub_object,
+                            target,
+                            excluding_properties=excluding_properties
+                        ),
+                        target_value_path,
+                        target
+                    ) for sub_object in objects
+                ]
             if target_structure[0] == 'listed-objects':
                 return [
                     cls.translate_data_to(
@@ -1110,6 +1110,7 @@ class ColDataAbstract(ColDataLegacy):
             'iso8601_local': TimeUtils.normalize_iso8601_local,
             'iso8601_wp': TimeUtils.normalize_iso8601_wp,
             'iso8601_wp_t': TimeUtils.normalize_iso8601_wp_t,
+            'iso8601_wp_t_z': TimeUtils.normalize_iso8601_wp_t_z,
             'iso8601_gdrive': TimeUtils.normalize_iso8601_gdrive,
             'datetime': SanitationUtils.identity,
             'timestamp_utc': TimeUtils.normalize_timestamp_utc,
@@ -1147,6 +1148,7 @@ class ColDataAbstract(ColDataLegacy):
             'iso8601_local': TimeUtils.denormalize_iso8601_local,
             'iso8601_wp': TimeUtils.denormalize_iso8601_wp,
             'iso8601_wp_t': TimeUtils.denormalize_iso8601_wp_t,
+            'iso8601_wp_t_z': TimeUtils.denormalize_iso8601_wp_t_z,
             'iso8601_gdrive': TimeUtils.denormalize_iso8601_gdrive,
             'wp_datetime': functools.partial(
                 TimeUtils.star_strf_datetime,
@@ -1429,6 +1431,10 @@ class ColDataSubEntity(ColDataAbstract):
     data = deepcopy(ColDataAbstract.data)
 
 class ColDataSubVariation(ColDataSubEntity):
+    """
+    Structure of data about a product's variations as they appear on the product.
+    Not very well documented, but in wc-wp-api this is just a list of variation ids
+    """
     data = deepcopy(ColDataSubEntity.data)
     data = SeqUtils.combine_ordered_dicts(data, {
         'id': {
@@ -1644,6 +1650,9 @@ class ColDataTermMixin(object):
                 'type': 'optional_int_none',
                 'write': True,
             },
+            'wp-sql': {
+                'path': 'terms.term_id'
+            },
             'report': True
         },
         'title': {
@@ -1653,7 +1662,7 @@ class ColDataTermMixin(object):
                 'type': 'wp_content_rendered',
             },
             'wp-sql': {
-                'path': 'name',
+                'path': 'terms.name',
                 'type': 'wp_content_rendered',
             },
             'wc-api':{
@@ -1677,10 +1686,10 @@ class ColDataTermMixin(object):
                 'path': 'slug'
             },
             'wc-legacy-api': {
-                'path': None
+                'path': 'slug'
             },
             'wp-sql': {
-                'path': 'slug'
+                'path': 'terms.slug'
             },
             'gen-api': {
                 'path': 'slug'
@@ -1693,7 +1702,7 @@ class ColDataTermMixin(object):
                 'path': 'taxonomy'
             },
             'wp-sql': {
-                'path': 'taxonomy'
+                'path': 'term_taxonomy.taxonomy'
             }
         },
         'count': {
@@ -1704,7 +1713,7 @@ class ColDataTermMixin(object):
                 'path': 'count'
             },
             'wp-sql': {
-                'path': 'count'
+                'path': 'term_taxonomy.count'
             }
         },
         'description': {
@@ -1714,41 +1723,13 @@ class ColDataTermMixin(object):
                 'type': 'wp_content_rendered',
             },
             'wp-sql': {
-                'path': 'description',
+                'path': 'term_taxonomy.description',
                 'type': 'wp_content_rendered',
             },
             'gen-csv': {
                 'path': 'descsum'
             },
         },
-        'term_parent': {
-            'path': None,
-            'wp-api-v1': {
-                'path': 'parent'
-            }
-        },
-        'term_parent_id': {
-            'path': None,
-            'type': 'optional_int_none',
-            'wp-api-v1': {
-                'path': 'parent.ID'
-            },
-            'wp-sql': {
-                'path': 'parent'
-            }
-        },
-        'term_link': {
-            'path': None,
-            'wp-api-v1': {
-                'path': 'link'
-            }
-        },
-        'term_meta': {
-            'path': None,
-            'wp-api-v1': {
-                'path': 'meta'
-            }
-        }
     }
 
 class ColDataSubTerm(ColDataSubEntity, ColDataTermMixin):
@@ -1762,6 +1743,13 @@ class ColDataSubTerm(ColDataSubEntity, ColDataTermMixin):
             'path': None
         }
     })
+    data['slug'].update({
+        'wc-legacy-api': {
+            'path': None
+        }
+    })
+
+
 
 class ColDataSubCategory(ColDataSubTerm):
     data = deepcopy(ColDataSubTerm.data)
@@ -1779,13 +1767,262 @@ class ColDataSubTag(ColDataSubTerm):
     data = SeqUtils.combine_ordered_dicts(data, {
     })
 
-class ColDataSubAttribute(ColDataSubTerm):
-    data = deepcopy(ColDataSubTerm.data)
+class ColDataTerm(ColDataAbstract, ColDataTermMixin):
+    data = deepcopy(ColDataSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        ColDataTermMixin.data
+    )
+    data['title'].update({
+        'wp-sql': {
+            'path': 'terms.name'
+        },
+        'csv': {
+            'path': 'title'
+        },
+        'report': True,
+    })
     data['slug'].update({
-        'wc-api': {
-            'path': None
+        'wp-sql': {
+            'path': 'terms.slug'
+        },
+        'gen-csv': {
+            'path': 'slug'
+        },
+        'report': True,
+    })
+    data['taxonomy'].update({
+        'wp-sql': {
+            'path': 'term_taxonomy.taxonomy'
         }
     })
+    data['count'].update({
+        'wp-sql': {
+            'path': 'term_taxonomy.count'
+        }
+    })
+    data['description'].update({
+        'wp-sql': {
+            'path': 'term_taxonomy.description'
+        },
+        'wc-api': {
+            'path': 'description'
+        },
+        'csv': {
+            'path': 'descsum'
+        },
+        'report': True,
+    })
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'term_parent': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'parent'
+            }
+        },
+        'term_parent_id': {
+            'path': None,
+            'type': 'optional_int_none',
+            'wp-api-v1': {
+                'path': 'parent.ID'
+            },
+            'wp-sql': {
+                'path': 'term_taxonomy.parent'
+            },
+            'wc-api': {
+                'path': 'parent'
+            },
+            'csv': {
+                'path': 'parent_id',
+                'read': False,
+            },
+            'report': True
+        },
+        'term_link': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'link'
+            }
+        },
+        'term_meta': {
+            'path': None,
+            'wp-api-v1': {
+                'path': 'meta'
+            }
+        }
+    })
+
+class ColDataWcTerm(ColDataTerm):
+    data = deepcopy(ColDataTerm.data)
+    data['count'].update(
+        {
+            'wc-api': {
+                'path': 'count'
+            }
+        }
+    )
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'menu_order': {
+            'wc-api': {
+                'path': 'menu_order'
+            },
+            'wp-sql': {
+                'path': 'term_meta.order'
+            },
+            'gen-csv': {
+                'path': 'rowcount',
+                'write': False,
+            },
+            'wc-csv': {
+                'path': 'menu_order',
+                'write': False,
+            }
+        }
+    })
+
+class ColDataAttributeTerm(ColDataWcTerm):
+    """
+    Metadata for an attribute term on top of existing data from ColDataWCTerm or ColDataSubTerm.
+
+    e.g.
+    GET /wp-json/wc/v2/products/attributes/3/terms
+    ```json
+    [
+    {
+        "_links": {
+            ...
+        },
+        "count": 28,
+        "description": "",
+        "id": 152,
+        "menu_order": 0,
+        "name": "Mosaic Minerals",
+        "slug": "mosaic-minerals"
+    },
+    ...
+    ```
+
+    https://woocommerce.github.io/woocommerce-rest-api-docs/#product-attribute-terms
+    """
+    data = deepcopy(ColDataWcTerm.data)
+
+class ColDataAttributeTaxonomyMixin(object):
+    """
+    Mixin for an attribute taxonomy.
+
+    e.g.
+    GET /wp-json/wc/v2/products/attributes
+    ```json
+    [
+    {
+        "_links": {
+            ...
+        },
+        "has_archives": true,
+        "id": 3,
+        "name": "brand",
+        "order_by": "menu_order",
+        "slug": "pa_brand",
+        "type": "select"
+    },
+    ...
+    ```
+    https://woocommerce.github.io/woocommerce-rest-api-docs/#product-attributes
+    """
+    data = {
+        'attr_id': {
+            'wc-wp-api': {
+                'path': 'id',
+                'type': 'mandatory_int'
+            },
+            'wp-sql': {
+                'path': 'attribute_taxonomies.attribute_id'
+            }
+        },
+        'name': {
+            'wp-sql': {
+                'path': 'attribute_taxonomies.attribute_name'
+            }
+        },
+        'slug': {
+            'wp-sql': {
+                'path': 'term_taxonomy.taxonomy'
+            },
+            'wc-api': {
+                'path': None
+            }
+        },
+        'type': {
+            'wp-sql': {
+                'path': 'attribute_taxonomies.attribute_type'
+            }
+        },
+        'has_archives': {
+            'type': bool,
+            'wp-sql': {
+                'path': 'attribute_taxonomies.attribute_public'
+            }
+        },
+        'order_by': {
+            'wp-sql': {
+                'path': 'attribute_taxonomies.attribute_orderby'
+            }
+        }
+    }
+
+class ColDataAttributeSummaryMixin(object):
+    """
+    Mixin for the summary of a product's attribute taxonomy.
+
+    Has fields from attribute taxonomy and term
+    """
+    data = OrderedDict([
+        (key, value) for (key, value) in ColDataAttributeTaxonomyMixin.data.items() \
+        if key in ['attr_id', 'name', 'slug']
+    ])
+    data = SeqUtils.combine_ordered_dicts(data, {
+        'options': {
+            'path': None,
+            'sub_data': ColDataAttributeTerm,
+            'structure': ('listed-values', 'title'),
+            'wc-api': {
+                'path': 'options'
+            },
+        },
+    })
+
+class ColDataAttributeInstanceMixin(object):
+    """
+    Mixin for the summary of a variations attribute value.
+
+    Has fields from attribute taxonomy and term
+    """
+    data = deepcopy(OrderedDict([
+        (key, value) for (key, value) in ColDataAttributeTaxonomyMixin.data.items() \
+        if key in ['attr_id', 'name', 'slug']
+    ] + [
+        (key, value) for (key, value) in ColDataAttributeTerm.data.items() \
+        if key in ['title']
+    ]))
+    data['title'].update({
+        'path': 'option',
+        'wc-api': {
+            'path': 'option'
+        }
+    })
+
+class ColDataSubAttribute(ColDataSubEntity, ColDataAttributeSummaryMixin):
+    """
+    An item in a list of a product's attributes.
+
+    This is a summary of attribute taxonomy and term info.
+    https://woocommerce.github.io/woocommerce-rest-api-docs/#product-attributes-properties
+    """
+    data = deepcopy(ColDataSubEntity.data)
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        deepcopy(ColDataAttributeSummaryMixin.data)
+    )
     data = SeqUtils.combine_ordered_dicts(data, {
         'position': {
             'path': None,
@@ -1813,21 +2050,20 @@ class ColDataSubAttribute(ColDataSubTerm):
                 'path': 'is_variation'
             },
         },
-        'options': {
-            'path': None,
-            'wc-api': {
-                'path': 'options'
-            }
-        },
     })
 
-class ColDataSubDefaultAttribute(ColDataSubTerm):
-    data = deepcopy(ColDataSubTerm.data)
-    data['slug'].update({
-        'wc-api': {
-            'path': None
-        }
-    })
+class ColDataSubDefaultAttribute(ColDataSubEntity, ColDataAttributeInstanceMixin):
+    """
+    An item in a list of a product's default attributes
+
+    https://woocommerce.github.io/woocommerce-rest-api-docs/#product-default-attributes-properties
+    """
+    data = deepcopy(ColDataSubEntity.data)
+    # term_id, title, slug, taxonomy, count, description, term_parent, term_parent_id, term_link, term_meta
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        deepcopy(ColDataAttributeInstanceMixin.data)
+    )
     data = SeqUtils.combine_ordered_dicts(data, {
         'option': {
             'path': None,
@@ -1835,6 +2071,35 @@ class ColDataSubDefaultAttribute(ColDataSubTerm):
                 'path': 'option'
             }
         }
+    })
+
+class ColDataSubVarAttribute(ColDataSubEntity, ColDataAttributeInstanceMixin):
+    """
+    Product variation attributes:
+    https://woocommerce.github.io/woocommerce-rest-api-docs/#product-variation-attributes-properties
+
+    e.g.
+    ```
+    ...
+    "attributes": [
+        {
+            "id": 0,
+            "name": "size",
+            "option": "Large"
+        }
+    ],
+    ...
+    ```
+    """
+
+    data = deepcopy(ColDataSubEntity.data)
+    # term_id, title, slug, taxonomy, count, description
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        deepcopy(ColDataAttributeInstanceMixin.data)
+    )
+
+    data = SeqUtils.combine_ordered_dicts(data, {
     })
 
 class ColDataSubMeta(ColDataSubEntity):
@@ -2020,96 +2285,6 @@ class ColDataSubUser(ColDataSubEntity):
         },
     })
 
-class ColDataTerm(ColDataAbstract, ColDataTermMixin):
-    data = deepcopy(ColDataSubEntity.data)
-    data = SeqUtils.combine_ordered_dicts(
-        data,
-        ColDataTermMixin.data
-    )
-    data['title'].update({
-        'wp-sql': {
-            'path': 'terms.name'
-        },
-        'csv': {
-            'path': 'title'
-        },
-        'report': True,
-    })
-    data['slug'].update({
-        'wp-sql': {
-            'path': 'terms.slug'
-        },
-        'gen-csv': {
-            'path': 'slug'
-        },
-        'report': True,
-    })
-    data['taxonomy'].update({
-        'wp-sql': {
-            'path': 'term_taxonomy.taxonomy'
-        }
-    })
-    data['count'].update({
-        'wp-sql': {
-            'path': 'term_taxonomy.count'
-        }
-    })
-    data['description'].update({
-        'wp-sql': {
-            'path': 'term_taxonomy.description'
-        },
-        'wc-api': {
-            'path': 'description'
-        },
-        'csv': {
-            'path': 'descsum'
-        },
-        'report': True,
-    })
-    data['term_parent_id'].update({
-        'wp-sql': {
-            'path': 'term_taxonomy.parent'
-        },
-        'wc-api': {
-            'path': 'parent'
-        },
-        'csv': {
-            'path': 'parent_id',
-            'read': False,
-        },
-        'report': True
-    })
-
-
-class ColDataWcTerm(ColDataTerm):
-    data = deepcopy(ColDataTerm.data)
-    data['count'].update(
-        {
-            'wc-api': {
-                'path': 'count'
-            }
-        }
-    )
-    data = SeqUtils.combine_ordered_dicts(data, {
-        'menu_order': {
-            'wc-api': {
-                'path': 'menu_order'
-            },
-            'wp-sql': {
-                'path': 'term_meta.order'
-            },
-            'gen-csv': {
-                'path': 'rowcount',
-                'write': False,
-            },
-            'wc-csv': {
-                'path': 'menu_order',
-                'write': False,
-            }
-        }
-    })
-
-
 class ColDataWcProdCategory(ColDataWcTerm):
     data = deepcopy(ColDataWcTerm.data)
     data['count'].update(
@@ -2245,7 +2420,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             },
             'wc-legacy-api': {
                 'path': 'created_at',
-                'type': 'iso8601_wp',
+                'type': 'iso8601_wp_t_z',
             },
             'wp-sql':{
                 'path': 'post_date',
@@ -2267,7 +2442,10 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             },
             'wc-legacy-api': {
                 'path': 'modified_at',
-                'type': 'iso8601_wp',
+                'type': 'iso8601_wp_t_z',
+            },
+            'wc-legacy-api-v3': {
+                'path': 'updated_at'
             },
             'wp-api': {
                 'path': 'modified',
@@ -2759,6 +2937,7 @@ class ColDataProduct(ColDataWpEntity):
     """
 
     data = deepcopy(ColDataWpEntity.data)
+    del data['post_categories']
     del data['template']
     data['post_type'].update({
         'path': None,
@@ -3513,9 +3692,13 @@ class ColDataProduct(ColDataWpEntity):
         'variations': {
             'path': None,
             'sub_data': ColDataSubVariation,
-            'wc-api': {
+            'wc-wp-api': {
                 'path': 'variations',
                 'structure': ('listed-values', 'id')
+            },
+            'wc-legacy-api': {
+                'path': 'variations',
+                'structure': ('listed-objects', )
             }
         },
         # 'variation_ids': {
@@ -3530,6 +3713,7 @@ class ColDataProduct(ColDataWpEntity):
 
 class ColDataProductVariation(ColDataProduct):
     data = deepcopy(ColDataProduct.data)
+    del data['variations']
     data['title'].update({
         'wc-api': {
             'path': None
@@ -3537,11 +3721,6 @@ class ColDataProductVariation(ColDataProduct):
     })
     data['parent_id'].update({
         'write': True,
-        'wc-api': {
-            'path': None
-        }
-    })
-    data['variations'].update({
         'wc-api': {
             'path': None
         }
@@ -3555,6 +3734,9 @@ class ColDataProductVariation(ColDataProduct):
         'wc-csv': {
             'path': None
         }
+    })
+    data['attributes'].update({
+        'sub_data': ColDataSubVarAttribute,
     })
     data = SeqUtils.combine_ordered_dicts(
         data,
@@ -3572,7 +3754,7 @@ class ColDataProductVariation(ColDataProduct):
     )
 
 class ColDataMeridianEntityMixin(object):
-    data = OrderedDict(ColDataProduct.data.items() + {
+    data = OrderedDict({
         'wootan_danger': {
             'type': 'danger',
             'wc-api': {

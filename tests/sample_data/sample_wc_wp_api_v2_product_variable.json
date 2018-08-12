@@ -1,0 +1,248 @@
+{
+    "_links": {
+        "collection": [
+            {
+                "href": "http://localhost:18080/wctest/wp-json/wc/v2/products"
+            }
+        ],
+        "self": [
+            {
+                "href": "http://localhost:18080/wctest/wp-json/wc/v2/products/831"
+            }
+        ]
+    },
+    "attributes": [
+        {
+            "id": 0,
+            "name": "size",
+            "options": [
+                "Extra Small",
+                "Small",
+                "Medium",
+                "Large"
+            ],
+            "position": 0,
+            "variation": true,
+            "visible": true
+        },
+        {
+            "id": 0,
+            "name": "style",
+            "options": [
+                "Black"
+            ],
+            "position": 0,
+            "variation": false,
+            "visible": true
+        },
+        {
+            "id": 3,
+            "name": "brand",
+            "options": [
+                "My Tan"
+            ],
+            "position": 0,
+            "variation": false,
+            "visible": true
+        }
+    ],
+    "average_rating": "0.00",
+    "backordered": false,
+    "backorders": "no",
+    "backorders_allowed": false,
+    "button_text": "",
+    "catalog_visibility": "visible",
+    "categories": [
+        {
+            "id": 125,
+            "name": "Apparel",
+            "slug": "apparel"
+        },
+        {
+            "id": 126,
+            "name": "My Tan Dress",
+            "slug": "apparel-my-tan-dress"
+        }
+    ],
+    "cross_sell_ids": [],
+    "date_created": "2018-02-06T01:59:11",
+    "date_created_gmt": "2018-02-06T01:59:11",
+    "date_modified": "2018-08-12T03:55:27",
+    "date_modified_gmt": "2018-08-12T03:55:27",
+    "date_on_sale_from": null,
+    "date_on_sale_from_gmt": null,
+    "date_on_sale_to": null,
+    "date_on_sale_to_gmt": null,
+    "default_attributes": [
+        {
+            "id": 0,
+            "name": "size",
+            "option": "Extra Small"
+        }
+    ],
+    "description": "<p>The lightweight My Tan dress is perfect to wear to and from tanning appointments and when using self-tanning products. It has been carefully designed with a doubled lined bust and a specifically designed Hi-lo hem to protect your furniture and new tan as it sets. The lightweight My Tan dress is also stylish for everyday use, an essential item for any tanner.</p>\n",
+    "dimensions": {
+        "height": "",
+        "length": "",
+        "width": ""
+    },
+    "download_expiry": -1,
+    "download_limit": -1,
+    "downloadable": false,
+    "downloads": [],
+    "external_url": "",
+    "featured": false,
+    "grouped_products": [],
+    "id": 831,
+    "images": [
+        {
+            "alt": "Black My Tan Dress",
+            "date_created": "2018-02-06T01:59:12",
+            "date_created_gmt": "2018-02-06T01:59:12",
+            "date_modified": "2018-02-06T01:59:12",
+            "date_modified_gmt": "2018-02-06T01:59:12",
+            "id": 832,
+            "name": "Black My Tan Dress 1",
+            "position": 0,
+            "src": "http://localhost:18080/wctest/wp-content/uploads/2018/02/AMTD-BLK.jpg"
+        }
+    ],
+    "in_stock": true,
+    "manage_stock": false,
+    "menu_order": 0,
+    "meta_data": [
+        {
+            "id": 19772,
+            "key": "_upsell_skus",
+            "value": []
+        },
+        {
+            "id": 19773,
+            "key": "_crosssell_skus",
+            "value": []
+        },
+        {
+            "id": 19783,
+            "key": "_file_path",
+            "value": ""
+        },
+        {
+            "id": 19787,
+            "key": "_product_url",
+            "value": ""
+        },
+        {
+            "id": 34185,
+            "key": "_button_text",
+            "value": ""
+        },
+        {
+            "id": 34187,
+            "key": "_max_variation_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34188,
+            "key": "_min_variation_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34189,
+            "key": "_max_variation_regular_price",
+            "value": ""
+        },
+        {
+            "id": 34190,
+            "key": "_min_variation_regular_price",
+            "value": ""
+        },
+        {
+            "id": 34191,
+            "key": "_max_variation_price",
+            "value": ""
+        },
+        {
+            "id": 34192,
+            "key": "_min_variation_price",
+            "value": ""
+        },
+        {
+            "id": 34193,
+            "key": "title_1",
+            "value": "Black My Tan Dress"
+        },
+        {
+            "id": 34199,
+            "key": "_min_price_variation_id",
+            "value": "1094"
+        },
+        {
+            "id": 34200,
+            "key": "_min_regular_price_variation_id",
+            "value": "1094"
+        },
+        {
+            "id": 34201,
+            "key": "_min_sale_price_variation_id",
+            "value": "1094"
+        },
+        {
+            "id": 34202,
+            "key": "_max_price_variation_id",
+            "value": "1094"
+        },
+        {
+            "id": 34203,
+            "key": "_max_regular_price_variation_id",
+            "value": "1094"
+        },
+        {
+            "id": 34204,
+            "key": "_max_sale_price_variation_id",
+            "value": "1094"
+        }
+    ],
+    "name": "Black My Tan Dress",
+    "on_sale": false,
+    "parent_id": 0,
+    "permalink": "http://localhost:18080/wctest/product/black-my-tan-dress/",
+    "price": 11.95,
+    "price_html": "<span class=\"woocommerce-Price-amount amount\"><span class=\"woocommerce-Price-currencySymbol\">&#36;</span>11.95</span>",
+    "purchasable": true,
+    "purchase_note": "",
+    "rating_count": 0,
+    "regular_price": 11.95,
+    "related_ids": [
+        837,
+        833,
+        839,
+        843,
+        841
+    ],
+    "reviews_allowed": true,
+    "sale_price": "",
+    "shipping_class": "",
+    "shipping_class_id": 0,
+    "shipping_required": true,
+    "shipping_taxable": true,
+    "short_description": "",
+    "sku": "APMTD-BLK",
+    "slug": "black-my-tan-dress",
+    "sold_individually": false,
+    "status": "publish",
+    "stock_quantity": null,
+    "tags": [],
+    "tax_class": "",
+    "tax_status": "taxable",
+    "total_sales": 0,
+    "type": "variable",
+    "upsell_ids": [],
+    "variations": [
+        1094,
+        1095,
+        1096,
+        1097
+    ],
+    "virtual": false,
+    "weight": ""
+}

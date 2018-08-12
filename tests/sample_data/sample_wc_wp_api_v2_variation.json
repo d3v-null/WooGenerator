@@ -1,0 +1,259 @@
+{
+    "_links": {
+        "collection": [
+            {
+                "href": "http://localhost:18080/wctest/wp-json/wc/v2/products/831/variations"
+            }
+        ],
+        "self": [
+            {
+                "href": "http://localhost:18080/wctest/wp-json/wc/v2/products/831/variations/1097"
+            }
+        ],
+        "up": [
+            {
+                "href": "http://localhost:18080/wctest/wp-json/wc/v2/products/831"
+            }
+        ]
+    },
+    "attributes": [
+        {
+            "id": 0,
+            "name": "size",
+            "option": "Large"
+        }
+    ],
+    "backordered": false,
+    "backorders": "no",
+    "backorders_allowed": false,
+    "date_created": "2018-02-06T02:02:00",
+    "date_created_gmt": "2018-02-06T02:02:00",
+    "date_modified": "2018-08-12T03:55:27",
+    "date_modified_gmt": "2018-08-12T03:55:27",
+    "date_on_sale_from": null,
+    "date_on_sale_from_gmt": null,
+    "date_on_sale_to": null,
+    "date_on_sale_to_gmt": null,
+    "description": "",
+    "dimensions": {
+        "height": "330",
+        "length": "80",
+        "width": "80"
+    },
+    "download_expiry": -1,
+    "download_limit": -1,
+    "downloadable": false,
+    "downloads": [],
+    "id": 1097,
+    "image": {
+        "alt": "Placeholder",
+        "date_created": "2018-08-12T04:25:58",
+        "date_created_gmt": "2018-08-12T04:25:58",
+        "date_modified": "2018-08-12T04:25:58",
+        "date_modified_gmt": "2018-08-12T04:25:58",
+        "id": 0,
+        "name": "Placeholder",
+        "position": 0,
+        "src": "http://localhost:18080/wctest/wp-content/plugins/woocommerce/assets/images/placeholder.png"
+    },
+    "in_stock": true,
+    "manage_stock": false,
+    "menu_order": 0,
+    "meta_data": [
+        {
+            "id": 31460,
+            "key": "_upsell_skus",
+            "value": []
+        },
+        {
+            "id": 31461,
+            "key": "_crosssell_skus",
+            "value": []
+        },
+        {
+            "id": 31471,
+            "key": "_file_path",
+            "value": ""
+        },
+        {
+            "id": 31475,
+            "key": "_product_url",
+            "value": ""
+        },
+        {
+            "id": 34413,
+            "key": "_button_text",
+            "value": ""
+        },
+        {
+            "id": 34415,
+            "key": "_max_variation_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34416,
+            "key": "_min_variation_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34417,
+            "key": "_max_variation_regular_price",
+            "value": ""
+        },
+        {
+            "id": 34418,
+            "key": "_min_variation_regular_price",
+            "value": ""
+        },
+        {
+            "id": 34419,
+            "key": "_max_variation_price",
+            "value": ""
+        },
+        {
+            "id": 34420,
+            "key": "_min_variation_price",
+            "value": ""
+        },
+        {
+            "id": 34422,
+            "key": "wootan_danger",
+            "value": ""
+        },
+        {
+            "id": 34423,
+            "key": "lc_rn_regular_price",
+            "value": "34.95"
+        },
+        {
+            "id": 34424,
+            "key": "lc_rn_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34425,
+            "key": "lc_rn_sale_price_dates_from",
+            "value": ""
+        },
+        {
+            "id": 34426,
+            "key": "lc_rn_sale_price_dates_to",
+            "value": ""
+        },
+        {
+            "id": 34427,
+            "key": "lc_rp_regular_price",
+            "value": "29.95"
+        },
+        {
+            "id": 34428,
+            "key": "lc_rp_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34429,
+            "key": "lc_rp_sale_price_dates_from",
+            "value": ""
+        },
+        {
+            "id": 34430,
+            "key": "lc_rp_sale_price_dates_to",
+            "value": ""
+        },
+        {
+            "id": 34432,
+            "key": "lc_wn_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34433,
+            "key": "lc_wn_sale_price_dates_from",
+            "value": ""
+        },
+        {
+            "id": 34434,
+            "key": "lc_wn_sale_price_dates_to",
+            "value": ""
+        },
+        {
+            "id": 34435,
+            "key": "lc_wp_regular_price",
+            "value": "17.95"
+        },
+        {
+            "id": 34436,
+            "key": "lc_wp_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34437,
+            "key": "lc_wp_sale_price_dates_from",
+            "value": ""
+        },
+        {
+            "id": 34438,
+            "key": "lc_wp_sale_price_dates_to",
+            "value": ""
+        },
+        {
+            "id": 34439,
+            "key": "lc_dn_regular_price",
+            "value": "12.96"
+        },
+        {
+            "id": 34440,
+            "key": "lc_dn_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34441,
+            "key": "lc_dn_sale_price_dates_from",
+            "value": ""
+        },
+        {
+            "id": 34442,
+            "key": "lc_dn_sale_price_dates_to",
+            "value": ""
+        },
+        {
+            "id": 34443,
+            "key": "lc_dp_regular_price",
+            "value": "11.95"
+        },
+        {
+            "id": 34444,
+            "key": "lc_dp_sale_price",
+            "value": ""
+        },
+        {
+            "id": 34445,
+            "key": "lc_dp_sale_price_dates_from",
+            "value": ""
+        },
+        {
+            "id": 34446,
+            "key": "lc_dp_sale_price_dates_to",
+            "value": ""
+        },
+        {
+            "id": 36147,
+            "key": "lc_wn_regular_price",
+            "value": "22.95"
+        }
+    ],
+    "on_sale": false,
+    "permalink": "http://localhost:18080/wctest/product/black-my-tan-dress/?attribute_size=Large",
+    "price": 11.95,
+    "purchasable": true,
+    "regular_price": 11.95,
+    "sale_price": "",
+    "shipping_class": "",
+    "shipping_class_id": 0,
+    "sku": "APMTD-BLKL",
+    "stock_quantity": null,
+    "tax_class": "",
+    "tax_status": "taxable",
+    "virtual": false,
+    "visible": true,
+    "weight": "74"
+}

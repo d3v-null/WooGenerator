@@ -3,8 +3,10 @@ import unittest
 from collections import OrderedDict
 from pprint import pformat, pprint
 from unittest import TestCase
+import itertools
 
 import pytest
+from six import string_types
 
 from context import woogenerator
 from woogenerator.coldata import (ColDataAbstract, ColDataAttachment,
@@ -883,6 +885,48 @@ class TestColDataWcProd(TestColData):
         gen_data = self.coldata_class.translate_data_to(core_data, 'gen-api')
         self.assertEqual(gen_data['WNR'], '1.23')
 
+        api_data = {
+            'attributes': [
+                {
+                    u'id': 1,
+                    u'name': u'Brand',
+                    u'options': [u'Company A'],
+                    u'position': 0,
+                    u'variation': False,
+                    u'visible': True
+                },
+                {
+                    u'id': 3,
+                    u'name': u'Colour',
+                    u'options': [u'Style 12', u'Style 14'],
+                    u'position': 1,
+                    u'variation': False,
+                    u'visible': False
+                },
+                {
+                    u'id': 5,
+                    u'name': u'Material',
+                    u'options': [u'Cotton'],
+                    u'position': 2,
+                    u'variation': False,
+                    u'visible': True
+                }
+            ]
+        }
+        core_data = self.coldata_class.translate_data_from(api_data, 'wc-wp-api-v2')
+        self.assertTrue(isinstance(core_data['attributes'][0]['options'][0]['title'], string_types))
+        result = self.coldata_class.translate_data_to(core_data, 'wc-wp-api-v2')
+        self.assertTrue(isinstance(result['attributes'][0]['options'][0], string_types))
+
+    def test_translate_data_complex_legacy(self):
+        api_data = {
+            u'categories': [
+                u'Uncategorised', u'Signage', u'Window Flag Parts', u'Window Flags'
+            ],
+        }
+        core_data = self.coldata_class.translate_data_from(api_data, 'wc-legacy-api-v3')
+        self.assertEqual(len(core_data.keys()), 1) # post_categories AND product_categories
+        self.assertFalse(core_data['product_categories'][0]['title'].startswith('OrderedDict'))
 
 class TestColDataSubMeta(TestColData):
     coldata_class = ColDataSubMeta

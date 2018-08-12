@@ -32,7 +32,8 @@ class TimeUtils(object):
 
     wp_date_format = "%Y-%m-%d"
     act_date_format = "%d/%m/%Y"
-    iso8601_datetime_format = "%Y-%m-%dT%H:%M:%S"
+    iso8601_datetime_format_naive = "%Y-%m-%dT%H:%M:%S"
+    iso8601_datetime_format_aware = "%Y-%m-%dT%H:%M:%SZ"
     wp_datetime_format = "%Y-%m-%d %H:%M:%S"
     gdrive_datetime_format = wp_datetime_format
     ms_datetime_format = "%Y-%m-%d_%H-%M-%S"
@@ -213,7 +214,7 @@ class TimeUtils(object):
         if tz is None:
             tz = pytz.utc
         if fmt is None:
-            fmt = TimeUtils.iso8601_datetime_format
+            fmt = TimeUtils.iso8601_datetime_format_naive
         response = cls.star_strp_datetime(string, fmt)
         response = cls.inform_datetime(response, tz)
         return response
@@ -228,7 +229,7 @@ class TimeUtils(object):
         if tz is None:
             tz = pytz.utc
         if fmt is None:
-            fmt = cls.iso8601_datetime_format
+            fmt = cls.iso8601_datetime_format_naive
         response = cls.localize_datetime(dt, tz)
         response = cls.star_strf_datetime(response, fmt)
         return response
@@ -239,7 +240,11 @@ class TimeUtils(object):
 
     @classmethod
     def normalize_iso8601_wp_t(cls, string):
-        return cls.normalize_iso8601(string, cls._wp_srv_tz, cls.iso8601_datetime_format)
+        return cls.normalize_iso8601(string, cls._wp_srv_tz, cls.iso8601_datetime_format_naive)
+
+    @classmethod
+    def normalize_iso8601_wp_t_z(cls, string):
+        return cls.normalize_iso8601(string, cls._wp_srv_tz, cls.iso8601_datetime_format_aware)
 
     @classmethod
     def normalize_iso8601_act(cls, string):
@@ -263,7 +268,11 @@ class TimeUtils(object):
 
     @classmethod
     def denormalize_iso8601_wp_t(cls, dt):
-        return cls.denormalize_iso8601(dt, cls._wp_srv_tz, cls.iso8601_datetime_format)
+        return cls.denormalize_iso8601(dt, cls._wp_srv_tz, cls.iso8601_datetime_format_naive)
+
+    @classmethod
+    def denormalize_iso8601_wp_t_z(cls, dt):
+        return cls.denormalize_iso8601(dt, cls._wp_srv_tz, cls.iso8601_datetime_format_aware)
 
     @classmethod
     def denormalize_iso8601_act(cls, dt):

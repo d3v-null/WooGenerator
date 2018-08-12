@@ -1,0 +1,333 @@
+{
+    "attributes": [
+        {
+            "name": "size",
+            "options": [
+                "Extra Small",
+                "Small",
+                "Medium",
+                "Large"
+            ],
+            "position": 0,
+            "slug": "size",
+            "variation": true,
+            "visible": true
+        },
+        {
+            "name": "style",
+            "options": [
+                "Black"
+            ],
+            "position": 0,
+            "slug": "style",
+            "variation": false,
+            "visible": true
+        },
+        {
+            "name": "brand",
+            "options": [
+                "My Tan"
+            ],
+            "position": 0,
+            "slug": "brand",
+            "variation": false,
+            "visible": true
+        }
+    ],
+    "average_rating": "0.00",
+    "backordered": false,
+    "backorders_allowed": false,
+    "button_text": "",
+    "catalog_visibility": "visible",
+    "categories": [
+        "Apparel",
+        "My Tan Dress"
+    ],
+    "created_at": "2018-02-06T01:59:11Z",
+    "cross_sell_ids": [],
+    "description": "<p>The lightweight My Tan dress is perfect to wear to and from tanning appointments and when using self-tanning products. It has been carefully designed with a doubled lined bust and a specifically designed Hi-lo hem to protect your furniture and new tan as it sets. The lightweight My Tan dress is also stylish for everyday use, an essential item for any tanner.</p>\n",
+    "dimensions": {
+        "height": "",
+        "length": "",
+        "unit": "mm",
+        "width": ""
+    },
+    "download_expiry": -1,
+    "download_limit": -1,
+    "download_type": "standard",
+    "downloadable": false,
+    "downloads": [],
+    "featured": false,
+    "featured_src": "http://localhost:18080/wctest/wp-content/uploads/2018/02/AMTD-BLK.jpg",
+    "grouped_products": [],
+    "id": 831,
+    "images": [
+        {
+            "alt": "Black My Tan Dress",
+            "created_at": "2018-02-06T01:59:12Z",
+            "id": 832,
+            "position": 0,
+            "src": "http://localhost:18080/wctest/wp-content/uploads/2018/02/AMTD-BLK.jpg",
+            "title": "Black My Tan Dress 1",
+            "updated_at": "2018-02-06T01:59:12Z"
+        }
+    ],
+    "in_stock": true,
+    "managing_stock": false,
+    "menu_order": 0,
+    "on_sale": false,
+    "parent": [],
+    "parent_id": 0,
+    "permalink": "http://localhost:18080/wctest/product/black-my-tan-dress/",
+    "price": 11.95,
+    "price_html": "<span class=\"woocommerce-Price-amount amount\"><span class=\"woocommerce-Price-currencySymbol\">&#36;</span>11.95</span>",
+    "product_url": "",
+    "purchase_note": "",
+    "purchaseable": true,
+    "rating_count": 0,
+    "regular_price": 11.95,
+    "related_ids": [
+        833,
+        843,
+        841,
+        835,
+        839
+    ],
+    "reviews_allowed": true,
+    "sale_price": null,
+    "shipping_class": "",
+    "shipping_class_id": null,
+    "shipping_required": true,
+    "shipping_taxable": true,
+    "short_description": "",
+    "sku": "APMTD-BLK",
+    "sold_individually": false,
+    "status": "publish",
+    "stock_quantity": null,
+    "tags": [],
+    "tax_class": "",
+    "tax_status": "taxable",
+    "taxable": false,
+    "title": "Black My Tan Dress",
+    "total_sales": 0,
+    "type": "variable",
+    "updated_at": "2018-08-11T23:20:19Z",
+    "upsell_ids": [],
+    "variations": [
+        {
+            "attributes": [
+                {
+                    "name": "size",
+                    "option": "Extra Small",
+                    "slug": "size"
+                }
+            ],
+            "backordered": false,
+            "backorders_allowed": false,
+            "created_at": "2018-02-06T02:02:00Z",
+            "dimensions": {
+                "height": "330",
+                "length": "80",
+                "unit": "mm",
+                "width": "80"
+            },
+            "download_expiry": -1,
+            "download_limit": -1,
+            "downloadable": false,
+            "downloads": [],
+            "id": 1094,
+            "image": [
+                {
+                    "alt": "Black My Tan Dress",
+                    "created_at": "2018-02-06T01:59:12Z",
+                    "id": 832,
+                    "position": 0,
+                    "src": "http://localhost:18080/wctest/wp-content/uploads/2018/02/AMTD-BLK.jpg",
+                    "title": "Black My Tan Dress 1",
+                    "updated_at": "2018-02-06T01:59:12Z"
+                }
+            ],
+            "in_stock": true,
+            "managing_stock": false,
+            "on_sale": false,
+            "permalink": "http://localhost:18080/wctest/product/black-my-tan-dress/?attribute_size=Extra+Small",
+            "price": 11.95,
+            "purchaseable": true,
+            "regular_price": 11.95,
+            "sale_price": null,
+            "shipping_class": "",
+            "shipping_class_id": null,
+            "sku": "APMTD-BLKXS",
+            "stock_quantity": null,
+            "tax_class": "",
+            "tax_status": "taxable",
+            "taxable": false,
+            "updated_at": "2018-08-10T08:35:56Z",
+            "virtual": false,
+            "visible": true,
+            "weight": "0.41"
+        },
+        {
+            "attributes": [
+                {
+                    "name": "size",
+                    "option": "Small",
+                    "slug": "size"
+                }
+            ],
+            "backordered": false,
+            "backorders_allowed": false,
+            "created_at": "2018-02-06T02:02:00Z",
+            "dimensions": {
+                "height": "330",
+                "length": "80",
+                "unit": "mm",
+                "width": "80"
+            },
+            "download_expiry": -1,
+            "download_limit": -1,
+            "downloadable": false,
+            "downloads": [],
+            "id": 1095,
+            "image": [
+                {
+                    "alt": "Black My Tan Dress",
+                    "created_at": "2018-02-06T01:59:12Z",
+                    "id": 832,
+                    "position": 0,
+                    "src": "http://localhost:18080/wctest/wp-content/uploads/2018/02/AMTD-BLK.jpg",
+                    "title": "Black My Tan Dress 1",
+                    "updated_at": "2018-02-06T01:59:12Z"
+                }
+            ],
+            "in_stock": true,
+            "managing_stock": false,
+            "on_sale": false,
+            "permalink": "http://localhost:18080/wctest/product/black-my-tan-dress/?attribute_size=Small",
+            "price": 11.95,
+            "purchaseable": true,
+            "regular_price": 11.95,
+            "sale_price": null,
+            "shipping_class": "",
+            "shipping_class_id": null,
+            "sku": "APMTD-BLKS",
+            "stock_quantity": null,
+            "tax_class": "",
+            "tax_status": "taxable",
+            "taxable": false,
+            "updated_at": "2018-08-10T08:35:56Z",
+            "virtual": false,
+            "visible": true,
+            "weight": "0.49"
+        },
+        {
+            "attributes": [
+                {
+                    "name": "size",
+                    "option": "Medium",
+                    "slug": "size"
+                }
+            ],
+            "backordered": false,
+            "backorders_allowed": false,
+            "created_at": "2018-02-06T02:02:00Z",
+            "dimensions": {
+                "height": "330",
+                "length": "80",
+                "unit": "mm",
+                "width": "80"
+            },
+            "download_expiry": -1,
+            "download_limit": -1,
+            "downloadable": false,
+            "downloads": [],
+            "id": 1096,
+            "image": [
+                {
+                    "alt": "Black My Tan Dress",
+                    "created_at": "2018-02-06T01:59:12Z",
+                    "id": 832,
+                    "position": 0,
+                    "src": "http://localhost:18080/wctest/wp-content/uploads/2018/02/AMTD-BLK.jpg",
+                    "title": "Black My Tan Dress 1",
+                    "updated_at": "2018-02-06T01:59:12Z"
+                }
+            ],
+            "in_stock": true,
+            "managing_stock": false,
+            "on_sale": false,
+            "permalink": "http://localhost:18080/wctest/product/black-my-tan-dress/?attribute_size=Medium",
+            "price": 11.95,
+            "purchaseable": true,
+            "regular_price": 11.95,
+            "sale_price": null,
+            "shipping_class": "",
+            "shipping_class_id": null,
+            "sku": "APMTD-BLKM",
+            "stock_quantity": null,
+            "tax_class": "",
+            "tax_status": "taxable",
+            "taxable": false,
+            "updated_at": "2018-08-10T08:35:56Z",
+            "virtual": false,
+            "visible": true,
+            "weight": "0.56"
+        },
+        {
+            "attributes": [
+                {
+                    "name": "size",
+                    "option": "Large",
+                    "slug": "size"
+                }
+            ],
+            "backordered": false,
+            "backorders_allowed": false,
+            "created_at": "2018-02-06T02:02:00Z",
+            "dimensions": {
+                "height": "330",
+                "length": "80",
+                "unit": "mm",
+                "width": "80"
+            },
+            "download_expiry": -1,
+            "download_limit": -1,
+            "downloadable": false,
+            "downloads": [],
+            "id": 1097,
+            "image": [
+                {
+                    "alt": "Black My Tan Dress",
+                    "created_at": "2018-02-06T01:59:12Z",
+                    "id": 832,
+                    "position": 0,
+                    "src": "http://localhost:18080/wctest/wp-content/uploads/2018/02/AMTD-BLK.jpg",
+                    "title": "Black My Tan Dress 1",
+                    "updated_at": "2018-02-06T01:59:12Z"
+                }
+            ],
+            "in_stock": true,
+            "managing_stock": false,
+            "on_sale": false,
+            "permalink": "http://localhost:18080/wctest/product/black-my-tan-dress/?attribute_size=Large",
+            "price": 11.95,
+            "purchaseable": true,
+            "regular_price": 11.95,
+            "sale_price": null,
+            "shipping_class": "",
+            "shipping_class_id": null,
+            "sku": "APMTD-BLKL",
+            "stock_quantity": null,
+            "tax_class": "",
+            "tax_status": "taxable",
+            "taxable": false,
+            "updated_at": "2018-08-11T23:20:19Z",
+            "virtual": false,
+            "visible": true,
+            "weight": "74"
+        }
+    ],
+    "virtual": false,
+    "visible": true,
+    "weight": null
+}

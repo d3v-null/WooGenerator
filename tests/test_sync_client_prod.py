@@ -6,14 +6,14 @@ import unittest
 from collections import OrderedDict
 from copy import deepcopy
 from pprint import pformat
+import functools
 
 import pytest
 from tabulate import tabulate
 from tests.test_sync_client import AbstractSyncClientTestCase
 
 from context import TESTS_DATA_DIR, woogenerator
-from woogenerator.client.img import ImgSyncClientWP
-from woogenerator.client.prod import CatSyncClientWC, ProdSyncClientWC
+from woogenerator.client.prod import ProdSyncClientWCLegacy
 from woogenerator.coldata import ColDataAttachment
 from woogenerator.conf.parser import ArgumentParserProd
 from woogenerator.namespace.prod import SettingsNamespaceProd
@@ -61,110 +61,128 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
         ApiParseWoo.do_specials = False
         ApiParseWoo.do_dyns = False
 
-    def sub_entity_join_leave(
-        self, client, sub_client, sub_entity_handle
-    ):
-        first_sub_raw = sub_client.get_first_endpoint_item()
-        first_sub_core = sub_client.coldata_class.translate_data_from(
-            first_sub_raw, sub_client.coldata_target
-        )
-        if self.debug:
-            print("first sub core:\n%s" % pformat(first_sub_core.items()))
-        first_sub_pkey = first_sub_core.get(sub_client.primary_key_handle)
-        if self.debug:
-            print("first sub pkey:%s" % first_sub_pkey)
-        self.assertTrue(first_sub_pkey is not None)
-
-        first_entity_raw = client.get_first_endpoint_item()
-        first_entity_core = client.coldata_class.translate_data_from(
-            first_entity_raw, client.coldata_target
-        )
-        if self.debug:
-            print("first entity core:\n%s" % pformat(first_entity_core.items()))
-        first_entity_pkey = first_entity_core.get(client.primary_key_handle)
-        if self.debug:
-            print("first entity pkey:%s" % first_entity_pkey)
-        first_entity_subs = first_entity_core.get(sub_entity_handle)
-        first_entity_sub_pkeys = [
-            sub.get(sub_client.primary_key_handle) \
-            for sub in first_entity_subs
-        ]
-        if self.debug:
-            print("first entity sub pkeys:%s" % first_entity_sub_pkeys)
-
-        new_entity_sub_pkeys = first_entity_sub_pkeys[:]
-        if first_sub_pkey in new_entity_sub_pkeys:
-            new_entity_sub_pkeys.remove(first_sub_pkey)
+    def toggle(self, sequence, element):
+        sequence = sequence[:]
+        if element in sequence:
+            sequence.remove(element)
         else:
-            new_entity_sub_pkeys.append(first_sub_pkey)
-        if self.debug:
-            print("new entity sub pkeys:%s" % new_entity_sub_pkeys)
-        self.assertNotEqual(
-            set(first_entity_sub_pkeys),
-            set(new_entity_sub_pkeys)
-        )
+            sequence.append(element)
+        return sequence
 
-        updates_core = {
-            sub_entity_handle: [
-                {sub_client.primary_key_handle: pkey} \
-                for pkey in new_entity_sub_pkeys
-            ]
-        }
+    @classmethod
+    def get_pkey_list(cls, items, client):
+        return sorted([
+            item.get(client.primary_key_handle) \
+            for item in items
+        ])
 
-        first_response_raw = client.upload_changes_core(
-            first_entity_pkey,  updates_core
-        ).json()
-        first_response_core = client.coldata_class.translate_data_from(
-            first_response_raw, client.coldata_target
-        )
-        if self.debug:
-            print("first response core:\n%s" % pformat(first_response_core.items()))
-        first_response_pkey = first_response_core.get(client.primary_key_handle)
-        if self.debug:
-            print("first response pkey:%s" % first_response_pkey)
-        self.assertEqual(
-            first_response_pkey, first_entity_pkey
-        )
-        first_response_subs = first_response_core.get(sub_entity_handle)
-        first_response_sub_pkeys = [
-            sub.get(sub_client.primary_key_handle) \
-            for sub in first_response_subs
+    def sub_join_leave(
+        self, client, sub_client, sub_handle
+    ):
+        """
+        Helper method containing common functionality for testing sub-entities
+        (items that are children of other items, e.g. categories, attachments)
+        """
+
+        entity_raw = client.get_first_endpoint_item()
+        entity_pkey, entity_subs = tuple(self.raw_get_core_paths(
+            client, entity_raw, [client.primary_key_handle, sub_handle]
+        ))
+
+        first_sub_raw = sub_client.get_first_endpoint_item()
+        first_sub_pkey, = tuple(self.raw_get_core_paths(
+            sub_client, first_sub_raw, [sub_client.primary_key_handle]
+        ))
+        self.assertFalse(first_sub_pkey is None)
+
+        entity_sub_pkeys = self.get_pkey_list(entity_subs, sub_client)
+
+        new_sub_pkeys = self.toggle(entity_sub_pkeys, first_sub_pkey)
+
+        new_subs = [
+            {sub_client.primary_key_handle: pkey} \
+            for pkey in new_sub_pkeys
         ]
-        self.assertEqual(
-            set(new_entity_sub_pkeys),
-            set(first_response_sub_pkeys)
+
+        if new_subs == []:
+            raise UserWarning("undefined behaviour: removing all sub entities")
+
+        self.check_update_target_path(
+            client, entity_pkey, sub_handle, new_subs,
+            comparison=functools.partial(self.get_pkey_list, client=sub_client)
         )
 
-        updates_core = {
-            sub_entity_handle: first_entity_subs
-        }
+        self.check_update_target_path(
+            client, entity_pkey, sub_handle, entity_subs,
+            comparison=functools.partial(self.get_pkey_list, client=sub_client)
+        )
 
-        second_response_raw = client.upload_changes_core(
-            first_entity_pkey,  updates_core
-        ).json()
-        second_response_core = client.coldata_class.translate_data_from(
-            second_response_raw, client.coldata_target
+    def extract_core(self, client, item_raw):
+        return client.coldata_class.translate_data_from(
+            item_raw, client.coldata_target
         )
-        if self.debug:
-            print("second response core:\n%s" % pformat(second_response_core.items()))
-        second_response_pkey = second_response_core.get(client.primary_key_handle)
-        if self.debug:
-            print("second response pkey:%s" % second_response_pkey)
-        self.assertEqual(
-            second_response_pkey, first_entity_pkey
-        )
-        second_response_subs = second_response_core.get(sub_entity_handle)
-        second_response_sub_pkeys = [
-            sub.get(sub_client.primary_key_handle) \
-            for sub in second_response_subs
-        ]
-        if self.debug:
-            print("second response sub pkeys:%s" % second_response_sub_pkeys)
 
-        self.assertEqual(
-            set(second_response_sub_pkeys),
-            set(first_entity_sub_pkeys)
+    def response_extract_core(self, client, response):
+        """
+        Get the response item in core format
+        """
+        return self.extract_core(
+            client,
+            client.apply_to_data_item(response.json(), SanitationUtils.identity)
         )
+
+    def core_get_core_paths(self, client, item_core, core_paths):
+        """
+        Given an item in core format, extract the values from the target at the
+        given core paths.
+        """
+        for core_path in core_paths:
+            yield client.coldata_class.get_from_path(
+                item_core, core_path
+            )
+
+    def raw_get_core_paths(self, client, item_raw, core_paths):
+        """
+        Given an item in raw format, convert to core format and extract the values
+        from the target at the given core paths.
+        """
+        return self.core_get_core_paths(
+            client, self.extract_core(client, item_raw), core_paths
+        )
+
+
+    def check_update_target_path(self, client, pkey, core_path, value, **kwargs):
+        """
+        Set the value of the item represented by a given primary key to the
+        given value at the core path.
+        """
+        updates_core = client.coldata_class.update_in_path(
+            {}, core_path, value
+        )
+        response = client.upload_changes_core(pkey, updates_core, **kwargs)
+        self.assertTrue(response)
+        self.assertTrue(hasattr(response, 'json'))
+        response_core = self.response_extract_core(client, response)
+        self.assertTrue(response_core)
+        response_value = client.coldata_class.get_from_path(
+            response_core, core_path
+        )
+        if 'comparison' in kwargs and callable(kwargs['comparison']):
+            value = kwargs['comparison'](value)
+            response_value = kwargs['comparison'](response_value)
+        self.assertEqual(response_value, value)
+
+    def check_delete_target_path(self, client, pkey, core_path, **kwargs):
+        self.check_update_target_path(client, pkey, core_path, '', **kwargs)
+
+    def new_distinct_strint(self, old_value):
+        """
+        Generate a new random str float until it is different to the old value
+        """
+        new_value = old_value
+        while new_value == old_value:
+            new_value = str(float(random.randint(10, 20)))
+        return new_value
 
 # TODO: mock these tests
 @pytest.mark.local
@@ -173,6 +191,7 @@ class TestProdSyncClientSimple(TestProdSyncClient):
     Test cases for products, type = simple
     """
     dataset_has_variable = False
+    dataset_has_img = True
 
     def test_read(self):
         response = []
@@ -197,11 +216,6 @@ class TestProdSyncClientSimple(TestProdSyncClient):
         with product_client_class(**product_client_args) as client:
             first_item = client.get_first_endpoint_item()
             self.assertTrue(first_item)
-            if self.debug:
-                print("fist item:\n%s" % pformat(first_item))
-                first_item_json = SanitationUtils.encode_json(first_item)
-                print("fist item json:\n%s" % pformat(first_item_json))
-
 
     def test_analyse_remote(self):
         product_parser_class = self.settings.slave_parser_class
@@ -259,136 +273,55 @@ class TestProdSyncClientSimple(TestProdSyncClient):
             ))
 
     def test_upload_changes(self):
-        target_key = 'weight'
-        # target_key = 'regular_price' # this interferes with lasercommerce
+        delta_path = 'weight'
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
-            first_item = client.get_first_endpoint_item()
-            if self.debug:
-                print("first prod:\n%s" % pformat(first_item))
-            first_pkey = client.get_item_core(first_item, 'id')
-            try:
-                first_value = float(first_item[target_key])
-            except ValueError:
-                first_value = 0.0
-            if self.debug:
-                print("first_value:%s" % first_value)
+            first_item_raw = client.get_first_endpoint_item()
+            value, pkey = tuple(self.raw_get_core_paths(
+                client, first_item_raw, [delta_path, client.primary_key_handle]
+            ))
+            if value is None:
+                value = '0.0'
 
-            new_value = first_value
-            while new_value == first_value:
-                new_value = float(random.randint(10, 20))
-            if self.debug:
-                print("new_value:%s" % new_value)
-
-            updates = client.set_item_core({}, target_key, str(new_value))
-            if self.debug:
-                print("updates:\n%s" % pformat(updates))
-            response = client.upload_changes(first_pkey, updates)
-            if self.debug:
-                print("first response:\n%s" % pformat(response.text))
-            self.assertTrue(response)
-            self.assertTrue(hasattr(response, 'json'))
-            response_price = client.get_data_core(response.json(), target_key)
-            self.assertEqual(response_price, str(new_value))
-            updates = client.set_item_core({}, target_key, str(first_value))
-
-            response = client.upload_changes(first_pkey, updates)
-            if self.debug:
-                print("second response:\n%s" % pformat(response.text))
-            self.assertTrue(hasattr(response, 'json'))
-            response_price = client.get_data_core(response.json(), target_key)
-            self.assertEqual(response_price, str(first_value))
+            new_value = self.new_distinct_strint(value)
+            self.check_update_target_path(client, pkey, delta_path, new_value)
+            self.check_update_target_path(client, pkey, delta_path, value)
 
     def test_upload_changes_meta(self):
-        target_key = 'lc_wn_regular_price'
+        delta_path = 'meta.lc_wn_regular_price'
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
-            first_item = client.get_first_endpoint_item()
-            if self.debug:
-                print("first prod:\n%s" % pformat(first_item))
-            first_pkey = client.get_item_core(first_item, 'id')
-            try:
-                first_value = float(client.get_item_meta(first_item, target_key))
-            except ValueError:
-                first_value = 0.0
-            if self.debug:
-                print("first_value:%s" % first_value)
+            first_item_raw = client.get_first_endpoint_item()
+            value, pkey = tuple(self.raw_get_core_paths(
+                client, first_item_raw, [delta_path, client.primary_key_handle]
+            ))
+            if value is None:
+                value = '0.0'
 
-            new_value = first_value
-            while new_value == first_value:
-                new_value = float(random.randint(10, 20))
-            if self.debug:
-                print("new_value:%s" % new_value)
+            new_value = self.new_distinct_strint(value)
 
-            updates = client.set_item_meta({}, {target_key: str(new_value)})
-            if self.debug:
-                print("updates:\n%s" % pformat(updates))
-
-            response = client.upload_changes(first_pkey, updates)
-            if self.debug:
-                print("first response:\n%s" % pformat(response.text))
-            self.assertTrue(response)
-            self.assertTrue(hasattr(response, 'json'))
-            response_price = client.get_data_meta(response.json(), target_key)
-            self.assertEqual(response_price, str(new_value))
-
-            updates = client.set_item_meta({}, {target_key: str(first_value)})
-            response = client.upload_changes(first_pkey, updates)
-            if self.debug:
-                print("second response:\n%s" % response.text)
-            self.assertTrue(response)
-            self.assertTrue(hasattr(response, 'json'))
-            response_price = client.get_data_meta(response.json(), target_key)
-            self.assertEqual(response_price, str(first_value))
+            self.check_update_target_path(client, pkey, delta_path, new_value)
+            self.check_update_target_path(client, pkey, delta_path, value)
 
     def test_upload_delete_meta(self):
-        target_key = 'lc_wn_regular_price'
+        delta_path = 'meta.lc_wn_regular_price'
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
         with product_client_class(**product_client_args) as client:
-            first_item = client.get_first_endpoint_item()
-            if self.debug:
-                print("first prod:\n%s" % pformat(first_item))
-            first_pkey = client.get_item_core(first_item, 'id')
-            try:
-                first_value = float(client.get_item_meta(first_item, target_key))
-            except ValueError:
-                first_value = 0.0
-            if self.debug:
-                print("first_value:%s" % first_value)
+            first_item_raw = client.get_first_endpoint_item()
+            value, pkey = tuple(self.raw_get_core_paths(
+                client, first_item_raw, [delta_path, client.primary_key_handle]
+            ))
+            if value is None:
+                value = '0.0'
 
-            new_value = first_value
-            while new_value == first_value:
-                new_value = random.randint(10, 20)
-            if self.debug:
-                print("new_value:%s" % new_value)
-
-            updates = client.delete_item_meta({}, target_key)
-
-            if self.debug:
-                print("updates:\n%s" % pformat(updates))
-
-            response = client.upload_changes(first_pkey, updates)
-            if self.debug:
-                print("first response:\n%s" % pformat(response.text))
-            self.assertTrue(response)
-            self.assertTrue(hasattr(response, 'json'))
-            response_price = client.get_data_meta(response.json(), target_key)
-            self.assertEqual(response_price, '')
-
-            updates = client.set_item_meta({}, {target_key: str(first_value)})
-            response = client.upload_changes(first_pkey, updates)
-            if self.debug:
-                print("second response: %s" % response.text)
-            self.assertTrue(response)
-            self.assertTrue(hasattr(response, 'json'))
-            response_price = client.get_data_meta(response.json(), target_key)
-            self.assertEqual(response_price, str(first_value))
+            self.check_delete_target_path(client, pkey, delta_path)
+            self.check_update_target_path(client, pkey, delta_path, value)
 
     def test_upload_create_delete_product(self):
         product_client_class = self.settings.slave_download_client_class
@@ -396,21 +329,16 @@ class TestProdSyncClientSimple(TestProdSyncClient):
 
         with product_client_class(**product_client_args) as client:
             first_prod_raw = client.get_first_endpoint_item()
-            if self.debug:
-                print("first prod:\n%s" % pformat(first_prod_raw))
-
-            if self.debug:
-                print("first prod raw:\n%s" % pformat(first_prod_raw.items()))
             first_prod_core = client.coldata_class.translate_data_from(
                 first_prod_raw, client.coldata_target
             )
-            if self.debug:
-                print("first prod core:\n%s" % pformat(first_prod_core.items()))
-            first_prod_sku = first_prod_core.get('sku')
-            if self.debug:
-                print("first prod sku:%s" % first_prod_sku)
+            first_prod_sku = client.coldata_class.get_from_path(
+                first_prod_core, 'sku'
+            )
+
             new_sku = "%s-%02x" % (first_prod_sku, random.randrange(0,255))
             first_prod_core['sku'] = new_sku
+
             new_prod_raw = client.coldata_class.translate_data_to(
                 first_prod_core, client.coldata_target_write
             )
@@ -419,20 +347,16 @@ class TestProdSyncClientSimple(TestProdSyncClient):
             new_prod_raw = client.strip_item_readonly(new_prod_raw)
 
             response = client.create_item(new_prod_raw)
-
-            self.assertTrue(response)
-            if self.debug:
-                print("response: %s" % response.text)
-            self.assertTrue(hasattr(response, 'json'))
-            created_id = client.get_data_core(response.json(), 'id')
+            response_core = self.response_extract_core(client, response)
+            created_id = client.coldata_class.get_from_path(
+                response_core, client.primary_key_handle
+            )
             response = client.delete_item(created_id)
-            if self.debug:
-                print("response: %s" % response.text)
-            self.assertTrue(response)
-            self.assertTrue(hasattr(response, 'json'))
+            self.assertTrue(response.json())
+
 
     def test_upload_product_categories_join_leave(self):
-        sub_entity_handle = 'product_categories'
+        sub_handle = 'product_categories'
 
         cat_client_class = self.settings.slave_cat_sync_client_class
         cat_client_args = self.settings.slave_cat_sync_client_args
@@ -442,15 +366,10 @@ class TestProdSyncClientSimple(TestProdSyncClient):
 
         with cat_client_class(**cat_client_args) as sub_client, \
         product_client_class(**product_client_args) as client:
-            self.sub_entity_join_leave(
-                client, sub_client, sub_entity_handle
+            self.sub_join_leave(
+                client, sub_client, sub_handle
             )
 
-
-class TestProdSyncClientSimpleWP(TestProdSyncClientSimple):
-    """
-    Perform tests with WPTest dataset
-    """
     def test_upload_product_images_attach_remove(self):
         """
         Get the first image from the api and attach it to the first product.
@@ -459,19 +378,21 @@ class TestProdSyncClientSimpleWP(TestProdSyncClientSimple):
         Only works with WPTest dataset
         """
         #TODO: update WCTest config so this works
+        if not self.dataset_has_img:
+            return
 
-        sub_entity_handle = 'attachment_objects'
+        sub_handle = 'attachment_objects'
 
-        cat_client_class = self.settings.slave_img_sync_client_class
-        cat_client_args = self.settings.slave_img_sync_client_args
+        img_client_class = self.settings.slave_img_sync_client_class
+        img_client_args = self.settings.slave_img_sync_client_args
 
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
-        with cat_client_class(**cat_client_args) as sub_client, \
+        with img_client_class(**img_client_args) as sub_client, \
         product_client_class(**product_client_args) as client:
-            self.sub_entity_join_leave(
-                client, sub_client, sub_entity_handle
+            self.sub_join_leave(
+                client, sub_client, sub_handle
             )
 
 @pytest.mark.local
@@ -481,135 +402,283 @@ class TestProdSyncClientSimpleWC(TestProdSyncClientSimple):
     """
     config_file = "generator_config_wctest.yaml"
     dataset_has_variable = True
+    dataset_has_img = False
 
-    @unittest.skip("not implemented yet")
-    def test_upload_product_variation_attach_remove(self):
-        pass
+    def test_upload_var_create_delete(self):
 
-@pytest.mark.local
-class TestVarSyncClientWC(TestProdSyncClient):
-    """
-    These tests only work on WCTest dataset
-    """
-    config_file = "generator_config_wctest.yaml"
-    def test_upload_changes_variation(self):
 
-        delta_handle = 'weight'
-        expected_delta = str(random.randint(1, 100))
-        updates_core = OrderedDict([
-            (delta_handle, expected_delta)
-        ])
+
+
+
+        # TODO: THIS ONE
+
+
+
+
+
+
+
+        sub_handle = 'variations'
+
+        var_client_class = self.settings.slave_var_sync_client_class
+        var_client_args = self.settings.slave_var_sync_client_args
 
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
 
+        with var_client_class(**var_client_args) as sub_client, \
+        product_client_class(**product_client_args) as client:
+
+            entity_core = self.extract_core(
+                client, client.get_first_variable_product()
+            )
+            entity_pkey, entity_subs, entity_attributes = tuple(
+                self.core_get_core_paths(client, entity_core, [
+                    client.primary_key_handle, sub_handle, 'attributes'
+                ]
+            ))
+            self.assertTrue(entity_subs)
+            self.assertTrue(entity_attributes)
+            self.assertTrue(entity_attributes[0]['options'])
+            self.assertFalse(entity_attributes[0]['variation'] is None)
+
+            entity_var_attributes = [
+                attribute for attribute in entity_attributes if \
+                attribute.get('variation')
+            ]
+            self.assertTrue(entity_var_attributes)
+            entity_sub_pkeys = self.get_pkey_list(entity_subs, sub_client)
+            self.assertTrue(entity_sub_pkeys)
+
+            sub_core = self.extract_core(
+                sub_client, sub_client.get_first_variation(entity_pkey)
+            )
+            sub_pkey, sub_sku, sub_attr_instances = tuple(self.core_get_core_paths(
+                sub_client, sub_core, [
+                    sub_client.primary_key_handle, 'sku', 'attributes'
+                ]
+            ))
+
+            self.assertTrue(sub_attr_instances)
+            self.assertTrue(sub_attr_instances[0]['title'])
+
+            perform_deletion = True
+            # Delete the variation
+            if perform_deletion:
+                sub_client.delete_item(sub_pkey, parent_pkey=entity_pkey)
+
+            # Check that the variation was deleted
+            mod_entity_response = client.get_single_endpoint_item(
+                entity_pkey
+            )
+            mod_entity_core = self.response_extract_core(
+                client, mod_entity_response
+            )
+            mod_entity_subs, mod_entity_attributes = tuple(
+                self.core_get_core_paths(client, mod_entity_core, [
+                    sub_handle, 'attributes'
+                ])
+            )
+
+            mod_var_attributes = [
+                attribute for attribute in mod_entity_attributes if \
+                attribute.get('variation')
+            ]
+            self.assertTrue(mod_var_attributes)
+            mod_sub_pkeys = self.get_pkey_list(mod_entity_subs, sub_client)
+
+            self.assertEqual(
+                perform_deletion,
+                bool( set(entity_sub_pkeys) - set(mod_sub_pkeys) )
+            )
+            # self.assertEqual(
+            #     perform_deletion,
+            #     bool( mod_var_attributes != entity_var_attributes )
+            # )
+
+            # Re-create the variation we deleted
+
+            if not perform_deletion:
+                new_sku = "%s-%02x" % (sub_sku, random.randrange(0,255))
+                sub_core['sku'] = new_sku
+
+            new_sub_raw = sub_client.coldata_class.translate_data_to(
+                sub_core, sub_client.coldata_target_write
+            )
+
+            # TODO: should this go in sub_client.create_item?
+            new_sub_raw = sub_client.strip_item_readonly(new_sub_raw)
+
+            response = sub_client.create_item(new_sub_raw, parent_pkey=entity_pkey)
+
+            # Verify it was created
+
+            new_sub_core = self.response_extract_core(sub_client, response)
+
+            new_sub_pkey, new_sub_sku, new_sub_attr_instances = tuple(self.core_get_core_paths(
+                sub_client, new_sub_core, [
+                    sub_client.primary_key_handle, 'sku', 'attributes'
+                ]
+            ))
+
+            self.assertEqual(
+                perform_deletion,
+                new_sub_sku == sub_sku
+            )
+            self.assertNotEqual(new_sub_pkey, sub_pkey)
+
+
+
+
+
+
+
+
+
+
+
+            # sub_pkey, = tuple(self.raw_get_core_paths(
+            #     sub_client, sub_raw, [sub_client.primary_key_handle]
+            # ))
+            # self.assertFalse(sub_pkey is None)
+
+            # entity_sub_pkeys = self.get_pkey_list(entity_subs, sub_client)
+            #
+            # new_sub_pkeys = self.toggle(entity_sub_pkeys, sub_pkey)
+            #
+            # new_subs = [
+            #     {sub_client.primary_key_handle: pkey} \
+            #     for pkey in new_sub_pkeys
+            # ]
+            #
+            # self.check_update_target_path(
+            #     client, entity_pkey, sub_handle, new_subs,
+            #     comparison=functools.partial(self.get_pkey_list, client=sub_client)
+            # )
+            #
+            # self.check_update_target_path(
+            #     client, entity_pkey, sub_handle, entity_subs,
+            #     comparison=functools.partial(self.get_pkey_list, client=sub_client)
+            # )
+
+@unittest.skip("legacy api not supported")
+class TestProdSyncClientSimpleWCLegacy(TestProdSyncClientSimple):
+    config_file = "generator_config_wctest.yaml"
+    dataset_has_variable = True
+    dataset_has_img = False
+
+    def setUp(self):
+        super(TestProdSyncClientSimpleWCLegacy, self).setUp()
+        self.settings.wc_api_namespace = "wc-api"
+        self.settings.wc_api_version = "v3"
+
+    @unittest.skip("legacy API does not do product category primary keys so it's too complicated")
+    def test_upload_product_categories_join_leave(self):
+        super(TestProdSyncClientSimpleWCLegacy, self).test_upload_product_categories_join_leave()
+
+    def test_upload_delete_meta(self):
+        """ Legacy API does not do meta. """
+        pass
+
+    def test_upload_changes_meta(self):
+        """ Legacy API does not do meta. """
+        pass
+
+
+
+
+@pytest.mark.local
+class TestVarSyncClientWC(TestProdSyncClient):
+    """
+    These tests only work on WCTest dataset because WPTest doesn't have variable
+    """
+    config_file = "generator_config_wctest.yaml"
+    def test_upload_changes_variation(self):
+        delta_path = 'weight'
+
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
         with product_client_class(**product_client_args) as client:
             first_prod_raw = client.get_first_variable_product()
-            self.assertTrue(first_prod_raw)
-            if self.debug:
-                print("first prod raw:\n%s" % pformat(first_prod_raw.items()))
-            first_prod_core = client.coldata_class.translate_data_from(
-                first_prod_raw, client.coldata_target
-            )
-            if self.debug:
-                print("first prod core:\n%s" % pformat(first_prod_core.items()))
-            first_prod_pkey = first_prod_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first prod pkey:%s" % first_prod_pkey)
+            parent_pkey,  = tuple(self.raw_get_core_paths(
+                client, first_prod_raw, [client.primary_key_handle]
+            ))
 
         var_client_class = self.settings.slave_var_sync_client_class
         var_client_args = self.settings.slave_var_sync_client_args
         with var_client_class(**var_client_args) as client:
-            first_var_raw = client.get_first_variation(first_prod_pkey)
-            if self.debug:
-                print("first var raw:\n%s" % pformat(first_var_raw.items()))
-            first_var_core = client.coldata_class.translate_data_from(
-                first_var_raw, client.coldata_target
-            )
-            if self.debug:
-                print("first var core:\n%s" % pformat(first_var_core.items()))
-            first_var_pkey = first_var_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first var pkey:%s" % first_var_pkey)
-            first_var_delta = first_var_core.get(delta_handle)
+            first_var_raw = client.get_first_variation(parent_pkey)
+            value, var_pkey = tuple(self.raw_get_core_paths(
+                client, first_var_raw, [delta_path, client.primary_key_handle]
+            ))
 
-            first_response_raw = client.upload_changes_core(
-                first_prod_pkey, updates_core, var_pkey=first_var_pkey
-            ).json()
-            if self.debug:
-                print("first response raw:\n%s" % pformat(first_response_raw.items()))
-            first_response_core = client.coldata_class.translate_data_from(
-                first_response_raw, client.coldata_target
-            )
-            if self.debug:
-                print("first response core:\n%s" % pformat(first_response_core.items()))
-            first_response_pkey = first_response_core.get(client.primary_key_handle)
-            if self.debug:
-                print("first response pkey:%s" % first_response_pkey)
-            first_response_delta = first_response_core.get(delta_handle)
+            new_value = self.new_distinct_strint(value)
 
-            self.assertEqual(
-                first_response_delta, expected_delta
+            self.check_update_target_path(
+                client, var_pkey, delta_path, new_value, parent_pkey=parent_pkey
+            )
+            self.check_update_target_path(
+                client, var_pkey, delta_path, value, parent_pkey=parent_pkey
             )
 
-            updates_core[delta_handle] = first_var_delta
-
-            second_response_raw = client.upload_changes_core(
-                first_prod_pkey, updates_core, var_pkey=first_var_pkey
-            ).json()
-            if self.debug:
-                print("second response raw:\n%s" % pformat(second_response_raw.items()))
-            second_response_core = client.coldata_class.translate_data_from(
-                second_response_raw, client.coldata_target
-            )
-            if self.debug:
-                print("second response core:\n%s" % pformat(second_response_core.items()))
-            second_response_pkey = second_response_core.get(client.primary_key_handle)
-            if self.debug:
-                print("second response pkey:%s" % second_response_pkey)
-            second_response_delta = second_response_core.get(delta_handle)
-
-            self.assertEqual(
-                second_response_delta, first_var_delta
-            )
-
-    @unittest.skip("Destructive tests not mocked yet")
     def test_upload_changes_var_meta(self):
-        pkey = 23
-        expected_result = str(random.randint(1, 100))
-        updates = dict([
-            ('custom_meta', dict([
-                ('lc_dn_regular_price', expected_result)
-            ]))
-        ])
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
-            response = client.upload_changes(pkey, updates)
-            # print response
-            # if hasattr(response, 'json'):
-            #     print "test_upload_changes_var_meta", response.json()
-            # self.assertIn('meta_test_key', str(response.json()))
-            self.assertIn('lc_dn_regular_price',
-                          (response.json()['product']['meta']))
-            wn_regular_price = response.json()['product']['meta'][
-                'lc_dn_regular_price']
-            self.assertEqual(wn_regular_price, expected_result)
+        delta_path = 'meta.lc_wn_regular_price'
 
-    @unittest.skip("Destructive tests not mocked yet")
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+        with product_client_class(**product_client_args) as client:
+            first_prod_raw = client.get_first_variable_product()
+            parent_pkey,  = tuple(self.raw_get_core_paths(
+                client, first_prod_raw, [client.primary_key_handle]
+            ))
+
+        var_client_class = self.settings.slave_var_sync_client_class
+        var_client_args = self.settings.slave_var_sync_client_args
+        with var_client_class(**var_client_args) as client:
+            first_var_raw = client.get_first_variation(parent_pkey)
+            value, var_pkey = tuple(self.raw_get_core_paths(
+                client, first_var_raw, [delta_path, client.primary_key_handle]
+            ))
+
+            new_value = self.new_distinct_strint(value)
+
+            self.check_update_target_path(
+                client, var_pkey, delta_path, new_value, parent_pkey=parent_pkey
+            )
+            self.check_update_target_path(
+                client, var_pkey, delta_path, value, parent_pkey=parent_pkey
+            )
+
     def test_upload_delete_var_meta(self):
-        pkey = 41
-        updates = OrderedDict([
-            ('custom_meta', OrderedDict([
-                ('lc_wn_regular_price', u'')
-            ]))
-        ])
-        with ProdSyncClientWC(self.settings.slave_wc_api_params) as client:
-            response = client.upload_changes(pkey, updates)
-            # print response
-            # if hasattr(response, 'json'):
-            #     print "test_upload_delete_var_meta", response.json()
-            wn_regular_price = response.json()['product'][
-                'meta'].get('lc_wn_regular_price')
-            self.assertFalse(wn_regular_price)
+        delta_path = 'meta.lc_wn_regular_price'
+
+        product_client_class = self.settings.slave_download_client_class
+        product_client_args = self.settings.slave_download_client_args
+        with product_client_class(**product_client_args) as client:
+            first_prod_raw = client.get_first_variable_product()
+            parent_pkey,  = tuple(self.raw_get_core_paths(
+                client, first_prod_raw, [client.primary_key_handle]
+            ))
+
+        var_client_class = self.settings.slave_var_sync_client_class
+        var_client_args = self.settings.slave_var_sync_client_args
+        with var_client_class(**var_client_args) as client:
+            first_var_raw = client.get_first_variation(parent_pkey)
+            value, var_pkey = tuple(self.raw_get_core_paths(
+                client, first_var_raw, [delta_path, client.primary_key_handle]
+            ))
+
+            self.check_delete_target_path(
+                client, var_pkey, delta_path, parent_pkey=parent_pkey
+            )
+            self.check_update_target_path(
+                client, var_pkey, delta_path, value, parent_pkey=parent_pkey
+            )
+
+@pytest.mark.local
+class TestAttrSyncClientWC(TestProdSyncClient):
+    def test_get_first_attr(self):
+        pass
 
 @pytest.mark.local
 class TestCatSyncClient(TestProdSyncClient):
@@ -667,13 +736,8 @@ class TestImgSyncClient(TestProdSyncClient):
         with img_client_class(**img_client_args) as client:
             img_path = os.path.join(TESTS_DATA_DIR, 'sample_img.jpg')
             response = client.upload_image(img_path)
-            if self.debug:
-                print("response: %s" % pformat(response.json()))
-            id_key = 'id'
-            if self.settings.wp_api_version == 'wp/v1':
-                id_key = 'ID'
-            self.assertIn(id_key, response.json())
-            img_id = client.get_data_core(response.json(), id_key)
+            self.assertIn(client.primary_key_handle, response.json())
+            img_id = client.get_data_core(response.json(), client.primary_key_handle)
             client.delete_item(img_id)
 
     def test_upload_image_changes_slave_delete(self):
@@ -703,23 +767,13 @@ class TestImgSyncClient(TestProdSyncClient):
         with img_client_class(**img_client_args) as client:
             img_path = new_img_core.pop('file_path')
             response = client.upload_image(img_path)
-            if self.debug:
-                print("upload images response: %s" % pformat(response.json()))
-            response_core = client.coldata_class.translate_data_from(
-                response.json(), client.coldata_target
-            )
+            response_core = self.response_extract_core(client, response)
             self.assertIn(client.primary_key_handle, response.json())
             img_id = client.coldata_class.get_from_path(
                 response_core, client.primary_key_handle
             )
-            # if self.debug:
-            #     import pudb; pudb.set_trace()
             response = client.upload_changes_core(img_id, new_img_core)
-            if self.debug:
-                print("upload changes response: %s" % pformat(response.json()))
-            response_core = client.coldata_class.translate_data_from(
-                response.json(), client.coldata_target_write
-            )
+            response_core = self.response_extract_core(client, response)
             self.assertEqual(
                 response_core['title'], title
             )
@@ -727,7 +781,8 @@ class TestImgSyncClient(TestProdSyncClient):
                 response_core['post_excerpt'], content
             )
             self.assertEqual(
-                response_core['post_content'], content
+                SanitationUtils.sanitize_cell(response_core['post_content']),
+                SanitationUtils.sanitize_cell(content)
             )
             self.assertEqual(
                 response_core['alt_text'], title

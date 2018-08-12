@@ -148,6 +148,13 @@ ImportWooApiProduct.container = WooApiProdList
 class ImportWooApiProductSimple(ImportWooApiProduct, ImportShopProductSimpleMixin):
     product_type = ImportShopProductSimpleMixin.product_type
 
+class ImportWooApiProductSimpleLegacy(ImportWooApiProductSimple):
+    verify_meta_keys = SeqUtils.subtrace_two_lists(
+        ImportWooApiProductSimple.verify_meta_keys,
+        [
+            ImportWooApiProductSimple.slug_key
+        ]
+    )
 
 class ImportWooApiProductVariable(
         ImportWooApiProduct, ImportShopProductVariableMixin):
@@ -702,6 +709,7 @@ class ApiParseWoo(
         return object_data
 
 class ApiParseWooLegacy(ApiParseWoo):
+    simple_container = ImportWooApiProductSimpleLegacy
     category_container = ImportWooApiCategoryLegacy
     coldata_target = 'wc-legacy-api'
 
@@ -714,7 +722,7 @@ class ApiParseWooLegacy(ApiParseWoo):
 
         if 'categories' in api_data:
             for category in api_data['categories']:
-                self.process_api_category({'title': category}, object_data)
+                self.process_api_category_gen({'title': category}, object_data)
                 # self.rowcount += 1
 
         if 'variations' in api_data:

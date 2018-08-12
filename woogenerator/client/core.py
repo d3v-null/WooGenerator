@@ -785,6 +785,11 @@ class SyncClientRest(SyncClientAbstract):
                         Registrar.register_message('reached limit, exiting')
                     return
 
+    def get_endpoint(self, **kwargs):
+        if kwargs.pop('singular', None):
+            return self.endpoint_singular, kwargs
+        return self.endpoint_plural, kwargs
+
     def get_single_endpoint(self, pkey, **kwargs):
         try:
             pkey = int(pkey)
@@ -792,11 +797,16 @@ class SyncClientRest(SyncClientAbstract):
             exc = UserWarning("Can't convert pkey %s to int" % pkey)
             Registrar.register_error(exc)
             raise exc
-        endpoint_parsed = urlparse(self.endpoint_plural)
-        service_endpoint = '%s/%d' % (endpoint_parsed.path, pkey)
-        if endpoint_parsed.query:
-            service_endpoint += '?%s' % endpoint_parsed.query
-        return service_endpoint
+        endpoint, kwargs = self.get_endpoint(**kwargs)
+        endpoint_parsed = urlparse(endpoint)
+        endpoint = '%s/%d' % (endpoint_parsed.path, pkey)
+        query_string = '&'.join(filter(None, [
+            endpoint_parsed.query,
+            kwargs.get('extra_query_string')
+        ]))
+        if query_string:
+            endpoint += '?%s' % query_string
+        return endpoint
 
     def process_response(self, response):
         assert response.status_code not in [400, 401], "API ERROR"
@@ -819,15 +829,16 @@ class SyncClientRest(SyncClientAbstract):
         data = dict([(key, value) for key, value in data.items()])
         # print "service version: %s, data:%s" % (self.service.version, data)
         if self.page_nesting:
-            data = {self.endpoint_singular: data}
+            page_key = getattr(self, 'page_key', self.endpoint_singular)
+            data = {page_key: data}
         if Registrar.DEBUG_API:
             Registrar.register_message("updating %s: %s" %
                                        (service_endpoint, data))
         response = self.service.put(service_endpoint, data)
         return self.process_response(response)
 
-    def get_single_endpoint_item(self, pkey):
-        service_endpoint = self.get_single_endpoint(pkey)
+    def get_single_endpoint_item(self, pkey, **kwargs):
+        service_endpoint = self.get_single_endpoint(pkey, **kwargs)
         response = self.service.get(service_endpoint)
         return self.process_response(response)
 
@@ -858,15 +869,17 @@ class SyncClientRest(SyncClientAbstract):
             total_items_key=self.total_items_key,
         )
 
-    def get_page_generator(self, endpoint=None):
+    def get_page_generator(self, endpoint=None, page_key=None):
         """
         Get a generator for endpoint items.
         """
         if endpoint is None:
             endpoint = self.endpoint_plural
+        if page_key is None:
+            page_key = getattr(self, 'page_key', endpoint)
         # import pudb; pudb.set_trace()
         return itertools.chain(
-            (page[self.endpoint_plural] if self.page_nesting else page)
+            (page[page_key] if self.page_nesting else page)
             for page in self.get_iterator(endpoint)
         )
 
@@ -874,28 +887,31 @@ class SyncClientRest(SyncClientAbstract):
         """
         Creates an item in the API
         """
+        # TODO: what's with these lines?
         if hasattr(data, 'items'):
             data = dict([(key, value) for key, value in data.items()])
         if isinstance(data, dict):
             if str(data.get('parent')) == str(-1):
                 del data['parent']
-        service_endpoint = self.endpoint_plural
-        endpoint_singular = self.endpoint_singular
-        endpoint_singular = re.sub('/', '_', endpoint_singular)
+
+        endpoint, kwargs = self.get_endpoint(**kwargs)
         if self.page_nesting:
-            data = {endpoint_singular: data}
+            endpoint_singular = self.endpoint_singular
+            endpoint_singular = re.sub('/', '_', endpoint_singular)
+            page_key = getattr(self, 'page_key', endpoint_singular)
+            data = {page_key: data}
         if Registrar.DEBUG_API:
             Registrar.register_message("creating %s: %s" % (
-                service_endpoint,
+                endpoint,
                 pformat(data)[:1000]
             ))
         # TODO: add a better read timeout
         try:
-            response = self.service.post(service_endpoint, data, **kwargs)
+            response = self.service.post(endpoint, data, **kwargs)
         except ReadTimeout as exc:
             Registrar.register_warning(exc)
             kwargs['timeout'] = 30
-            response = self.service.post(service_endpoint, data, **kwargs)
+            response = self.service.post(endpoint, data, **kwargs)
         assert response.status_code not in [400, 401], "API ERROR"
         assert response.json(), "json should exist"
         assert not isinstance(
@@ -907,13 +923,14 @@ class SyncClientRest(SyncClientAbstract):
         return response
 
     def delete_item(self, pkey, **kwargs):
-        service_endpoint = "%s/%s" % (self.endpoint_plural, pkey)
         force = kwargs.pop('force', False)
         if force:
-            service_endpoint += "?force=true"
+            kwargs['extra_query_string'] = "force=true"
+        endpoint = self.get_single_endpoint(pkey, **kwargs)
+
         if Registrar.DEBUG_API:
-            Registrar.register_message("deleting %s" % service_endpoint)
-        response = self.service.delete(service_endpoint)
+            Registrar.register_message("deleting %s" % endpoint)
+        response = self.service.delete(endpoint)
         assert response.status_code not in [400, 401], "API ERROR"
         return response
 
@@ -1129,8 +1146,8 @@ class SyncClientWCLegacy(SyncClientRest):
     default_version = 'v3'
     default_namespace = 'wc-api'
     coldata_class = ColDataWpPost
-    coldata_target = 'wc-api-legacy-v3'
-    coldata_target_write = 'wc-api-legacy-v3-write'
+    coldata_target = 'wc-legacy-api-v3'
+    coldata_target_write = 'wc-legacy-api-v3-edit'
     primary_key_handle = 'id'
     page_nesting = True
     search_param = 'filter[q]'

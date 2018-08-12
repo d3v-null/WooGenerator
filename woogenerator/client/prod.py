@@ -11,6 +11,7 @@ class ProdSyncClientMixin(object):
     endpoint_singular = 'product'
     coldata_class = ColDataProductMeridian
 
+    # TODO: merge this with get_first_endpoint_item
     def get_first_variable_product(self):
         endpoint = "%s/%s" % (self.endpoint_plural, "?type=variable")
         for page in self.get_page_generator(endpoint):
@@ -29,6 +30,7 @@ class ProdSyncClientWCLegacy(SyncClientWCLegacy, ProdSyncClientMixin):
 class CatSyncClientMixin(object):
     endpoint_singular = 'product_category'
     endpoint_plural = 'products/categories'
+    page_key = 'product_categories'
     coldata_class = ColDataWcProdCategory
     primary_key_handle = 'term_id'
 
@@ -61,48 +63,44 @@ class VarSyncClientMixin(object):
         raise UserWarning("concept of endpoint singular does not apply to var sync client")
 
     def get_variations(self, parent_pkey):
-        try:
-            parent_pkey = int(parent_pkey)
-        except ValueError:
-            raise UserWarning("Can't convert parent_pkey %s to int" % parent_pkey)
-        endpoint = "%ss/%d/variations" % (
-            ProdSyncClientMixin.endpoint_singular,
-            parent_pkey
-        )
+        endpoint, _ = self.get_endpoint(parent_pkey=parent_pkey)
         return self.get_page_generator(endpoint)
 
     def get_first_variation(self, parent_id):
         return self.get_variations(parent_id).next()[0]
 
-    def get_single_endpoint(self, parent_pkey, **kwargs):
-        assert 'var_pkey' in kwargs, "must specify variation pkey"
-        var_pkey = kwargs['var_pkey']
+    def get_endpoint(self, **kwargs):
+        """
+        Override SyncClientRest.endpoint to work with Variations
+        """
+        kwargs.pop('singular', None) # no concept of singular
+        assert 'parent_pkey' in kwargs, "must specify parent pkey"
         try:
-            var_pkey = int(var_pkey)
-        except ValueError:
-            raise UserWarning("Can't convert var_pkey %s to int" % var_pkey)
-        try:
-            parent_pkey = int(parent_pkey)
+            parent_pkey = int(kwargs.pop('parent_pkey'))
         except ValueError:
             raise UserWarning("Can't convert parent_pkey %s to int" % parent_pkey)
 
-        return "%ss/%d/variations/%d" % (
+        return "%ss/%d/variations" % (
             ProdSyncClientMixin.endpoint_singular,
-            parent_pkey,
-            var_pkey
-        )
-
+            parent_pkey
+        ), kwargs
 
 class VarSyncClientWC(SyncClientWC, VarSyncClientMixin):
     coldata_class = VarSyncClientMixin.coldata_class
     endpoint_singular = VarSyncClientMixin.endpoint_singular
-    get_single_endpoint = VarSyncClientMixin.get_single_endpoint
-
+    get_endpoint = VarSyncClientMixin.get_endpoint
 
 class VarSyncClientWCLegacy(SyncClientWCLegacy, VarSyncClientMixin):
     coldata_class = VarSyncClientMixin.coldata_class
     endpoint_singular = VarSyncClientMixin.endpoint_singular
-    get_single_endpoint = VarSyncClientMixin.get_single_endpoint
+    get_endpoint = VarSyncClientMixin.get_endpoint
+
+    def __init__(self, *args, **kwargs):
+        raise DeprecationWarning("Variations undocumented in WooCommerce Legacy API")
+
+# class AttrSyncClient(SyncClientWC):
+#     # TODO: this
+#     coldata_class = ColData
 
 class ProdSyncClientXero(SyncClientXero):
     endpoint_singular = 'item'
