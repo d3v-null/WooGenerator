@@ -2301,6 +2301,13 @@ class ColDataWcProdCategory(ColDataWcTerm):
             }
         }
     )
+    data['title'].update(
+        {
+            'gen-api': {
+                'path': 'cat_name'
+            }
+        }
+    )
     data = SeqUtils.combine_ordered_dicts(data, {
         'display': {
             'path': None,

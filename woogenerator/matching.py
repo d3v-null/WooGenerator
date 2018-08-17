@@ -675,7 +675,7 @@ class CategoryMatcher(AbstractMatcher):
     @staticmethod
     def category_index_fn(category_object):
         """ Return the name of the category. """
-        return category_object.cat_name
+        return category_object.title
 
     def __init__(self):
         super(CategoryMatcher, self).__init__(self.category_index_fn)

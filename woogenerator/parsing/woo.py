@@ -310,6 +310,7 @@ class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
 class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMixin):
     is_category = ImportShopCategoryMixin.is_category
     is_product = ImportShopCategoryMixin.is_product
+    cat_name = ImportShopCategoryMixin.cat_name
 
     def __init__(self, *args, **kwargs):
         for base_class in [ImportWooTaxo, ImportShopCategoryMixin]:
@@ -333,11 +334,9 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMi
                 base_class.process_meta(self)
         if not self.title:
             self.title = self.fullname
-
-    @property
-    def cat_name(self):
-        cat_layers = self.namesum.split(' > ')
-        return cat_layers[-1]
+        if not self.cat_name:
+            cat_layers = self.namesum.split(self.name_delimeter)
+            self.cat_name = cat_layers[-1]
 
     @property
     def index(self):

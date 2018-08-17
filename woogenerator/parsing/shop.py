@@ -12,7 +12,7 @@ from collections import OrderedDict
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataSubAttachment,
                        ColDataWcProdCategory)
-from ..utils import FileUtils, Registrar, SanitationUtils, SeqUtils
+from ..utils import FileUtils, Registrar, SanitationUtils, SeqUtils, DescriptorUtils
 from .abstract import ImportObject, ObjList
 from .gen import CsvParseGenMixin
 from .tree import ItemList, TaxoList
@@ -405,6 +405,8 @@ class ImportShopCategoryMixin(object):
     is_category = True
     is_product = False
     parent_id_key = 'parent_id'
+    cat_name_key = 'cat_name'
+    cat_name = DescriptorUtils.safe_key_property(cat_name_key)
 
     def __init__(self, *args, **kwargs):
         self.members = ShopProdList()

@@ -11,6 +11,7 @@ import mock
 import pytest
 import pytz
 from tabulate import tabulate
+from collections import OrderedDict
 
 from context import TESTS_DATA_DIR, woogenerator
 from test_sync_manager import AbstractSyncManagerTestCase
@@ -748,6 +749,119 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         #     'api_id': 24817
         # }.items():
         #     self.assertEqual(getattr(last_slave, attr), value)
+
+    def test_do_match_cat(self):
+        """
+        Test category matching with bad match:
+
+        there were some urgent errors that need to be reviewed before continuing
+        woogenerator/generator.py:2063.main>woogenerator/generator.py:959.do_match_categories | You may want to fix up the following categories before syncing:
+
+
+        (1) [                              CV|r:305|w:|Pre Tan <ImportWooCategory>                               ] | (0) [                                                                                                    ]
+        (0) [                                                                                                    ] | (1) [                           r:15|a:55|VuTan Pre Tan <ImportWooApiCategory>                           ]
+
+        """
+        self.settings.schema = "VT"
+        self.settings.woo_schemas = ["VT"]
+        self.parsers.master = self.settings.master_parser_class(
+            **self.settings.master_parser_args
+        )
+
+        # Manually insert only relevant items
+        self.parsers.master.indices = OrderedDict([
+            ('post_status', 54), ('height', 48), ('width', 47),
+            ('stock_status', 50), ('weight', 45), ('Images', 51),
+            ('length', 46), ('Xero Description', 53), ('CVC', 44),
+            ('HTML Description', 52), ('VA', 21), ('PA', 20),
+            ('is_sold', 56), ('SCHEDULE', 26), ('is_purchased', 57),
+            ('DYNCAT', 23), ('Updated', 22), ('D', 17), ('VISIBILITY', 25),
+            ('DYNPROD', 24), ('E', 18), ('RNR', 30), ('RPR', 31), ('WNR', 32),
+            ('WPR', 33), ('DNR', 34), ('DPR', 35), ('RNRC', 37), ('RPRC', 38),
+            ('WNRC', 39), ('WPRC', 40), ('DNRC', 41), ('DPRC', 42),
+            ('stock', 49), ('VT', 12)
+        ])
+        self.parsers.master.analyse_rows([
+            [
+                u'Tan Care', u'', u'', u'', u'', u'C', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u''
+            ],
+            [
+                u'', u'VuTan Pre Tan', u'', u'', u'', u'', u'V', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'{"pa_brand":"VuTan"}', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'CV-PT.jpg', u'',
+                u'', u'', u'', u'', u''
+            ],
+            [
+                u'', u'', u'Exfoliating Facial Gel', u'', u'', u'', u'', u'EXG',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u''
+            ],
+            [
+                u'', u'', u'', u'Exfoliating Facial Gel - Lavender & Rosemary',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'{"fragrance":"Lavender & Rosemary"}', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', unicode('The VuTan Exfoliating Gel is specially '
+                'designed to gently polish away dead skin cells whilst '
+                'nourishing the skin. The formula is completely sodium lauryl '
+                'sulphate free and contains Aloe Vera, Lavender, Rosemary, Tea '
+                'Tree and Geranium Oils. Not to mention the wonderful exfoliating '
+                'properties of English Walnut Shell.'), u'', u'', u'', u'', u''
+            ],
+            [
+                u'', u'', u'', u'', u'250ml (jar)', u'', u'', u'', u'', u'250',
+                u'Y', u'', u'S', u'', u'', u'', u'', u'', u'E', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'VTCARE1', u'$19.95',
+                u'$17.95', u'$11.95', u'$10.16', u'$7.17', u'$6.87', u'',
+                u'$20.91', u'$17.78', u'$11.95', u'$10.16', u'$7.17', u'$6.87',
+                u'$9.56', u'1.00', u'0.32', u'94', u'94', u'55', u'', u'',
+                u'CVEXG-250.png', u'', u'', u'trash', u'', u'', u''
+            ]
+        ])
+
+        self.assertTrue(len(self.parsers.master.categories) > 0)
+
+        self.parsers.slave = self.settings.slave_parser_class(
+            **self.settings.slave_parser_args
+        )
+
+        self.parsers.slave.process_api_categories_gen([
+            OrderedDict([
+                ('display', u'default'), ('HTML Description', u'Tan Care'),
+                ('slug', u'tan-care'), ('title', 'Tan Care'), ('ID', 54),
+                ('rowcount', 14), ('descsum', u'Tan Care'), ('parent_id', 0),
+                ('attachment_object', []), ('type', 'category'),
+                ('codesum', u'tan-care'), ('source', 'woocommerce-vt-test'),
+                ('_row', [])
+            ]),
+            OrderedDict([
+                ('display', u'default'), ('HTML Description', u'VuTan Pre Tan'),
+                ('slug', u'tan-care-pre-tan'), ('title', 'VuTan Pre Tan'),
+                ('ID', 55), ('rowcount', 15), ('descsum', u'VuTan Pre Tan'),
+                ('parent_id', 54), ('attachment_object', []),
+                ('type', 'category'), ('codesum', u'tan-care-pre-tan'),
+                ('source', 'woocommerce-vt-test'), ('_row', [])
+            ])
+        ])
+
+        self.assertTrue(len(self.parsers.slave.categories) > 0)
+
+        do_match_categories(
+            self.parsers, self.matches, self.settings
+        )
+
+        self.assertTrue(len(self.matches.category.valid) > 1)
+        for index in ['Tan Care', 'VuTan Pre Tan']:
+            self.assertTrue(index in self.matches.category.globals.m_indices)
 
 
     @pytest.mark.slow

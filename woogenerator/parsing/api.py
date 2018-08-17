@@ -35,7 +35,9 @@ class ApiListMixin(object):
         """
         Export the items in the object list to a json file in the given file path.
         """
-        raise DeprecationWarning("don't store api_data along with item")
+        exc = DeprecationWarning("don't store api_data along with item")
+        self.register_warning(exc)
+        return
 
         assert file_path, "needs a filepath"
         assert self.objects, "meeds items"
@@ -187,6 +189,7 @@ class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
 class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     is_category = ImportShopCategoryMixin.is_category
     identifier = ImportWooApiObject.identifier
+    cat_name = ImportShopCategoryMixin.cat_name
 
     def __init__(self, *args, **kwargs):
         for base_class in ImportWooApiCategory.__bases__:
@@ -197,10 +200,9 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
         for base_class in ImportWooApiCategory.__bases__:
             if hasattr(base_class, 'process_meta'):
                 base_class.process_meta(self)
+        if not self.title:
+            self.title = self.cat_name
 
-    @property
-    def cat_name(self):
-        return self.title
 
     @property
     def index(self):

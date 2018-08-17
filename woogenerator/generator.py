@@ -859,12 +859,42 @@ AssertionError: can't add match m_object 550|VTS-S.png <ImportWooImg> : m_index 
     return matches
 
 def do_match_categories(parsers, matches, settings):
+    """
+    Analyse the master and slave categories for matches.
+
+    Categorising these matches into either
+     - masterless = a category exists in slave that doesn't exist in master
+     - slaveless = a category exists in master that doesn't exist in slave
+     - invalid = an ambiguous match between categories
+     - valid = either a category in master which matches exclusively with a
+         category in slave or an ambiguous match between categories that could
+         still be acted upon.
+
+    Example of an ambiguous but valid category match:
+        Master category tree:
+
+        A - Product A
+            ACA - Company A Product A
+                ACARA - Company A Product A Range A
+                ACARB - Company A Product A Range B
+
+        Slave category tree (where slave is only Company A products):
+
+        ACA - Product A
+            ACARA - Product A Range A
+            ACARB - Product A Range B
+
+        so slave ACA matches with master A and ACA after master has been processed.
+        the category tree can collapse multiple master categories into single slave
+    """
 
     if Registrar.DEBUG_CATS:
         Registrar.register_message(
             "matching %d master categories with %d slave categories" %
             (len(parsers.master.categories),
              len(parsers.slave.categories)))
+
+    # Matching on "cat_name"
 
     matches.category = MatchNamespace(
         index_fn=CategoryMatcher.category_index_fn
@@ -892,7 +922,7 @@ def do_match_categories(parsers, matches, settings):
 
     if Registrar.DEBUG_CATS:
         if category_matcher.pure_matches:
-            Registrar.register_message("All Category matches:\n%s" % (
+            Registrar.register_message("All Category matches on cat_name:\n%s" % (
                 '\n'.join(map(str, category_matcher.matches))))
 
     # using valid because the category tree can collapse multiple master categories into single slave
@@ -904,12 +934,18 @@ def do_match_categories(parsers, matches, settings):
 
         for match in category_matcher.duplicate_matches:
             master_taxo_sums = [cat.namesum for cat in match.m_objects]
-            if all(master_taxo_sums) \
-                    and SeqUtils.check_equal(master_taxo_sums) \
-                    and not len(match.s_objects) > 1:
-                matches.category.valid.append(match)
-            else:
-                matches.category.invalid.append(match)
+            # If there is more than one master category in the match,
+            # it is only valid if they have the same name
+            if len(master_taxo_sums) > 1 \
+            and all(master_taxo_sums) \
+            and SeqUtils.check_equal(master_taxo_sums):
+                if len(match.s_objects) == 1:
+                    matches.category.valid.append(match)
+                    continue
+                if len(match.s_objects) == 0:
+                    matches.category.slaveless.append(match)
+                    continue
+            matches.category.invalid.append(match)
         if matches.category.invalid:
             exc = UserWarning(
                 "categories couldn't be synchronized because of ambiguous names:\n%s"
@@ -917,7 +953,12 @@ def do_match_categories(parsers, matches, settings):
             Registrar.register_error(exc)
             raise exc
 
-    if category_matcher.slaveless_matches and category_matcher.masterless_matches:
+    if not (matches.category.slaveless and matches.category.masterless):
+        return matches
+
+    # TODO: Now try and match the masterless / slaveless categories on title instead of cat_name
+
+    if matches.category.slaveless and matches.category.masterless:
         exc = UserWarning(
             "You may want to fix up the following categories before syncing:\n%s\n%s"
             %
@@ -1080,7 +1121,18 @@ def do_merge_categories(matches, parsers, updates, settings):
 
     if settings['auto_create_new']:
         for count, match in enumerate(matches.category.slaveless):
-            m_object = match.m_object
+            # not all masterless matches have a singular master object.
+            # Only select the deepest one.
+            if len(match.m_objects) > 1:
+                m_object = sorted([
+                    (m_object.depth, m_object) for m_object in match.m_objects
+                ])[-1][1]
+            else:
+                m_object = match.m_object
+
+            # TODO: if there is a pending change to change a slave category to
+            # the same category name as one being created, then there will be a
+            # conflict
             Registrar.register_message(
                 "will create category %d: %s" % (
                     count, m_object.identifier
