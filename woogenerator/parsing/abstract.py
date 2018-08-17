@@ -121,7 +121,6 @@ class ImportObject(OrderedDict, Registrar):
     def row(self):
         return self._row
 
-    # TODO: refactor to get rid of row property, rename _row to row
     @property
     def rowcount(self):
         return self.get(self.rowcount_key, 0)

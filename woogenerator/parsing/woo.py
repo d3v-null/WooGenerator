@@ -7,6 +7,7 @@ import re
 from collections import OrderedDict
 from copy import deepcopy
 from pprint import pformat
+from six import integer_types
 
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataWcProdCategory)
@@ -99,12 +100,24 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
     verify_meta_keys = ImportGenObject.verify_meta_keys + ImportWooMixin.verify_meta_keys
 
     def __init__(self, *args, **kwargs):
+        if args \
+        and hasattr(args[0], 'get') \
+        and args[0].get(self.rowcount_key) is None \
+        and self.menu_order_key in args[0]:
+            args[0][self.rowcount_key] = args[0][self.menu_order_key]
         for base_class in ImportWooObject.__bases__:
             if hasattr(base_class, '__init__'):
                 base_class.__init__(self, *args, **kwargs)
         # ImportGenObject.__init__(self, *args, **kwargs)
         # ImportShopMixin.__init__(self, *args, **kwargs)
         # ImportWooMixin.__init__(self, *args, **kwargs)
+
+    def process_meta(self):
+        for base_class in ImportWooObject.__bases__:
+            if hasattr(base_class, 'process_meta'):
+                base_class.process_meta(self)
+        if not isinstance(self.menu_order_key, integer_types):
+            self.menu_order = self.rowcount
 
 class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
     verify_meta_keys = ImportShopAttachmentMixin.verify_meta_keys

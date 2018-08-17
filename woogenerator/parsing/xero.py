@@ -13,7 +13,7 @@ from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .myo import CsvParseMyo
 from .shop import (CsvParseShopMixin, ImportShopMixin, ImportShopProductMixin,
                    ImportShopProductSimpleMixin, ShopMixin, ShopProdList)
-from .tree import CsvParseTreeMixin
+from .tree import CsvParseTreeMixin, ImportTreeRoot
 
 
 class ApiXeroMixin(object):
@@ -22,13 +22,25 @@ class ApiXeroMixin(object):
 class ImportXeroMixin(object):
     description_key = 'Xero Description'
     description = DescriptorUtils.safe_key_property(description_key)
+    api_id_key = 'item_id'
+    api_id = DescriptorUtils.safe_key_property(api_id_key)
+
+    @classmethod
+    def get_object_id(cls, object_data):
+        return object_data.get(cls.api_id_key)
+
+    child_indexer = get_object_id
+
+
+class ImportXeroRoot(ImportTreeRoot, ImportXeroMixin):
+    child_indexer = ImportXeroMixin.child_indexer
+
 
 class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin, ApiXeroMixin):
     description_key = ImportXeroMixin.description_key
     description = ImportXeroMixin.description
-    api_id_key = 'item_id'
-    api_id = DescriptorUtils.safe_key_property(api_id_key)
     coldata_target = ApiXeroMixin.coldata_target
+    child_indexer = ImportXeroMixin.child_indexer
 
     def __init__(self, *args, **kwargs):
         for base_class in [ImportGenObject, ImportShopMixin]:
@@ -180,6 +192,7 @@ class ApiParseXero(
     """
     Provide Xero API data parsing functionality
     """
+    root_container = ImportXeroRoot
     object_container = ImportXeroApiObject
     item_container = ImportXeroApiItem
     product_container = ImportXeroApiProduct

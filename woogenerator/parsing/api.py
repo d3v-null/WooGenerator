@@ -55,6 +55,7 @@ class ApiListMixin(object):
 
 class ImportApiMixin(object):
     api_id_key = ImportWooMixin.wpid_key
+    rowcount_key = 'rowcount'
     api_id = DescriptorUtils.safe_key_property(api_id_key)
 
 class ImportApiObjectMixin(ImportApiMixin):
@@ -63,7 +64,6 @@ class ImportApiObjectMixin(ImportApiMixin):
     attachment_indexer = ImportShopAttachmentMixin.get_attachment_id
 
     def process_meta(self):
-        # API Objects don't process meta
         pass
 
     @classmethod
@@ -78,7 +78,7 @@ class ImportApiObjectMixin(ImportApiMixin):
     def identifier(self):
         # identifier = super(ImportWooApiObject, self).identifier
         identifiers = [
-            'r:%s' % str(self.rowcount),
+            'r:%s' % str(self.get(self.rowcount_key)),
             'a:%s' % str(self.get(self.api_id_key)),
             self.title,
         ]

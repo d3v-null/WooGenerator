@@ -186,6 +186,8 @@ class ImportShopMixin(object):
     #container = ObjList
     attachment_indexer = ImportShopAttachmentMixin.attachment_indexer
     # attachment_resolver = Registrar.exception_resolver
+    menu_order_key = 'menu_order'
+    menu_order = DescriptorUtils.safe_key_property(menu_order_key)
 
     def __init__(self, *args, **kwargs):
         # TODO: Remove any dependencies on __init__ in mixins

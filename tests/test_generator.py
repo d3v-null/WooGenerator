@@ -163,10 +163,14 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
 
     @pytest.mark.first
     def test_dummy_settings_namespace(self):
-        self.assertNotIn(
-            'rowcount',
-            self.settings.sync_handles_cat
-        )
+        sync_handles_cat = self.settings.sync_handles_cat
+        for handle in [
+            'rowcount'
+        ]:
+            self.assertNotIn(
+                handle,
+                sync_handles_cat
+            )
 
         self.settings.do_categories = False
         self.settings.do_images = True
@@ -538,6 +542,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             first_cat.to_dict().get('attachment_object').file_name,
             "ACA.jpg"
         )
+        self.assertEqual(first_cat.menu_order, 1)
 
         second_cat = cat_list[1]
         if self.debug:
@@ -551,6 +556,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             second_cat.to_dict().get('attachment_object').file_name,
             "ACA.jpg"
         )
+        self.assertEqual(second_cat.menu_order, 0)
 
         img_container = self.parsers.slave.attachment_container.container
         img_list = img_container(self.parsers.slave.attachments.values())
@@ -2771,6 +2777,9 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertEqual(len(self.updates.slave), 1)
 
         # sync_update = self.updates.delta_slave[0]
+        self.assertTrue(
+            self.updates.delta_slave[0].new_m_object.rowcount
+        )
         sync_update = self.updates.delta_slave.get_by_ids(19, 'c27221d7-8290-4204-9f3d-0cfb7c5a3d6f')
         try:
             if self.debug:

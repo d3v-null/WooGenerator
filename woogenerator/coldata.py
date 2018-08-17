@@ -1527,6 +1527,46 @@ class CreatedModifiedGmtMixin(object):
         },
     }
 
+class MenuOrderMixin(object):
+    data = {
+        'menu_order': {
+            'type': int,
+            'path': None,
+            'wp-api': {
+                'path': None
+            },
+            'wc-api': {
+                'path': 'menu_order'
+            },
+            'wp-sql': {
+                'path': 'term_meta.order'
+            },
+            'gen-csv': {
+                'path': 'menu_order',
+                'write': False,
+                'read': False,
+            },
+            'wc-csv': {
+                'path': 'menu_order',
+                'write': False,
+            }
+        },
+        'rowcount': {
+            'path': None,
+            'gen-csv': {
+                'path': 'rowcount',
+                'read': False,
+                'write': False,
+            },
+            'wc-api': {
+                'path': 'rowcount',
+                'read': False,
+                'write': False,
+            }
+        },
+    }
+
+
 class ColDataSubAttachment(ColDataSubEntity, CreatedModifiedGmtMixin):
     """
     Metadata for Media sub items; media items that appear within entities in the API
@@ -1861,22 +1901,13 @@ class ColDataWcTerm(ColDataTerm):
             }
         }
     )
-    data = SeqUtils.combine_ordered_dicts(data, {
-        'menu_order': {
-            'wc-api': {
-                'path': 'menu_order'
-            },
-            'wp-sql': {
-                'path': 'term_meta.order'
-            },
-            'gen-csv': {
-                'path': 'rowcount',
-                'write': False,
-            },
-            'wc-csv': {
-                'path': 'menu_order',
-                'write': False,
-            }
+    data = SeqUtils.combine_ordered_dicts(
+        data,
+        MenuOrderMixin.data
+    )
+    data['menu_order'].update({
+        'wp-sql': {
+            'path': 'menu_order'
         }
     })
 
@@ -2354,7 +2385,7 @@ class ColDataWcProdCategory(ColDataWcTerm):
         }
     })
 
-class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
+class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin, MenuOrderMixin):
     """
     Metadata for abstract WP objects based off wp post object
     - wp-api-v2: https://developer.wordpress.org/rest-api/reference/posts/
@@ -2363,6 +2394,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
     """
     data = deepcopy(ColDataAbstract.data)
     data = SeqUtils.combine_ordered_dicts(data, CreatedModifiedGmtMixin.data)
+    data = SeqUtils.combine_ordered_dicts(data, MenuOrderMixin.data)
     data = SeqUtils.combine_ordered_dicts(data, {
         # TODO: rename to post_id?
         'id': {
@@ -2668,26 +2700,6 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin):
             },
             'gen-csv': {
                 'path': None,
-            },
-        },
-        'menu_order': {
-            'type': int,
-            'path': None,
-            'wp-api': {
-                'path': None
-            },
-            'wc-api': {
-                'path': 'menu_order'
-            },
-            # 'wp-api-v1': {
-            #     'path': 'menu_order'
-            # },
-            'wp-sql': {
-                'path': 'menu_order'
-            },
-            'gen-csv': {
-                'path': 'rowcount',
-                'read': False,
             },
         },
         'mime_type': {

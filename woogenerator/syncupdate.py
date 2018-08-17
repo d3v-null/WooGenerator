@@ -1385,7 +1385,7 @@ class SyncUpdateGen(SyncUpdate):
 
     @property
     def master_id(self):
-        return self.get_new_subject_value('menu_order', self.master_name)
+        return self.get_new_subject_value('rowcount', self.master_name)
 
 class SyncUpdateProd(SyncUpdateGen):
     """
