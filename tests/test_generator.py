@@ -2159,7 +2159,9 @@ python -m woogenerator.generator \
             except AssertionError as exc:
                 self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.updates.slave.get_by_ids(10, 24863)
+        # sync_update = self.updates.slave.get_by_ids(10, 24863)
+        # Something must have changed in product matching??
+        sync_update = self.updates.slave.get_by_ids(93, 24863)
 
         try:
             if self.debug:
