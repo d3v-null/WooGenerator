@@ -588,8 +588,19 @@ class SyncUpdate(Registrar):
         for warnings in subjects.values():
             subject_formatted = subject_fmt % "-"
             table = [header] + warnings
-            table_fmtd = tabulate(table, headers='firstrow',
-                                  tablefmt=tablefmt)
+            try:
+                table_fmtd = tabulate(table, headers='firstrow',
+                                      tablefmt=tablefmt)
+            except ValueError:
+                # stupid fix for tabulate
+                table = [
+                    OrderedDict([
+                        (key, "_%s" % value) \
+                        for key, value in odict.items()
+                    ]) for odict in table
+                ]
+                table_fmtd = tabulate(table, headers='firstrow',
+                                      tablefmt=tablefmt)
             tables.append(delimeter.join([subject_formatted, table_fmtd]))
         return SanitationUtils.coerce_ascii(delimeter.join(tables))
 
