@@ -104,7 +104,7 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 from .images import process_images
 from .matching import (AttacheeSkuMatcher, AttachmentIDMatcher,
                        CategoryMatcher, CategoryTitleMatcher, ImageMatcher, ProductMatcher,
-                       VariationMatcher, AttacheeTitleMatcher, MatchList)
+                       VariationMatcher, AttacheeTitleMatcher, MatchList, Match)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
@@ -941,6 +941,15 @@ def do_match_categories(parsers, matches, settings):
             and all(master_taxo_sums) \
             and SeqUtils.check_equal(master_taxo_sums):
                 if len(match.s_objects) == 1:
+                    if len(match.m_objects) > 1:
+                        deepest_m_object = sorted([
+                            (m_object.depth, m_object) for m_object in match.m_objects
+                        ])[-1][1]
+                        # Other matches are irrelevant if they have the same name
+                        # other_m_objects = list(set(match.m_objects) - set([deepest_m_object]))
+                        match = Match([deepest_m_object], match.s_objects)
+                        # other_match = Match(other_m_objects)
+                        # matches.category.slaveless.append(other_match)
                     matches.category.valid.append(match)
                     continue
                 if len(match.s_objects) == 0:

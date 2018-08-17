@@ -756,9 +756,9 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         # }.items():
         #     self.assertEqual(getattr(last_slave, attr), value)
 
-    def test_do_match_cat(self):
+    def test_do_match_cat_name(self):
         """
-        Test category matching with bad match:
+        Test category matching with bad name match:
 
         there were some urgent errors that need to be reviewed before continuing
         woogenerator/generator.py:2063.main>woogenerator/generator.py:959.do_match_categories | You may want to fix up the following categories before syncing:
@@ -896,6 +896,102 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         self.assertTrue(len(self.matches.category.valid) > 1)
         for index in ['Tan Care', 'Pre Tan']:
             self.assertTrue(index in self.matches.category.globals.m_indices)
+
+
+    def test_do_match_cat_ambiguous_title(self):
+        self.settings.schema = "VT"
+        self.settings.woo_schemas = ["VT"]
+        self.parsers.master = self.settings.master_parser_class(
+            **self.settings.master_parser_args
+        )
+
+        # Manually insert only relevant items
+        self.parsers.master.indices = OrderedDict([
+            ('post_status', 54), ('height', 48), ('width', 47),
+            ('stock_status', 50), ('weight', 45), ('Images', 51),
+            ('length', 46), ('Xero Description', 53), ('CVC', 44),
+            ('HTML Description', 52), ('VA', 21), ('PA', 20),
+            ('is_sold', 56), ('SCHEDULE', 26), ('is_purchased', 57),
+            ('DYNCAT', 23), ('Updated', 22), ('D', 17), ('VISIBILITY', 25),
+            ('DYNPROD', 24), ('E', 18), ('RNR', 30), ('RPR', 31), ('WNR', 32),
+            ('WPR', 33), ('DNR', 34), ('DPR', 35), ('RNRC', 37), ('RPRC', 38),
+            ('WNRC', 39), ('WPRC', 40), ('DNRC', 41), ('DPRC', 42),
+            ('stock', 49), ('VT', 12)
+        ])
+
+        self.parsers.master.analyse_rows([
+            # rowcount = 3
+            [
+                u'Solution', u'', u'', u'', u'', u'S', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'wholesale | local', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u''
+            ],
+            # rowcount = 99
+            [
+                u'', u'VuTan Solution', u'', u'', u'', u'', u'V', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'{"pa_brand":"VuTan"}', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', (u"VuTan have "
+                u"developed a range of unique blends in a number of shades to "
+                u"suit all skin types. All VuTan's tanning solutions are create"
+                u"d using the finest naturally derived botanical and certified "
+                u"organic ingredients."), u'', u'', u'', u'', u''
+            ],
+            # rowcount = 104
+            [
+                u'', u'', u'', u'Vu2Tan (2hr) - Caramel', u'', u'', u'', u'',
+                u'CA', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'{"pa_colour":"Light"}', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
+                (u'Vu2Tan is perfect for tanners looking for an authentic '
+                 u'Australian glow, without compromising on quality. Available '
+                 u'in five rich, ash-brown shades to suit all skin tones. Vu2Tan'
+                 u' is ready to wash off in just 2 hours, yet it continues to '
+                 u'develop for a further 12-24 hours. Specially formulated with'
+                 u' Erythrulose, Eco Certified DHA, and natural ingredients suc'
+                 u'h as Aloe Vera, Kakadu Plum and a unique selection of Certif'
+                 u'ied Organic herbal extracts. Caramel is recommended for fair'
+                 u' skin tones.'), u'', u'', u'', u'', u''
+            ],
+            # rowcount = 105
+            [
+                u'', u'', u'', u'', u'1Litre', u'', u'', u'', u'', u'L', u'Y',
+                u'', u'S', u'', u'', u'', u'', u'', u'E', u'', u'', u'', u'',
+                u'', u'', u'', u'', u'', u'', u'VTSOL1', u'-', u'-', u'$99.95',
+                u'$84.96', u'$59.97', u'$57.47', u'', u'', u'', u'$99.95',
+                u'$84.96', u'$59.97', u'$57.47', u'$79.96', u'1.00', u'1.08',
+                u'85', u'85', u'235', u'', u'', u'SVV2-CAL.png', u'', u'', u'',
+                u'', u'', u''
+            ],
+        ])
+
+        self.assertTrue(len(self.parsers.master.categories) > 0)
+
+        self.parsers.slave = self.settings.slave_parser_class(
+            **self.settings.slave_parser_args
+        )
+
+        self.parsers.slave.process_api_categories_gen([
+            OrderedDict([
+                ('display', u'default'), ('HTML Description', u'Solution'),
+                ('cat_name', 'Solution'), ('slug', u'solution'),
+                ('parent_id', 0), ('descsum', u'Solution'),
+                ('attachment_object', []), ('menu_order', 99),
+                ('type', 'category'), ('ID', 29), ('codesum', u'solution'),
+                ('source', 'woocommerce-vt-test'), ('rowcount', 5),
+                ('_row', []), ('title', 'Solution')]),
+        ])
+
+        do_match_categories(
+            self.parsers, self.matches, self.settings
+        )
+
+        self.assertEqual(len(self.matches.category.valid), 1)
+        self.assertEqual(self.matches.category.valid[0].m_object.codesum , 'SV')
 
 
     @pytest.mark.slow
