@@ -93,6 +93,7 @@ import time
 import traceback
 import webbrowser
 import zipfile
+import itertools
 from bisect import insort
 from collections import OrderedDict
 from pprint import pformat, pprint
@@ -102,8 +103,8 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from .images import process_images
 from .matching import (AttacheeSkuMatcher, AttachmentIDMatcher,
-                       CategoryMatcher, ImageMatcher, ProductMatcher,
-                       VariationMatcher, AttacheeTitleMatcher)
+                       CategoryMatcher, CategoryTitleMatcher, ImageMatcher, ProductMatcher,
+                       VariationMatcher, AttacheeTitleMatcher, MatchList)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
@@ -957,6 +958,25 @@ def do_match_categories(parsers, matches, settings):
         return matches
 
     # TODO: Now try and match the masterless / slaveless categories on title instead of cat_name
+    master_orphaned_categories = OrderedDict([
+        (category.rowcount, category) \
+        for category in itertools.chain(*[match.m_objects for match in matches.category.slaveless])
+    ])
+    slave_orphaned_categories = OrderedDict([
+        (category.title, category) \
+        for category in itertools.chain(*[match.s_objects for match in matches.category.masterless])
+    ])
+
+    title_matcher = CategoryTitleMatcher()
+    title_matcher.clear()
+    title_matcher.process_registers(
+        slave_orphaned_categories, master_orphaned_categories
+    )
+
+    matches.category.globals.add_matches(title_matcher.pure_matches)
+    matches.category.valid += title_matcher.pure_matches
+    matches.category.masterless = MatchList(title_matcher.masterless_matches)
+    matches.category.slaveless = MatchList(title_matcher.slaveless_matches)
 
     if matches.category.slaveless and matches.category.masterless:
         exc = UserWarning(
@@ -964,6 +984,7 @@ def do_match_categories(parsers, matches, settings):
             %
             ('\n'.join(map(str, category_matcher.slaveless_matches)),
              '\n'.join(map(str, category_matcher.masterless_matches))))
+
         Registrar.register_error(exc)
         # raise exc
 

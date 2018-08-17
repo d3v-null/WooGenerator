@@ -675,12 +675,18 @@ class CategoryMatcher(AbstractMatcher):
     @staticmethod
     def category_index_fn(category_object):
         """ Return the name of the category. """
-        return category_object.title
+        return category_object.cat_name
 
     def __init__(self):
         super(CategoryMatcher, self).__init__(self.category_index_fn)
         self.process_registers = self.process_registers_singular
         # self.retrieveObjects = self.retrieveObjectsSingular
+
+class CategoryTitleMatcher(CategoryMatcher):
+    @staticmethod
+    def category_index_fn(category_object):
+        """ Return the name of the category. """
+        return category_object.title
 
 class ImageMatcher(AbstractMatcher):
     """

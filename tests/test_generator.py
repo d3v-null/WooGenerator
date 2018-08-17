@@ -781,6 +781,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             ('WNRC', 39), ('WPRC', 40), ('DNRC', 41), ('DPRC', 42),
             ('stock', 49), ('VT', 12)
         ])
+
         self.parsers.master.analyse_rows([
             [
                 u'Tan Care', u'', u'', u'', u'', u'C', u'', u'', u'', u'', u'',
@@ -841,7 +842,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 ('rowcount', 14), ('descsum', u'Tan Care'), ('parent_id', 0),
                 ('attachment_object', []), ('type', 'category'),
                 ('codesum', u'tan-care'), ('source', 'woocommerce-vt-test'),
-                ('_row', [])
+                ('_row', []), ('cat_name', 'Tan Care')
             ]),
             OrderedDict([
                 ('display', u'default'), ('HTML Description', u'VuTan Pre Tan'),
@@ -849,7 +850,7 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
                 ('ID', 55), ('rowcount', 15), ('descsum', u'VuTan Pre Tan'),
                 ('parent_id', 54), ('attachment_object', []),
                 ('type', 'category'), ('codesum', u'tan-care-pre-tan'),
-                ('source', 'woocommerce-vt-test'), ('_row', [])
+                ('source', 'woocommerce-vt-test'), ('_row', []), ('cat_name', 'VuTan Pre Tan')
             ])
         ])
 
@@ -860,7 +861,34 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
         )
 
         self.assertTrue(len(self.matches.category.valid) > 1)
-        for index in ['Tan Care', 'VuTan Pre Tan']:
+        for index in ['Tan Care', 'Pre Tan']:
+            self.assertTrue(index in self.matches.category.globals.m_indices)
+
+        self.parsers.slave.clear_transients()
+
+        self.parsers.slave.process_api_categories_gen([
+            OrderedDict([
+                ('display', u'default'), ('HTML Description', u'Tan Care'),
+                ('slug', u'tan-care'), ('cat_name', 'Tan Care'), ('ID', 54),
+                ('rowcount', 15), ('descsum', u'Tan Care'), ('parent_id', 0),
+                ('attachment_object', []), ('type', 'category'), ('title', 'Tan Care'),
+                ('codesum', u'tan-care'), ('source', 'woocommerce-vt-test'),
+                ('_row', []),
+            ]),
+            OrderedDict([
+                ('display', u'default'), ('HTML Description', u'VuTan Pre Tan'),
+                ('cat_name', 'Pre Tan'), ('parent_id', 54),
+                ('slug', u'tan-care-pre-tan'), ('rowcount', 16),
+                ('descsum', u'VuTan Pre Tan'), ('attachment_object', []),
+                ('ID', 55), ('type', 'category'),
+                ('codesum', u'tan-care-pre-tan'),
+                ('source', 'woocommerce-vt-test'),
+                ('_row', []), ('title', 'Pre Tan')
+            ])
+        ])
+
+        self.assertTrue(len(self.matches.category.valid) > 1)
+        for index in ['Tan Care', 'Pre Tan']:
             self.assertTrue(index in self.matches.category.globals.m_indices)
 
 
