@@ -3140,7 +3140,7 @@ class ColDataProduct(ColDataWpEntity):
             'type': 'datetime',
             'wc-api': {
                 'path': 'date_on_sale_from',
-                'type': 'iso8601_wp',
+                'type': 'iso8601_wp_t',
             },
             'wc-legacy-api': {
                 'read': False,
@@ -3178,7 +3178,7 @@ class ColDataProduct(ColDataWpEntity):
             'type': 'datetime',
             'wc-api': {
                 'path': 'date_on_sale_to',
-                'type': 'iso8601_wp',
+                'type': 'iso8601_wp_t',
             },
             'wc-legacy-api': {
                 'read': False,
