@@ -308,6 +308,11 @@ class ArgumentParserCommon(ArgumentParserProto):
             help="quit after exporting master parsers, don't process slave",
             action="store_true",
         )
+        processing_group.add_argument(
+            '--save-api-data',
+            help='store data from the api so it can be replayed later (expensive)',
+            action='store_true'
+        )
 
         current_tsecs = TimeUtils.current_tsecs()
         year_tsecs = 60 * 60 * 24 * 365.25

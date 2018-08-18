@@ -35,9 +35,9 @@ class ApiListMixin(object):
         """
         Export the items in the object list to a json file in the given file path.
         """
-        exc = DeprecationWarning("don't store api_data along with item")
-        self.register_warning(exc)
-        return
+        # exc = DeprecationWarning("don't store api_data along with item")
+        # self.register_warning(exc)
+        # return
 
         assert file_path, "needs a filepath"
         assert self.objects, "meeds items"
@@ -262,6 +262,7 @@ class ApiParseMixin(object):
     coldata_gen_target = 'gen-api'
     attachment_container = ImportWooApiImg
     attachment_indexer = attachment_container.get_identifier
+    save_api_data = None
 
     def analyse_stream(self, byte_file_obj, **kwargs):
 
@@ -319,8 +320,8 @@ class ApiParseMixin(object):
             core_api_data, self.coldata_gen_target
         )
 
-        # row_data = deepcopy(gen_api_data)
-        # row_data['api_data'] = api_data
+        if self.save_api_data:
+            row_data['api_data'] = api_data
         if not 'type' in row_data:
             row_data['type'] = row_data.get('prod_type')
         kwargs['row_data'] = row_data
@@ -384,7 +385,8 @@ class ApiParseWoo(
         img_gen_data = coldata_class.translate_data_to(
             img_core_data, self.coldata_gen_target
         )
-        # img_gen_data['api_data'] = img_api_data
+        if self.save_api_data:
+            img_gen_data['api_data'] = img_api_data
         return self.analyse_api_image_gen(img_gen_data, object_data, **kwargs)
 
     def analyse_api_image_gen(self, img_gen_data, object_data=None, **kwargs):
@@ -418,7 +420,8 @@ class ApiParseWoo(
         sub_img_gen_data = coldata_class.translate_data_to(
             sub_img_core_data, self.coldata_gen_target
         )
-        # sub_img_gen_data['api_data'] = sub_img_api_data
+        if self.save_api_data:
+            sub_img_gen_data['api_data'] = sub_img_api_data
         return self.process_api_sub_image_gen(sub_img_gen_data, object_data, **kwargs)
 
     def process_api_sub_image_gen(self, sub_img_gen_data, object_data, **kwargs):
@@ -446,7 +449,8 @@ class ApiParseWoo(
         category_gen_data = coldata_class.translate_data_to(
             category_core_data, self.coldata_gen_target
         )
-        # category_gen_data['api_data'] = category_raw_data
+        if self.save_api_data:
+            category_gen_data['api_data'] = category_raw_data
         return category_gen_data
 
 

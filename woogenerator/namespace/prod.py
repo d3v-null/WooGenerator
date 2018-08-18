@@ -49,6 +49,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.img_raw_extra_dir = getattr(self, 'img_raw_extra_dir', None)
         self.img_cmp_dir = getattr(self, 'img_cmp_dir', None)
         self.do_export_master = getattr(self, 'do_export_master', True)
+        self.do_save_api_data = getattr(self, 'do_save_api_data', None)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
     @property
@@ -486,14 +487,23 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         """ Class used to parse master data """
         if self.schema_is_myo:
             return CsvParseMyo
-        if self.schema_is_xero:
+        elif self.schema_is_xero:
             return CsvParseXero
-        if self.schema_is_woo:
+        elif self.schema_is_woo:
             if self.schema == CsvParseTT.target_schema:
                 return CsvParseTT
             if self.schema == CsvParseVT.target_schema:
                 return CsvParseVT
             return CsvParseWoo
+        else:
+            raise UserWarning(
+                "could not determine schema type. "
+                "%s is not one of %s. "
+                "try setting woo_schemas, xero_schemas, myo_schemas" % (
+                    self.schema, self.woo_schemas + self.myo_schemas + self.xero_schemas
+                )
+            )
+
 
     @property
     def master_parser_args(self):
@@ -762,6 +772,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         CsvParseWoo.do_images = self.do_images
         CsvParseWoo.do_dyns = self.do_dyns
         CsvParseWoo.do_specials = self.do_specials
+        ApiParseWoo.save_api_data = self.save_api_data
 
 
     @property

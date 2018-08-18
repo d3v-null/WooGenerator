@@ -448,6 +448,8 @@ def cache_api_data(settings, parsers):
     """Export key information from slave parser to csv."""
     if not settings.download_slave:
         return
+    if not settings.save_api_data:
+        return
 
     Registrar.register_progress("Exporting Slave info to disk")
     container = settings.slave_parser_class.product_container.container
