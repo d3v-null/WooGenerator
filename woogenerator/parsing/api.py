@@ -10,7 +10,7 @@ from copy import deepcopy
 from pprint import pformat, pprint
 
 from ..coldata import (ColDataProductMeridian, ColDataSubAttachment,
-                       ColDataWcProdCategory)
+                       ColDataWcProdCategory, ColDataProductVariationMeridian)
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
 from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
@@ -67,8 +67,8 @@ class ImportApiObjectMixin(ImportApiMixin):
         pass
 
     @classmethod
-    def get_index(self, data):
-        return data.get(self.api_id_key)
+    def get_index(cls, data):
+        return data.get(cls.api_id_key)
 
     @property
     def index(self):
@@ -162,6 +162,7 @@ class ImportWooApiProductVariable(
         ImportWooApiProduct, ImportShopProductVariableMixin):
     is_variable = ImportShopProductVariableMixin.is_variable
     product_type = ImportShopProductVariableMixin.product_type
+    variation_indexer = ImportApiObjectMixin.get_index
 
     def __init__(self, *args, **kwargs):
         for base_class in ImportWooApiProductVariable.__bases__:
@@ -173,6 +174,27 @@ class ImportWooApiProductVariation(
         ImportWooApiProduct, ImportShopProductVariationMixin):
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
+    parent_id_key = 'parent_id'
+
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportWooApiProduct.verify_meta_keys,
+        ImportShopProductVariationMixin.verify_meta_keys,
+        [
+            parent_id_key
+        ]
+    )
+    verify_meta_keys.remove(ImportWooApiProduct.codesum_key)
+    verify_meta_keys.remove(ImportWooApiProduct.title_key)
+    verify_meta_keys.remove(ImportWooApiProduct.slug_key)
+
+    @property
+    def identifier(self):
+        identifiers = [
+            'r:%s' % str(self.get(self.rowcount_key)),
+            'p:%s' % str(self.get(self.parent_id_key)),
+            'a:%s' % str(self.get(self.api_id_key)),
+        ]
+        return "|".join(map(str, identifiers))
 
 class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
     is_taxo = ImportGenTaxo.is_taxo
@@ -353,11 +375,12 @@ class ApiParseWoo(
     item_indexer = CsvParseBase.get_object_rowcount
     taxo_indexer = ImportWooApiTaxo.get_title
     product_indexer = CsvParseShopMixin.product_indexer
-    variation_indexer = CsvParseWooMixin.get_title
+    variation_indexer = ImportWooApiProductVariation.get_index
     attachment_indexer = ImportApiObjectMixin.attachment_indexer
     attachment_container = ApiParseMixin.attachment_container
     coldata_class = ColDataProductMeridian
     coldata_cat_class = ColDataWcProdCategory
+    coldata_var_class = ColDataProductVariationMeridian
     coldata_sub_img_class = ColDataSubAttachment
     coldata_target = 'wc-wp-api'
     coldata_gen_target = ApiParseMixin.coldata_gen_target
@@ -469,7 +492,9 @@ class ApiParseWoo(
         category data must be in gen format, i.e. already converted.
         """
         if self.DEBUG_API:
-            category_title = category_gen_data.get('title', '')
+            category_title = category_gen_data.get(
+                self.category_container.title_key, ''
+            )
             if object_data:
                 identifier = object_data.identifier
                 self.register_message(
@@ -491,8 +516,7 @@ class ApiParseWoo(
             except:
                 pass
         if not cat_data:
-            category_search_data = {}
-            category_search_data.update(**category_gen_data)
+            category_search_data = deepcopy(category_gen_data)
 
             # if 'itemsum' in category_search_data:
             #     category_search_data['taxosum'] = category_search_data['itemsum']
@@ -545,14 +569,16 @@ class ApiParseWoo(
                 sub_img_gen_data = cat_data['attachment_object']
                 if sub_img_gen_data:
                     self.process_api_sub_image_gen(sub_img_gen_data, cat_data)
+
+            self.rowcount += 1
         else:
             if self.DEBUG_API:
                 self.register_message("FOUND CATEGORY: %s" % repr(cat_data))
+
             # TODO: do any merging here?
+            cat_data.update(category_gen_data)
 
         self.register_join_category(cat_data, object_data)
-
-        self.rowcount += 1
 
         return cat_data
 
@@ -597,9 +623,84 @@ class ApiParseWoo(
         # TODO: finish this
         pass
 
-    def analyse_api_variation_gen(self, object_data, variation_data_gen):
-        # TODO: finish this
+    def analyse_api_sub_var_gen(self, object_data, variation_data_gen):
+        """
+        Initialize a blank variation child of object_data.
+
+        Variation data is in gen format and can be nothing more than an object
+        with just a variation ID, so that it can be filled in later.
+        """
+
+        var_data = None
+        if not var_data:
+            try:
+                variation_index = self.variation_indexer(variation_data_gen)
+                var_data = self.variations.get(variation_index)
+            except:
+                pass
+
+        # UN-NECESSARY?: implement self.find_variation(variation_search_data) based off self.find_category
+        # if not var_data:
+        #     variation_search_data = deepcopy(variation_data_gen)
+        #
+        #     if self.DEBUG_API:
+        #         self.register_message("SEARCHING FOR VARIATION: %s" %
+        #                               repr(variation_search_data))
+        #
+        #     var_data = self.find_variation(variation_search_data)
+
+        if not var_data:
+            if self.DEBUG_API:
+                self.register_message("VARIATION NOT FOUND")
+
+            kwargs = OrderedDict()
+            row_data = deepcopy(variation_data_gen)
+            kwargs['defaults'] = self.var_defaults
+            kwargs['container'] = self.variation_container
+            row_data['type'] = kwargs['container'].product_type
+            if object_data:
+                row_data['parent_id'] = object_data.get_index(object_data)
+                kwargs['parent'] = object_data
+            kwargs['row_data'] = row_data
+
+            # TODO: why is this relevant?
+            kwargs['coldata_class'] = self.coldata_var_class
+
+            var_data = self.new_object(rowcount=self.rowcount, **kwargs)
+
+            if self.DEBUG_API:
+                self.register_message("CONSTRUCTED: %s" % var_data.identifier)
+            self.process_object(var_data)
+            if self.DEBUG_API:
+                self.register_message("PROCESSED: %s" % var_data.identifier)
+            self.register_object(var_data)
+            if self.DEBUG_API:
+                self.register_message("REGISTERED: %s" % var_data.identifier)
+            if 'attachment_object' in var_data:
+                sub_img_gen_data = var_data['attachment_object']
+                if sub_img_gen_data:
+                    self.process_api_sub_image_gen(sub_img_gen_data, var_data)
+
+            self.rowcount += 1
+
+            # This is handled by CsvParseShopMixin.register_object
+            # self.register_variation(object_data, var_data)
+
+        else:
+            if self.DEBUG_API:
+                self.register_message("FOUND VARIATION: %s" % repr(var_data))
+            var_data.update(variation_data_gen)
+
+        return var_data
+
+    def update_api_var_gen(self, object_data, variation_data_gen):
+        """
+        Fill in a variation child of object_data created with analyse_api_sub_var_gen
+        """
+        # TODO: finish this (may not be necessary if analyse_api_sub_var_gen is good enough)
+
         pass
+
 
 
     def get_parser_data(self, **kwargs):
@@ -634,6 +735,17 @@ class ApiParseWoo(
             #     self.attachment_container.file_name_key,
             #     pformat(parser_data.items())
             # )
+        elif parser_data.get('type') in ['variation']:
+            assert self.variation_container.api_id_key in parser_data, \
+            "parser_data should have api_id(%s):\n%s" % (
+                self.variation_container.api_id_key,
+                parser_data
+            )
+            assert self.variation_container.parent_id_key in parser_data, \
+            "parser_data should have parent_id(%s):\n%s" % (
+                self.variation_container.parent_id_key,
+                parser_data
+            )
         else:
             assert self.object_container.codesum_key in parser_data, \
             "parser_data should have codesum(%s):\n%s" % (
@@ -695,7 +807,7 @@ class ApiParseWoo(
 
         if 'variations' in object_data:
             for variation_data_gen in object_data['variations']:
-                self.analyse_api_variation_gen(object_data, variation_data_gen)
+                self.analyse_api_sub_var_gen(object_data, variation_data_gen)
                 self.rowcount += 1
 
         if 'attribute_objects' in object_data:

@@ -777,7 +777,6 @@ class SyncClientRest(SyncClientAbstract):
                 page_items = page
 
             for page_item in page_items:
-
                 parser.analyse_api_obj(page_item)
                 result_count += 1
                 if limit and result_count > limit:

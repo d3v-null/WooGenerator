@@ -260,6 +260,7 @@ class ImportWooProductVariable(
         ImportWooProduct, ImportShopProductVariableMixin):
     is_variable = ImportShopProductVariableMixin.is_variable
     product_type = ImportShopProductVariableMixin.product_type
+    variation_indexer = ImportWooObject.get_sku
 
     def __init__(self, *args, **kwargs):
         for base_class in ImportWooProductVariable.__bases__:
@@ -278,6 +279,11 @@ class ImportWooProductVariation(
 ):
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
+
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportWooProduct.verify_meta_keys,
+        ImportShopProductVariationMixin.verify_meta_keys
+    )
 
     def to_dict(self):
         response = {}
@@ -460,6 +466,12 @@ class CsvParseWooMixin(object):
         if not hasattr(self, '_coldata_cat_class_defaults'):
             self._coldata_cat_class_defaults = self.coldata_cat_class.get_col_values_native('default')
         return deepcopy(self._coldata_cat_class_defaults)
+
+    @property
+    def var_defaults(self):
+        if not hasattr(self, '_coldata_var_class_defaults'):
+            self._coldata_var_class_defaults = self.coldata_var_class.get_col_values_native('default')
+        return deepcopy(self._coldata_var_class_defaults)
 
     def process_image(self, img_raw_data, object_data=None, **kwargs):
         img_index = self.attachment_container.get_file_name(img_raw_data)

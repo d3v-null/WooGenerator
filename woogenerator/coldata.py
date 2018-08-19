@@ -19,6 +19,10 @@ from .utils import (FileUtils, JSONPathUtils, MimeUtils, PHPUtils, Registrar,
                     SanitationUtils, SeqUtils, TimeUtils)
 
 # TODO: Replace dicts with `OrderedDict`s
+# TODO: Implement indexer property for parser classes
+# TODO: rename to hyperdata or something
+# TODO: move into own folder
+
 """
 Get rid of stuff like slave_override, since it should be able to work both ways.
 get rid of attributes like category, product, variation, that's covered by class now.
@@ -3718,6 +3722,10 @@ class ColDataProduct(ColDataWpEntity):
             'wc-legacy-api': {
                 'path': 'variations',
                 'structure': ('listed-objects', )
+            },
+            'gen-api': {
+                'path': 'variations',
+                'structure': ('listed-objects', )
             }
         },
         # 'variation_ids': {
@@ -3731,6 +3739,16 @@ class ColDataProduct(ColDataWpEntity):
     }.items())
 
 class ColDataProductVariation(ColDataProduct):
+    """
+    Fields that don't need to show up on wc-csv or need to be renamed:
+    - meta
+    - catalog_visibility -> transform into visibility:(visible|catalog|search|hidden)
+    - external_url -> product_url
+    - price (already have regular_price)
+    - commissionable_value -> meta:commissionable_value
+    - virtual
+    """
+
     data = deepcopy(ColDataProduct.data)
     del data['variations']
     data['title'].update({

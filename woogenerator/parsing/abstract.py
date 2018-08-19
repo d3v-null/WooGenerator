@@ -27,6 +27,8 @@ BLANK_CELL = ''
 class ImportObject(OrderedDict, Registrar):
     """
     A container for a parsed object.
+
+    TODO: replace all (.*)_key with references to coldata
     """
 
     rowcount_key = 'rowcount'
@@ -426,6 +428,9 @@ ImportObject.container = ObjList
 class CsvParseBase(Registrar):
     """
     Base class for Parsing spreadsheet-like formats.
+
+    TODO: replace all (.*)_indexer with references to coldata
+
     """
 
     object_container = ImportObject

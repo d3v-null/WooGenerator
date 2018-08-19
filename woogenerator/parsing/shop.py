@@ -287,6 +287,12 @@ class ImportShopMixin(object):
         return data.get(cls.title_key)
 
     @classmethod
+    def get_sku(cls, data):
+        assert cls.codesum_key in data, \
+        "expected codesum key (%s) in data" % cls.codesum_key
+        return data.get(cls.codesum_key)
+
+    @classmethod
     def get_description(cls, data):
         assert cls.description_key in data, \
         "expected description key (%s) in data" % cls.description_key
@@ -364,6 +370,7 @@ class ImportShopProductSimpleMixin(object):
 class ImportShopProductVariableMixin(object):
     product_type = 'variable'
     is_variable = True
+    variation_indexer = ImportShopMixin.get_sku
 
     def __init__(self, *args, **kwargs):
         self.variations = OrderedDict()
@@ -373,7 +380,7 @@ class ImportShopProductVariableMixin(object):
         self.register_anything(
             var_data,
             self.variations,
-            indexer=var_data.codesum,
+            indexer=self.variation_indexer,
             singular=True,
             register_name="product variations"
         )
@@ -386,8 +393,9 @@ class ImportShopProductVariableMixin(object):
 
 
 class ImportShopProductVariationMixin(ImportShopProductMixin):
-    product_type = 'variable-instance'
+    product_type = 'variation'
     is_variation = True
+    verify_meta_keys = []
 
     def register_parent_product(self, parent_data):
         assert issubclass(type(parent_data), ImportShopProductVariableMixin)
@@ -645,7 +653,7 @@ class CsvParseShopMixin(object):
                 Registrar.register_message("Object is product")
         else:
             if Registrar.DEBUG_SHOP:
-                Registrar.register_message("Object is not product")
+                Registrar.register_message("Object is not a shop object")
 
     def register_category(self, cat_data):
         assert\

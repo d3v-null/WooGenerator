@@ -44,7 +44,27 @@ from woogenerator.utils.reporter import ReporterNamespace
 from .abstract import AbstractWooGeneratorTestCase
 
 
-class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
+class AbstractParserSyncManagerTestCase(AbstractSyncManagerTestCase):
+    """
+    Common superclass of TestGeneratorDummySpecials and TestGeneratorSuperDummy.
+
+    House common utility functions.
+    """
+    def populate_master_parsers(self):
+        if self.parsers.master:
+            return
+        if self.debug:
+            print("regenerating master")
+        populate_master_parsers(self.parsers, self.settings)
+
+    def populate_slave_parsers(self):
+        if self.parsers.slave:
+            return
+        if self.debug:
+            print("regenerating slave")
+        populate_slave_parsers(self.parsers, self.settings)
+
+class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
 
@@ -123,20 +143,6 @@ class TestGeneratorDummySpecials(AbstractSyncManagerTestCase):
             CsvParseWoo.product_resolver = Registrar.exception_resolver
         else:
             Registrar.strict = False
-
-    def populate_master_parsers(self):
-        if self.parsers.master:
-            return
-        if self.debug:
-            print("regenerating master")
-        populate_master_parsers(self.parsers, self.settings)
-
-    def populate_slave_parsers(self):
-        if self.parsers.slave:
-            return
-        if self.debug:
-            print("regenerating slave")
-        populate_slave_parsers(self.parsers, self.settings)
 
     @pytest.mark.first
     def test_dummy_init_settings(self):
@@ -2494,12 +2500,24 @@ python -m woogenerator.generator \
                 self.reporters.cat.get_summary_text()
             )
 
-class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
+class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
     """
     Stuff missing from original dummy:
      - variations
      - attributes
      - collapsable categories (e.g. Product A > Company A Product A => Company A Product A)
+
+    Generate slave input files:
+    ```
+    python -m woogenerator.generator --testmode --schema "CA" \
+      --local-work-dir "/Users/derwent/Documents/woogenerator/" \
+      --local-test-config "/Users/derwent/GitHub/WooGenerator/tests/sample_data/generator_config_test.yaml" \
+      --master-file "/Users/derwent/GitHub/WooGenerator/tests/sample_data/generator_master_super_dummy.csv" \
+      --master-dialect-suggestion "SublimeCsvTable" --do-categories --skip-specials --do-images --skip-attributes --do-variations \
+      --download-slave --save-api-data \
+      -vvv --debug-trace
+    ```
+
     """
     settings_namespace_class = SettingsNamespaceProd
     config_file = "generator_config_test.yaml"
@@ -2510,6 +2528,15 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
         self.settings.download_master = False
         self.settings.master_file = os.path.join(
             TESTS_DATA_DIR, "generator_master_super_dummy.csv"
+        )
+        self.settings.slave_file = os.path.join(
+            TESTS_DATA_DIR, "prod_slave_super_dummy.json"
+        )
+        self.settings.slave_cat_file = os.path.join(
+            TESTS_DATA_DIR, "prod_slave_cat_super_dummy.json"
+        )
+        self.settings.slave_img_file = os.path.join(
+            TESTS_DATA_DIR, "prod_slave_img_super_dummy.json"
         )
         self.settings.master_and_quit = True
         self.settings.do_specials = False
@@ -2526,13 +2553,6 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
         self.settings.schema = "CA"
         self.settings.skip_unattached_images = True
         self.settings.init_settings(self.override_args)
-
-    def populate_master_parsers(self):
-        if self.parsers.master:
-            return
-        if self.debug:
-            print("regenerating master")
-        populate_master_parsers(self.parsers, self.settings)
 
     @pytest.mark.first
     def test_super_dummy_populate_master_parsers(self):
@@ -2626,6 +2646,31 @@ class TestGeneratorSuperDummy(AbstractSyncManagerTestCase):
         for key, value in test_dict.items():
             self.assertEqual(unicode(first_variation[key]), unicode(value))
 
+    def test_super_dummy_populate_slave_parsers(self):
+
+        self.populate_slave_parsers()
+        if self.debug:
+            print("slave objects: %s" % len(self.parsers.slave.objects.values()))
+            print("slave items: %s" % len(self.parsers.slave.items.values()))
+            print("slave products: %s" % len(self.parsers.slave.products.values()))
+            print("slave categories: %s" % len(self.parsers.slave.categories.values()))
+
+        if self.debug:
+            print("parser tree:\n%s" % self.parsers.slave.to_str_tree())
+
+        self.assertEqual(len(self.parsers.slave.products), 1)
+        prod_container = self.parsers.slave.product_container.container
+        prod_list = prod_container(self.parsers.slave.products.values())
+        first_prod = prod_list[0]
+        if self.debug:
+            print("first_prod.dict %s" % pformat(dict(first_prod)))
+            print("first_prod.categories: %s" % pformat(first_prod.categories))
+            print("first_prod.to_dict().get('attachment_objects'): %s" % pformat(first_prod.to_dict().get('attachment_objects')))
+
+        #TODO: test only variation_id first, then test codesum
+        var_ids = [var.api_id for var in first_prod.variations.values()]
+        for var_id in [27065, 27066, 27067, 27068]:
+            self.assertIn(var_id, var_ids)
     def test_super_dummy_to_target_type(self):
         """
         test the to_target_type functionality of master objects.
