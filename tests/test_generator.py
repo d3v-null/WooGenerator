@@ -2538,10 +2538,14 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         self.settings.slave_img_file = os.path.join(
             TESTS_DATA_DIR, "prod_slave_img_super_dummy.json"
         )
+        self.settings.slave_var_file_27063 = os.path.join(
+            TESTS_DATA_DIR, "prod_slave_var_27063_super_dummy.json"
+        )
         self.settings.master_and_quit = True
         self.settings.do_specials = False
         self.settings.do_categories = True
         self.settings.do_images = True
+        self.settings.do_variations = True
         self.settings.report_matching = True
         self.settings.auto_create_new = True
         self.settings.update_slave = False
@@ -2671,6 +2675,41 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         var_ids = [var.api_id for var in first_prod.variations.values()]
         for var_id in [27065, 27066, 27067, 27068]:
             self.assertIn(var_id, var_ids)
+
+        self.assertEqual(
+            set([variation.codesum for variation in first_prod.variations.values()]),
+            set([
+                "AGL-CP5S",
+                "AGL-CP5M",
+                "AGL-CP5L",
+                "AGL-CP5XL",
+            ])
+        )
+
+        first_variation = first_prod.variations.values()[0]
+
+        test_dict = {
+            'DNR': u'3.85',
+            'DPR': u'3.85',
+            'RNR': u'',
+            'RPR': u'',
+            'WNR': u'5.50',
+            'WPR': u'4.95',
+            'height': u'25',
+            'length': u'100',
+            'width': u'250',
+            'weight': u'0.10',
+            # TODO: test these somewhere else
+            # 'attribute:pa_material': 'Cotton',
+            # 'attribute:quantity': '5',
+            # 'attribute:size': 'Small',
+            # 'meta:attribute_size': 'Small',
+            # 'CA': u'I',
+        }
+
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(first_variation[key]), unicode(value))
+
     def test_super_dummy_to_target_type(self):
         """
         test the to_target_type functionality of master objects.

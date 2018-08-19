@@ -85,6 +85,13 @@ class VarSyncClientMixin(object):
             parent_pkey
         ), kwargs
 
+    def analyse_remote_variations(self, parser, **kwargs):
+        parent_pkey = kwargs.pop('parent_pkey', None)
+        for page in self.get_variations(parent_pkey):
+            for page_item in page:
+                parser.process_api_variation_raw(page_item)
+
+
 class VarSyncClientWC(SyncClientWC, VarSyncClientMixin):
     coldata_class = VarSyncClientMixin.coldata_class
     endpoint_singular = VarSyncClientMixin.endpoint_singular

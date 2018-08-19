@@ -331,6 +331,21 @@ class SyncClientLocal(SyncClientAbstract):
                 for decoded_item in decoded:
                     parser.analyse_api_image_raw(decoded_item)
 
+    def analyse_remote_variations(self, parser, **kwargs):
+        data_path = kwargs.pop('data_path', None)
+        parent_pkey = kwargs.pop('parent_pkey', None)
+        # encoding = kwargs.pop('encoding', None)
+
+        with open(data_path, 'rbU') as data_file:
+            decoded = SanitationUtils.decode_json(data_file.read())
+            if not decoded:
+                warn = UserWarning("could not analyse_remote_imgs, json not decoded")
+                self.register_warning(warn)
+
+            if isinstance(decoded, list):
+                for decoded_item in decoded:
+                    parser.process_api_variation_raw(decoded_item)
+
 
 class SyncClientLocalStream(SyncClientLocal):
     """ Designed to act like a GDrive client but work on a local stream instead """
@@ -726,34 +741,34 @@ class SyncClientRest(SyncClientAbstract):
         super(SyncClientRest, self).__init__(superconnect_params, **kwargs)
 
     def analyse_remote(self, parser, **kwargs):
-        limit = kwargs.get('limit', self.limit)
-        since = kwargs.get('since', self.since)
-        search = kwargs.get('search')
+        limit = kwargs.pop('limit', self.limit)
+        since = kwargs.pop('since', self.since)
+        search = kwargs.pop('search', None)
         if since:
             pass
             # TODO: implement kwargs['since']
 
         result_count = 0
 
-        # api_iterator = self.ApiIterator(self.service, self.endpoint_plural)
-        endpoint_plural = self.endpoint_plural
+        # api_iterator = self.ApiIterator(self.service, self.endpoint)
+        endpoint, kwargs = self.get_endpoint(**kwargs)
         if self.search_param and search:
-            endpoint_parsed = urlparse(endpoint_plural)
+            endpoint_parsed = urlparse(endpoint)
             endpoint_path, endpoint_query = endpoint_parsed.path, endpoint_parsed.query
             additional_query = '%s=%s' % (self.search_param, search)
             if endpoint_query:
                 endpoint_query += '&%s' % additional_query
             else:
                 endpoint_query = additional_query
-            endpoint_plural = "%s?%s" % (endpoint_path, endpoint_query)
-            # print "search_param and search exist, new endpoint: %s" % endpoint_plural
+            endpoint = "%s?%s" % (endpoint_path, endpoint_query)
+            # print "search_param and search exist, new endpoint: %s" % endpoint
             # quit()
         else:
             # print "search_param and search DNE, %s %s" % (self.search_param, search)
             # quit()
             pass
 
-        api_iterator = self.get_iterator(endpoint_plural)
+        api_iterator = self.get_iterator(endpoint)
         progress_counter = None
         for page in api_iterator:
             if progress_counter is None:

@@ -661,6 +661,8 @@ class ApiParseWoo(
             if object_data:
                 row_data['parent_id'] = object_data.get_index(object_data)
                 kwargs['parent'] = object_data
+            else:
+                kwargs['parent'] = self.root_data
             kwargs['row_data'] = row_data
 
             # TODO: why is this relevant?
@@ -693,14 +695,19 @@ class ApiParseWoo(
 
         return var_data
 
-    def update_api_var_gen(self, object_data, variation_data_gen):
-        """
-        Fill in a variation child of object_data created with analyse_api_sub_var_gen
-        """
-        # TODO: finish this (may not be necessary if analyse_api_sub_var_gen is good enough)
+    def process_api_variation_raw(self, var_api_data, **kwargs):
+        coldata_class = kwargs.get('codata_class', self.coldata_var_class)
+        coldata_target = kwargs.get('coldata_target', self.coldata_target)
 
-        pass
-
+        var_core_data = coldata_class.translate_data_from(
+            var_api_data, coldata_target
+        )
+        var_gen_data = coldata_class.translate_data_to(
+            var_core_data, self.coldata_gen_target
+        )
+        if self.save_api_data:
+            var_gen_data['api_data'] = var_api_data
+        return self.analyse_api_sub_var_gen(None, var_gen_data)
 
 
     def get_parser_data(self, **kwargs):

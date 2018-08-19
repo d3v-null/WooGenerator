@@ -323,6 +323,19 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response += "-" + self.import_name + '.json'
         return os.path.join(self.in_dir_full, response)
 
+    def get_slave_var_path(self, parent_id=None):
+        """ The path which the slave wp api variation json data is cached. """
+        key = 'slave_var_file_%s' % parent_id
+        if hasattr(self, key) and getattr(self, key):
+            return getattr(self, key)
+        response = '%s%s' % (self.file_prefix, 'slave_var')
+        if self.variant:
+            response = "-".join([response, self.variant])
+        if parent_id:
+            response += "-%s" % parent_id
+        response += "-" + self.import_name + '.json'
+        return os.path.join(self.in_dir_full, response)
+
     @property
     def rep_delta_slave_csv_path(self):
         """ The path which the delta slave csv report is stored. """

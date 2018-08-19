@@ -272,6 +272,8 @@ def populate_slave_parsers(parsers, settings):
 
     slave_client_class = settings.slave_download_client_class
     slave_client_args = settings.slave_download_client_args
+    slave_var_client_class = settings.slave_var_sync_client_class
+    slave_var_client_args = settings.slave_var_sync_client_args
 
     # with ProdSyncClientWC(settings['slave_wp_api_params']) as client:
 
@@ -295,8 +297,25 @@ def populate_slave_parsers(parsers, settings):
 
         client.analyse_remote(
             parsers.slave,
-            data_path=settings.slave_path
+            data_path=settings.slave_path,
         )
+
+        if settings.do_variations:
+
+            Registrar.register_progress("analysing API variation data")
+
+            var_client = slave_var_client_class(**slave_var_client_args)
+
+            for prod in parsers.slave.products.values():
+                if not getattr(prod, 'is_variable', None):
+                    continue
+                parent_id = prod.api_id
+                var_client = var_client.analyse_remote_variations(
+                    parsers.slave,
+                    parent_pkey=parent_id,
+                    data_path=settings.get_slave_var_path(parent_id)
+                )
+
 
     if settings.schema_is_woo and settings.do_images:
         Registrar.register_progress("analysing API image data")
@@ -465,6 +484,17 @@ def cache_api_data(settings, parsers):
         attachment_container = settings.slave_parser_class.attachment_container.container
         image_list = attachment_container(parsers.slave.attachments.values())
         image_list.export_api_data(settings.slave_img_path)
+
+    if settings.do_variations and parsers.slave.variations:
+        variation_container = settings.slave_parser_class.variation_container.container
+        for prod in product_list:
+            if not prod.is_variable:
+                continue
+            var_list = variation_container(prod.variations.values())
+            if not var_list:
+                continue
+            var_list.export_api_data(settings.get_slave_var_path(prod.api_id))
+
 
 def do_match_images(parsers, matches, settings):
     if Registrar.DEBUG_IMG:
