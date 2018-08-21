@@ -2839,6 +2839,11 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
 
+        sync_update = self.updates.variation.slave.get_by_ids(7, 27065)
+
+        self.assertNotIn('meta', sync_update.get_master_updates().keys())
+        self.assertNotIn('regular_price', sync_update.get_master_updates().keys())
+
 
 
     # def test_super_dummy_attributes(self):

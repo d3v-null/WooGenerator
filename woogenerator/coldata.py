@@ -3995,6 +3995,25 @@ class ColDataMeridianEntityMixin(object):
                 'type': 'yesno'
             },
             'default': ''
+        },
+        # When Lasercommerce is active, the API reports these values in the admin
+        # context, so they will never be properly synced
+        'regular_price': {
+            'path': None,
+            'sync': False,
+            'api': {
+                'type': 'api_currency'
+            },
+            'special': True
+        },
+        'sale_price': {
+            'path': None,
+            'type': 'currency',
+            'api': {
+                'type': 'api_currency'
+            },
+            'sync': False,
+            'special': True
         }
     }.items() + [
         (
