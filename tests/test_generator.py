@@ -4,23 +4,23 @@ import os
 import shutil
 import tempfile
 import unittest
+from collections import OrderedDict
 from datetime import datetime
 from pprint import pformat, pprint
 
 import mock
 import pytest
 import pytz
-from tabulate import tabulate
-from collections import OrderedDict
-
 from context import TESTS_DATA_DIR, woogenerator
+from tabulate import tabulate
 from test_sync_manager import AbstractSyncManagerTestCase
 from utils import MockUtils
 from woogenerator.coldata import (ColDataAttachment, ColDataProductMeridian,
                                   ColDataWcProdCategory)
 from woogenerator.generator import (do_match_categories, do_match_images,
-                                    do_match_prod, do_merge_categories,
-                                    do_merge_images, do_merge_prod, do_report,
+                                    do_match_prod, do_match_var,
+                                    do_merge_categories, do_merge_images,
+                                    do_merge_prod, do_merge_var, do_report,
                                     do_report_categories, do_report_images,
                                     do_updates_categories_master,
                                     do_updates_categories_slave,
@@ -34,7 +34,7 @@ from woogenerator.matching import ProductMatcher
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
 from woogenerator.namespace.prod import SettingsNamespaceProd
 from woogenerator.parsing.api import ApiParseWoo
-from woogenerator.parsing.special import SpecialGruopList, CsvParseSpecial
+from woogenerator.parsing.special import CsvParseSpecial, SpecialGruopList
 from woogenerator.parsing.tree import ItemList
 from woogenerator.parsing.woo import CsvParseWoo, WooProdList
 from woogenerator.parsing.xero import ApiParseXero
@@ -283,7 +283,6 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             'WPR': u'84.96',
             'height': u'235',
             'length': u'85',
-            'price': u'',
             'weight': u'1.08',
             'width': u'85',
             'rowcount': 10,
@@ -2500,6 +2499,23 @@ python -m woogenerator.generator \
                 self.reporters.cat.get_summary_text()
             )
 
+    def test_dummy_merge_prod_only(self):
+        self.settings.do_variations = False
+        self.settings.do_categories = False
+        self.settings.do_attributes = False
+        self.settings.do_images = False
+        self.settings.do_specials = False
+
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        do_match_prod(self.parsers, self.matches, self.settings)
+        if self.debug:
+            Registrar.DEBUG_UPDATE = True
+
+        do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
+
+
 class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
     """
     Stuff missing from original dummy:
@@ -2517,6 +2533,9 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
       --download-slave --save-api-data \
       -vvv --debug-trace
     ```
+
+    TODO / test:
+        - parent of variable product can change from simple to variable (prod type syncs correctly)
 
     """
     settings_namespace_class = SettingsNamespaceProd
@@ -2541,22 +2560,30 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         self.settings.slave_var_file_27063 = os.path.join(
             TESTS_DATA_DIR, "prod_slave_var_27063_super_dummy.json"
         )
-        self.settings.master_and_quit = True
+        self.settings.master_and_quit = False
         self.settings.do_specials = False
         self.settings.do_categories = True
         self.settings.do_images = True
         self.settings.do_variations = True
-        self.settings.report_matching = True
+        self.settings.do_sync = True
         self.settings.auto_create_new = True
         self.settings.update_slave = False
         self.settings.do_problematic = True
         self.settings.do_report = True
+        self.settings.report_matching = True
         self.settings.do_remeta_images = False
         self.settings.do_resize_images = True
         self.settings.do_delete_images = False
         self.settings.schema = "CA"
         self.settings.skip_unattached_images = True
         self.settings.init_settings(self.override_args)
+
+    @pytest.mark.first
+    def test_super_dummy_init_settings(self):
+        self.assertIn('image', self.settings.sync_handles_var)
+        self.settings.do_images = False
+        self.assertNotIn('image', self.settings.sync_handles_var)
+
 
     @pytest.mark.first
     def test_super_dummy_populate_master_parsers(self):
@@ -2776,6 +2803,28 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         for key, value in test_dict.items():
             self.assertEqual(unicode(first_variation_csv[key]), unicode(value))
 
+    def test_super_dummy_match_var_only(self):
+        self.settings.do_images = False
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        do_match_var(self.parsers, self.matches, self.settings)
+
+        self.assertEqual(len(self.matches.variation.globals), 4)
+
+    def test_super_dummy_merge_var_only(self):
+        self.settings.do_images = False
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        do_match_var(self.parsers, self.matches, self.settings)
+        if self.debug:
+            Registrar.DEBUG_VARS = True
+
+        do_merge_var(self.matches, self.parsers, self.updates, self.settings)
+
+
+
     # def test_super_dummy_attributes(self):
     #     self.populate_master_parsers()
     #
@@ -2938,7 +2987,6 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         populate_master_parsers(self.parsers, self.settings)
         populate_slave_parsers(self.parsers, self.settings)
         do_match_prod(self.parsers, self.matches, self.settings)
-        self.updates = UpdateNamespace()
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
         if self.debug:
