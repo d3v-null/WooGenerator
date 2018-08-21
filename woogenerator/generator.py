@@ -310,7 +310,7 @@ def populate_slave_parsers(parsers, settings):
                 if not getattr(prod, 'is_variable', None):
                     continue
                 parent_id = prod.api_id
-                var_client = var_client.analyse_remote_variations(
+                var_client.analyse_remote_variations(
                     parsers.slave,
                     parent_pkey=parent_id,
                     data_path=settings.get_slave_var_path(parent_id)
@@ -1074,11 +1074,12 @@ def do_match_prod(parsers, matches, settings):
         raise exc
 
 def do_match_var(parsers, matches, settings):
+    # TODO: finish and test
     matches.variation = MatchNamespace(
         index_fn=ProductMatcher.product_index_fn
     )
 
-    if not settings['do_variations']:
+    if not settings.do_variations:
         return
 
     variation_matcher = VariationMatcher()
@@ -1219,7 +1220,7 @@ def do_merge_prod(matches, parsers, updates, settings):
     if settings.do_variations:
         updates.variation = UpdateNamespace()
 
-    if not settings['do_sync']:
+    if not settings.do_sync:
         return
 
     sync_handles = settings.sync_handles_prod
@@ -1227,10 +1228,10 @@ def do_merge_prod(matches, parsers, updates, settings):
     if Registrar.DEBUG_UPDATE:
         Registrar.register_message("sync_handles: %s" % repr(sync_handles))
 
-    for _, match in enumerate(matches.globals):
-        if Registrar.DEBUG_CATS or Registrar.DEBUG_VARS:
-            Registrar.register_message("processing match: %s" %
-                                       match.tabulate())
+    for match_count, match in enumerate(matches.globals):
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message("processing match %d:\n%s" % (
+                match_count, match.tabulate()))
         m_object = match.m_object
         s_object = match.s_object
 
@@ -1255,12 +1256,14 @@ def do_merge_prod(matches, parsers, updates, settings):
 
         # Assumes that GDrive is read only, doesn't care about master
         # updates
+
         if not sync_update.s_updated:
             continue
 
         if Registrar.DEBUG_UPDATE:
-            Registrar.register_message("sync updates:\n%s" %
-                                       sync_update.tabulate())
+            Registrar.register_message("update %d:\n%s" % (
+                match_count, sync_update.tabulate()
+            ))
 
         if sync_update.s_updated and sync_update.s_deltas:
             updates.delta_slave.append(sync_update)
@@ -1288,8 +1291,13 @@ def do_merge_prod(matches, parsers, updates, settings):
             )
 
 def do_merge_var(matches, parsers, updates, settings):
-    if not settings['do_variations']:
+    # TODO: finish and test
+
+    if not (settings.do_variations and settings.do_sync):
         return
+
+    if not hasattr(updates, 'variation'):
+        updates.variation = UpdateNamespace()
 
     sync_handles = settings.sync_handles_var
 
@@ -1300,8 +1308,10 @@ def do_merge_var(matches, parsers, updates, settings):
         Registrar.register_error(exc)
         raise exc
 
-    for var_match_count, var_match in enumerate(matches.variation.globals):
-        # print "processing var_match: %s" % var_match.tabulate()
+    for match_count, var_match in enumerate(matches.variation.globals):
+        if Registrar.DEBUG_VARS:
+            Registrar.register_message("processing var_match %d:\n%s" % (
+                match_count, var_match.tabulate()))
         m_object = var_match.m_object
         s_object = var_match.s_object
 
@@ -1310,8 +1320,7 @@ def do_merge_var(matches, parsers, updates, settings):
         sync_update.update(sync_handles)
 
         if settings.do_images:
-            # TODO: this might not be the right handle for variation image
-            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id'])
+            sync_update.simplify_sync_warning_value_singular('image', ['id', 'title', 'source_url'])
 
         # Assumes that GDrive is read only, doesn't care about master
         # updates
@@ -1320,7 +1329,7 @@ def do_merge_var(matches, parsers, updates, settings):
 
         if Registrar.DEBUG_VARS:
             Registrar.register_message("var update %d:\n%s" % (
-                var_match_count, sync_update.tabulate()))
+                match_count, sync_update.tabulate()))
 
         if not sync_update.important_static:
             updates.variation.problematic.append(sync_update)
@@ -1329,39 +1338,39 @@ def do_merge_var(matches, parsers, updates, settings):
         if sync_update.s_updated:
             updates.variation.slave.append(sync_update)
 
-    for var_match_count, var_match in enumerate(
+    for match_count, var_match in enumerate(
             matches.variation.slaveless):
         assert var_match.has_no_slave
         m_object = var_match.m_object
 
-        # sync_update = SyncUpdateVarWoo(m_object, None)
+        sync_update = settings.syncupdate_class_var(m_object, None)
 
-        # sync_update.update()
+        sync_update.update(sync_handles)
 
         if Registrar.DEBUG_VARS:
             Registrar.register_message("var create %d:\n%s" % (
-                var_match_count, m_object.identifier))
+                match_count, m_object.identifier))
 
-        # TODO: figure out which attribute terms to add
+        # TODO: figure out which attribute terms to add to parent?
 
-    for var_match_count, var_match in enumerate(
+    for match_count, var_match in enumerate(
             matches.variation.masterless):
         assert var_match.has_no_master
         s_object = var_match.s_object
 
-        # sync_update = SyncUpdateVarWoo(None, s_object)
+        sync_update = settings.syncupdate_class_var(None, s_object)
 
-        # sync_update.update()
+        sync_update.update()
 
         if Registrar.DEBUG_VARS:
             Registrar.register_message("var delete: %d:\n%s" % (
-                var_match_count, s_object.identifier))
+                match_count, s_object.identifier))
 
-        # TODO: figure out which attribute terms to delete
 
-    if settings['auto_create_new']:
-        # TODO: auto create new variations
-        raise NotImplementedError()
+        # TODO: figure out which attribute terms to delete from parent?
+
+    # if settings.auto_create_new and matches.variation.slaveless:
+    #     raise NotImplementedError()
 
 def do_report_images(reporters, matches, updates, parsers, settings):
     if not settings.get('do_report'):
@@ -1484,6 +1493,7 @@ def handle_failed_update(update, results, exc, settings, source=None):
         import pudb; pudb.set_trace()
 
 def usr_prompt_continue(settings):
+    # TODO: this is completely broken. just read from stdin
     try:
         raw_in = input("\n".join([
             "Please read reports and then make your selection",
@@ -2065,15 +2075,12 @@ def do_updates_prod(updates, parsers, settings, results):
                 parsers, results, settings, client, change_updates
             )
 
-def do_updates_var(updates, parsers, settings, results):
+def do_updates_var_master(updates, parsers, settings, results):
     raise NotImplementedError()
 
-    change_updates = updates.variation.slave
-    if settings.do_problematic:
-        change_updates += updates.variation.problematic
 
-    if not change_updates:
-        return
+def do_updates_var_slave(updates, parsers, settings, results):
+    raise NotImplementedError()
 
 
 def main(override_args=None, settings=None):
@@ -2175,9 +2182,23 @@ def main(override_args=None, settings=None):
                 Registrar.register_error(exc)
                 return reporters, results
 
+    # product variation IDs must be known before prod sync but any non-existent
+    # variable products must be created before their variations can be created.
+    if settings.do_variations:
+        do_match_var(parsers, matches, settings)
+        do_merge_var(matches, parsers, updates, settings)
+        # do_report_variations(
+        #     reporters, matches, updates, parsers, settings
+        # )
+        Registrar.register_message(
+            "pre-sync summary: \n%s" % reporters.var.get_summary_text()
+        )
+        check_warnings(settings)
+        do_updates_var_master(updates, parsers, settings, results)
+
     do_match_prod(parsers, matches, settings)
     do_merge_prod(matches, parsers, updates, settings)
-    do_merge_var(matches, parsers, updates, settings)
+
     # check_warnings(settings)
     do_report(reporters, matches, updates, parsers, settings)
 
@@ -2195,16 +2216,15 @@ def main(override_args=None, settings=None):
     except (SystemExit, KeyboardInterrupt) as exc:
         Registrar.register_error(exc)
         return reporters, results
-    if settings['do_variations']:
 
-        Registrar.register_error(NotImplementedError("Functions past this point have not been completed"))
-        return reporters, results
+    if settings.do_variations:
+        if not settings.report_and_quit:
+            try:
+                do_updates_var_slave(updates, parsers, settings, results)
+            except (SystemExit, KeyboardInterrupt) as exc:
+                Registrar.register_error(exc)
+                return reporters, results
 
-        try:
-            do_updates_var(updates, parsers, settings, results)
-        except (SystemExit, KeyboardInterrupt) as exc:
-            Registrar.register_error(exc)
-            return reporters, results
     do_report_post(reporters, results, settings)
 
     Registrar.register_message(

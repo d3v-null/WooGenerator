@@ -284,6 +284,9 @@ class ImportWooProductVariation(
         ImportWooProduct.verify_meta_keys,
         ImportShopProductVariationMixin.verify_meta_keys
     )
+    verify_meta_keys.remove(ImportWooProduct.title_key)
+    verify_meta_keys.remove(ImportWooProduct.slug_key)
+    verify_meta_keys.remove(ImportWooProduct.namesum_key)
 
     def to_dict(self):
         response = {}
@@ -408,6 +411,7 @@ class CsvParseWooMixin(object):
     coldata_class = ShopMixin.coldata_class
     coldata_cat_class = ShopMixin.coldata_cat_class
     coldata_img_class = ShopMixin.coldata_img_class
+    coldata_var_class = ShopMixin.coldata_var_class
     coldata_sub_img_class = ShopMixin.coldata_sub_img_class
     taxo_container = ImportWooCategory
     category_container = ImportWooCategory
@@ -580,6 +584,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     coldata_class = CsvParseWooMixin.coldata_class
     coldata_cat_class = CsvParseWooMixin.coldata_cat_class
     coldata_img_class = CsvParseWooMixin.coldata_img_class
+    coldata_var_class = CsvParseWooMixin.coldata_var_class
 
     # Whether to calculate the special prices of objects
     do_specials = True
@@ -1266,6 +1271,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         if not (object_data.is_product or object_data.is_variation):
             return
 
+        if not self.do_specials:
+            return
+
         ancestors = object_data.inheritence_ancestors
         for ancestor in reversed(ancestors):
             ancestor_specials = ancestor.specials
@@ -1371,15 +1379,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             break  # only applies first special
 
         for key, value in {
-                'price': object_data.get('RNR'),
-                'sale_price': object_data.get('RNS')
-        }.items():
-            if value is not None:
-                object_data[key] = value
-
-        for key, value in {
-                'sale_price_dates_from': object_data.get('RNF'),
-                'sale_price_dates_to': object_data.get('RNT')
+            'sale_price': object_data.get('RNS'),
+            'sale_price_dates_from': object_data.get('RNF'),
+            'sale_price_dates_to': object_data.get('RNT')
         }.items():
             if value is not None:
                 object_data[key] = value
@@ -1522,6 +1524,12 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     break
 
     def post_process_pricing(self, object_data):
+        for key, value in {
+            'regular_price': object_data.get('RNR'),
+        }.items():
+            if value is not None:
+                object_data[key] = value
+
         if object_data.is_product and not object_data.is_variable:
             for key in ['WNR']:
                 if not object_data.get(key):
@@ -1550,8 +1558,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             if self.do_images:
                 self.post_process_attachments(object_data)
             self.post_process_attributes(object_data)
-            if self.do_specials:
-                self.post_process_specials(object_data)
+            self.post_process_specials(object_data)
+            self.post_process_pricing(object_data)
             self.post_process_inventory(object_data)
             self.post_process_updated(object_data)
             self.post_process_visibility(object_data)

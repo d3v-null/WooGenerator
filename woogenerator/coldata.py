@@ -223,9 +223,6 @@ to `meta_key` so that the `meta_value` can be accessed using the path meta.<meta
 
 # TODO: what if translate_data_to checked for writability?
 
-# DEPRECATE_OLDSTYLE = False
-DEPRECATE_OLDSTYLE = True
-
 class ColDataLegacy(object):
     """
     Legacy methods for backwards compatiblity, to be deprecated ASAP.
@@ -1674,6 +1671,14 @@ class ColDataSubTermAttachment(ColDataSubAttachment):
         }
     })
 
+class ColDataSubVarAttachment(ColDataSubAttachment):
+    """
+    Metadata for Media sub items of varitions.
+
+    AFAIK It's the same as product but just to be safe...
+    """
+    data = deepcopy(ColDataSubAttachment.data)
+
 class ColDataTermMixin(object):
     data = {
         'term_id': {
@@ -2438,7 +2443,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin, MenuOrderMixin):
             },
             'wc-api': {
                 'path': 'permalink'
-            }
+            },
         },
         'guid': {
             'write': False,
@@ -2754,6 +2759,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin, MenuOrderMixin):
             'sub_data': ColDataSubMeta,
             # 'force_mapping': 'meta_key',
             'structure': ('listed-objects', ),
+            'default': [],
             'wp-api': {
                 'path': 'meta'
             },
@@ -2770,9 +2776,17 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin, MenuOrderMixin):
             'wp-sql':{
                 'path': None,
             },
+            'wc-csv': {
+                'path': None
+            },
             'gen-csv': {
+                'path': None
+            },
+            'gen-api': {
+                'path': 'meta',
                 'structure': ('mapping-value', ('meta_key', 'meta_value')),
                 'read': False,
+                'default': {}
             },
             'xero-api': {
                 'path': None
@@ -2801,7 +2815,8 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin, MenuOrderMixin):
             },
             'gen-csv': {
                 'path': None,
-            }
+            },
+            'category': True,
         },
         # 'category_ids': {
         #     'path': None,
@@ -3104,6 +3119,7 @@ class ColDataProduct(ColDataWpEntity):
             },
             'gen-csv': {
                 'read': False,
+                'path': None,
             },
             'xero-api': {
                 'path': None
@@ -3119,6 +3135,9 @@ class ColDataProduct(ColDataWpEntity):
             },
             'gen-csv': {
                 'read': False,
+            },
+            'gen-api': {
+                'read': True,
             },
             'xero-api': {
                 'path': None
@@ -3229,14 +3248,15 @@ class ColDataProduct(ColDataWpEntity):
             'type': bool,
             'wc-api': {
                 'path': 'on_sale'
-            }
+            },
+            'special': True
         },
         'purchasable': {
             'write': False,
             'path': None,
             'type': bool,
             'wc-api': {
-                'path': 'on_sale'
+                'path': 'purchasable'
             },
         },
         'total_sales': {
@@ -3339,6 +3359,9 @@ class ColDataProduct(ColDataWpEntity):
             'gen-csv': {
                 'read': False,
             },
+            'wc-csv': {
+                'path': 'product_url'
+            }
         },
         'button_text': {
             'wp-sql': {
@@ -3696,7 +3719,8 @@ class ColDataProduct(ColDataWpEntity):
             'gen-api': {
                 'path': 'attribute_objects',
                 'structure': ('listed-objects', )
-            }
+            },
+            'attribute': True,
         },
         'default_attributes': {
             'path': None,
@@ -3710,7 +3734,8 @@ class ColDataProduct(ColDataWpEntity):
                 # 'path': 'meta._default_attributes',
                 # 'type': 'php_array_associative',
                 # 'structure': ('listed-objects', )
-            }
+            },
+            'attribute': True,
         },
         'variations': {
             'path': None,
@@ -3726,7 +3751,8 @@ class ColDataProduct(ColDataWpEntity):
             'gen-api': {
                 'path': 'variations',
                 'structure': ('listed-objects', )
-            }
+            },
+            'variation': True,
         },
         # 'variation_ids': {
         #     'path': None,
@@ -3741,40 +3767,42 @@ class ColDataProduct(ColDataWpEntity):
 class ColDataProductVariation(ColDataProduct):
     """
     Fields that don't need to show up on wc-csv or need to be renamed:
-    - meta
     - catalog_visibility -> transform into visibility:(visible|catalog|search|hidden)
+    done:
+    - commissionable_value -> meta:commissionable_value
     - external_url -> product_url
     - price (already have regular_price)
-    - commissionable_value -> meta:commissionable_value
     - virtual
+    - meta
+
+
+
+    TODO:
+    what if variation?orderby=title ? since there is no title.
     """
 
     data = deepcopy(ColDataProduct.data)
     del data['variations']
-    data['title'].update({
-        'wc-api': {
-            'path': None
-        }
-    })
+    del data['product_category_list']
+    del data['product_type']
+    del data['product_categories']
+    del data['title']
+    del data['slug']
+    del data['attachment_objects']
+    del data['catalog_visibility']
+    del data['button_text']
+    del data['featured']
+    del data['sold_individually']
     data['parent_id'].update({
         'write': True,
         'wc-api': {
             'path': None
         }
     })
-    data['product_category_list'].update({
-        'wc-csv': {
-            'path': None
-        }
-    })
-    data['product_type'].update({
-        'wc-csv': {
-            'path': None
-        }
-    })
     data['attributes'].update({
         'sub_data': ColDataSubVarAttribute,
     })
+
     data = SeqUtils.combine_ordered_dicts(
         data,
         OrderedDict([
@@ -3786,6 +3814,27 @@ class ColDataProductVariation(ColDataProduct):
                 'wc-csv': {
                     'path': 'parent_sku'
                 }
+            }),
+            ('image', {
+                'path': None,
+                'sub_data': ColDataSubVarAttachment,
+                'wc-api': {
+                    'path': 'image',
+                    'structure': ('singular-object', )
+                },
+                'wp-sql': {
+                    'path': 'term_meta.thumbnail_id',
+                    'structure': ('singular-value', 'id')
+                },
+                'csv': {
+                    'path': 'Images',
+                    'structure': ('singular-value', 'file_name')
+                },
+                'gen-api': {
+                    'path': 'attachment_object',
+                    'structure': ('singular-object', )
+                },
+                'image': True,
             })
         ])
     )
@@ -3822,7 +3871,7 @@ class ColDataMeridianEntityMixin(object):
             'gen-csv': {
                 'path': 'CVC'
             },
-            'woo-csv': {
+            'wc-csv': {
                 'path': 'meta:commissionable_value'
             },
             'default': 0.0,
@@ -3889,7 +3938,8 @@ class ColDataMeridianEntityMixin(object):
                 'structure': ('mapping-value', ('title', 'value')),
                 'default': ''
             },
-            'default': []
+            'default': [],
+            'attribute': True,
         },
         'variation_attributes': {
             'path': None,
@@ -3899,7 +3949,8 @@ class ColDataMeridianEntityMixin(object):
                 'structure': ('mapping-value', ('title', 'value')),
                 'default': ''
             },
-            'default': []
+            'default': [],
+            'attribute': True,
         },
         'extra_categories': {
             'path': None,
@@ -3907,6 +3958,7 @@ class ColDataMeridianEntityMixin(object):
                 'path': 'E',
                 'default': ''
             },
+            'category': True,
         },
         'xero_description': {
             'path': None,
@@ -3948,7 +4000,6 @@ class ColDataMeridianEntityMixin(object):
             'lc_%s_%s' % (tier, field),
             {
                 'read': import_,
-                'variation': True,
                 'pricing': True,
                 'type': root_type,
                 'wp-api': {
@@ -4000,6 +4051,7 @@ class ColDataMeridianEntityMixin(object):
         },
         'delta': True,
     })
+
 
 class ColDataProductMeridian(ColDataProduct, ColDataMeridianEntityMixin):
     data = OrderedDict(

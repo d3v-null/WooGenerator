@@ -411,7 +411,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         response = self.coldata_class_var.get_sync_handles(
             self.coldata_gen_target_write, self.coldata_target_write
         )
-        for handle in self.exclude_handles:
+        for handle in self.exclude_handles_var:
             if handle in response:
                 del response[handle]
         return response
@@ -448,6 +448,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             response.append('dynamic')
         if not self.do_specials:
             response.append('special')
+        if not self.do_attributes:
+            response.append('attribute')
+        if not self.do_variations:
+            response.append('variation')
         return response
 
     @property
@@ -479,11 +483,24 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         )
 
     @property
+    def exclude_handles_var(self):
+        """
+        The handles which have been configured to be ignored in variations.
+        """
+        response = set([])
+        for property_ in self.exclude_properties:
+            response.update(self.coldata_class_var.get_property_inclusions(property_))
+        return list(response)
+
+
+    @property
     def exclude_handles_cat(self):
         """
         The handles which have been configured to be ignored in categories.
         """
-        response = set(['post_status'])
+        response = set([
+            # 'post_status'
+        ])
         for property_ in self.exclude_properties:
             response.update(self.coldata_class_cat.get_property_inclusions(property_))
         return list(response)

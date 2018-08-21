@@ -410,6 +410,12 @@ class ImportShopProductVariationMixin(ImportShopProductMixin):
     def get_parent_product(self):
         return self.parent_product
 
+    def to_dict(self):
+        response = {}
+        if self.attachments:
+            response['attachment_object'] = self.attachments.values()[0]
+        return response
+
 
 class ImportShopCategoryMixin(object):
     is_category = True

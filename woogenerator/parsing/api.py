@@ -196,6 +196,13 @@ class ImportWooApiProductVariation(
         ]
         return "|".join(map(str, identifiers))
 
+    def to_dict(self):
+        response = {}
+        for base_class in ImportWooApiProductVariation.__bases__:
+            if hasattr(base_class, 'to_dict'):
+                response.update(base_class.to_dict(self))
+        return response
+
 class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
     is_taxo = ImportGenTaxo.is_taxo
 
