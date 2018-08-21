@@ -32,6 +32,7 @@ class ReporterNamespace(argparse.Namespace):
         self.post = RenderableReporter()
         self.cat = RenderableReporter()
         self.img = RenderableReporter()
+        self.var = RenderableReporter()
 
     # def add_reporter(self, name, css=None):
     #     setattr(self, name, RenderableReporter(css=css))

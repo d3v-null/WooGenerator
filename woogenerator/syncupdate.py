@@ -1427,6 +1427,11 @@ class SyncUpdateProdXero(SyncUpdateProd):
 class SyncUpdateVarWoo(SyncUpdateProdWoo):
     coldata_class = ColDataProductVariationMeridian
 
+    @property
+    def master_id(self):
+        old_m_object_gen = self.old_m_object_gen
+        return old_m_object_gen.parent.variation_indexer(old_m_object_gen)
+
 class SyncUpdateImgWoo(SyncUpdateGen):
     coldata_class = ColDataAttachment
     slave_target = 'wp-api-v2-edit'

@@ -1134,7 +1134,7 @@ def do_merge_images(matches, parsers, updates, settings):
             if sync_update.s_updated:
                 updates.image.slave.append(sync_update)
 
-    if settings['auto_create_new']:
+    if settings.auto_create_new:
         for count, match in enumerate(matches.image.slaveless):
             m_object = match.m_object
             Registrar.register_message(
@@ -1182,7 +1182,7 @@ def do_merge_categories(matches, parsers, updates, settings):
             if sync_update.s_updated:
                 updates.category.slave.append(sync_update)
 
-    if settings['auto_create_new']:
+    if settings.auto_create_new:
         for count, match in enumerate(matches.category.slaveless):
             # not all masterless matches have a singular master object.
             # Only select the deepest one.
@@ -1250,9 +1250,8 @@ def do_merge_prod(matches, parsers, updates, settings):
         if settings.do_images:
             sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id', 'title', 'source_url', 'position'])
 
-        # TODO: settings.do_attributes
-        # if settings.do_attributes:
-        #     sync_update.simplify_sync_warning_value_listed('attributes', ['term_id'])
+        if settings.do_attributes:
+            sync_update.simplify_sync_warning_value_listed('attributes', ['term_id'])
 
         # Assumes that GDrive is read only, doesn't care about master
         # updates
@@ -1275,7 +1274,7 @@ def do_merge_prod(matches, parsers, updates, settings):
         if sync_update.s_updated:
             updates.slave.append(sync_update)
 
-    if settings['auto_create_new']:
+    if settings.auto_create_new:
         for new_prod_count, new_prod_match in enumerate(matches.slaveless):
 
             m_object = new_prod_match.m_object
@@ -1322,10 +1321,8 @@ def do_merge_var(matches, parsers, updates, settings):
         if settings.do_images:
             sync_update.simplify_sync_warning_value_singular('image', ['id', 'title', 'source_url'])
 
-        # Assumes that GDrive is read only, doesn't care about master
-        # updates
-        if not sync_update.s_updated:
-            continue
+        if settings.do_attributes:
+            sync_update.simplify_sync_warning_value_listed('attributes', ['term_id'])
 
         if Registrar.DEBUG_VARS:
             Registrar.register_message("var update %d:\n%s" % (
@@ -1335,23 +1332,28 @@ def do_merge_var(matches, parsers, updates, settings):
             updates.variation.problematic.append(sync_update)
             continue
 
+        if sync_update.m_updated:
+            updates.variation.master.append(sync_update)
+
         if sync_update.s_updated:
             updates.variation.slave.append(sync_update)
 
-    for match_count, var_match in enumerate(
-            matches.variation.slaveless):
-        assert var_match.has_no_slave
-        m_object = var_match.m_object
+    if settings.auto_create_new:
+        for match_count, var_match in enumerate(
+                matches.variation.slaveless):
+            assert var_match.has_no_slave
+            m_object = var_match.m_object
 
-        sync_update = settings.syncupdate_class_var(m_object, None)
+            sync_update = settings.syncupdate_class_var(m_object, None)
 
-        sync_update.update(sync_handles)
+            sync_update.update(sync_handles)
 
-        if Registrar.DEBUG_VARS:
-            Registrar.register_message("var create %d:\n%s" % (
+            Registrar.register_message("Will create variation %d:\n%s" % (
                 match_count, m_object.identifier))
 
-        # TODO: figure out which attribute terms to add to parent?
+            updates.variation.new_slaves.append(sync_update)
+
+            # TODO: figure out which attribute terms to add to parent?
 
     for match_count, var_match in enumerate(
             matches.variation.masterless):
@@ -1362,15 +1364,11 @@ def do_merge_var(matches, parsers, updates, settings):
 
         sync_update.update()
 
-        if Registrar.DEBUG_VARS:
-            Registrar.register_message("var delete: %d:\n%s" % (
-                match_count, s_object.identifier))
+        Registrar.register_message("will delete variation: %d:\n%s" % (
+            match_count, s_object.identifier))
 
 
         # TODO: figure out which attribute terms to delete from parent?
-
-    # if settings.auto_create_new and matches.variation.slaveless:
-    #     raise NotImplementedError()
 
 def do_report_images(reporters, matches, updates, parsers, settings):
     if not settings.get('do_report'):
@@ -1650,7 +1648,7 @@ def do_updates_images_slave(updates, parsers, results, settings):
         change_updates += updates.image.problematic
     # updates in which a new item is created
     new_updates = []
-    if settings['auto_create_new']:
+    if settings.auto_create_new:
         new_updates += updates.image.new_slaves
     else:
         for update in new_updates:
@@ -1859,7 +1857,7 @@ def do_updates_categories_slave(updates, parsers, results, settings):
         change_updates += updates.category.problematic
     # updates in which a new item is created
     new_updates = []
-    if settings['auto_create_new']:
+    if settings.auto_create_new:
         new_updates += updates.category.new_slaves
     else:
         for update in new_updates:
@@ -2044,7 +2042,7 @@ def do_updates_prod(updates, parsers, settings, results):
         change_updates += updates.problematic
     # updates in which a new item is created
     new_updates = []
-    if settings['auto_create_new']:
+    if settings.auto_create_new:
         new_updates += updates.new_slaves
     else:
         for update in new_updates:
@@ -2076,8 +2074,25 @@ def do_updates_prod(updates, parsers, settings, results):
             )
 
 def do_updates_var_master(updates, parsers, settings, results):
-    raise NotImplementedError()
+    # TODO: this is the next important one !!!
 
+
+    for update in updates.variation.master:
+        old_master_id = update.master_id
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message(
+                "performing update < %5s | %5s > = \n%100s, %100s " %
+                (update.master_id, update.slave_id,
+                 str(update.old_m_object), str(update.old_s_object)))
+        if not old_master_id in parsers.master.variations:
+            exc = UserWarning(
+                "couldn't fine pkey %s in parsers.master.attachments" %
+                update.master_id)
+            Registrar.register_error(exc)
+            continue
+        parsers.master.variations[old_master_id].update(
+            update.get_master_updates_native()
+        )
 
 def do_updates_var_slave(updates, parsers, settings, results):
     raise NotImplementedError()

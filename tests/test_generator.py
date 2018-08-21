@@ -28,7 +28,7 @@ from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_updates_images_slave,
                                     export_master_parser,
                                     populate_master_parsers,
-                                    populate_slave_parsers)
+                                    populate_slave_parsers, do_updates_var_master)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
@@ -2830,6 +2830,8 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
     def test_super_dummy_merge_var_only(self):
         self.settings.do_images = False
+        self.settings.do_categories = False
+        self.settings.do_attributes = False
         self.populate_master_parsers()
         self.populate_slave_parsers()
 
@@ -2839,11 +2841,26 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
 
-        sync_update = self.updates.variation.slave.get_by_ids(7, 27065)
+        sync_update = self.updates.variation.slave.get_by_ids('AGL-CP5S', 27065)
 
         self.assertNotIn('meta', sync_update.get_master_updates().keys())
         self.assertNotIn('regular_price', sync_update.get_master_updates().keys())
 
+    def test_super_dummy_updates_var_only(self):
+        self.settings.do_images = False
+        self.settings.do_categories = False
+        self.settings.do_attributes = False
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        do_match_var(self.parsers, self.matches, self.settings)
+        do_merge_var(self.matches, self.parsers, self.updates, self.settings)
+
+        do_updates_var_master(self.updates, self.parsers, self.settings, self.results)
+
+        self.assertEqual(
+            self.parsers.master.variations.values()[0]['ID'], 27065
+        )
 
 
     # def test_super_dummy_attributes(self):
