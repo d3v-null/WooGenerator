@@ -2760,6 +2760,7 @@ class ColDataWpEntity(ColDataAbstract, CreatedModifiedGmtMixin, MenuOrderMixin):
             # 'force_mapping': 'meta_key',
             'structure': ('listed-objects', ),
             'default': [],
+            'sync': False,
             'wp-api': {
                 'path': 'meta'
             },

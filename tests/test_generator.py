@@ -2499,9 +2499,9 @@ python -m woogenerator.generator \
                 self.reporters.cat.get_summary_text()
             )
 
-    def test_dummy_merge_prod_only(self):
+    def test_dummy_do_merge_prod_cat_only(self):
         self.settings.do_variations = False
-        self.settings.do_categories = False
+        self.settings.do_categories = True
         self.settings.do_attributes = False
         self.settings.do_images = False
         self.settings.do_specials = False
@@ -2509,11 +2509,27 @@ python -m woogenerator.generator \
         self.populate_master_parsers()
         self.populate_slave_parsers()
 
+        if self.settings.do_categories:
+            do_match_categories(self.parsers, self.matches, self.settings)
+
+            do_merge_categories(
+                self.matches, self.parsers, self.updates, self.settings
+            )
+            do_updates_categories_master(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.do_updates_categories_slave_mocked()
+
+
         do_match_prod(self.parsers, self.matches, self.settings)
-        if self.debug:
-            Registrar.DEBUG_UPDATE = True
+        # if self.debug:
+        #     Registrar.DEBUG_UPDATE = True
 
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
+
+        sync_update = self.updates.slave.get_by_ids(93, 24863)
+
+        self.assertNotIn('meta', sync_update.get_master_updates().keys())
 
 
 class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
