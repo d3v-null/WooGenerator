@@ -1124,12 +1124,12 @@ def do_merge_images(matches, parsers, updates, settings):
 
             sync_update.update(sync_handles)
 
+            if sync_update.m_updated:
+                updates.image.master.append(sync_update)
+
             if not sync_update.important_static:
                 updates.image.problematic.append(sync_update)
                 continue
-
-            if sync_update.m_updated:
-                updates.image.master.append(sync_update)
 
             if sync_update.s_updated:
                 updates.image.slave.append(sync_update)
@@ -1155,7 +1155,8 @@ def do_merge_images(matches, parsers, updates, settings):
     return updates
 
 def do_merge_categories(matches, parsers, updates, settings):
-    updates.category = UpdateNamespace()
+    if not hasattr(updates, 'category'):
+        updates.category = UpdateNamespace()
 
     if not hasattr(matches, 'category'):
         return updates
@@ -1172,12 +1173,12 @@ def do_merge_categories(matches, parsers, updates, settings):
             if settings.do_images:
                 sync_update.simplify_sync_warning_value_singular('image', ['id', 'title', 'source_url'])
 
+            if sync_update.m_updated:
+                updates.category.master.append(sync_update)
+
             if not sync_update.important_static:
                 updates.category.problematic(sync_update)
                 continue
-
-            if sync_update.m_updated:
-                updates.category.master.append(sync_update)
 
             if sync_update.s_updated:
                 updates.category.slave.append(sync_update)
@@ -1290,7 +1291,7 @@ def do_merge_prod(matches, parsers, updates, settings):
             )
 
 def do_merge_var(matches, parsers, updates, settings):
-    # TODO: finish and test
+    # TODO: finish and test based on do_merge_categories
 
     if not (settings.do_variations and settings.do_sync):
         return
@@ -1328,12 +1329,15 @@ def do_merge_var(matches, parsers, updates, settings):
             Registrar.register_message("var update %d:\n%s" % (
                 match_count, sync_update.tabulate()))
 
-        if not sync_update.important_static:
-            updates.variation.problematic.append(sync_update)
-            continue
+        # TODO: I really don't get what this is about
+        if sync_update.s_updated and sync_update.s_deltas:
+            updates.delta_slave.append(sync_update)
 
         if sync_update.m_updated:
             updates.variation.master.append(sync_update)
+
+        if not sync_update.important_static:
+            updates.variation.problematic.append(sync_update)
 
         if sync_update.s_updated:
             updates.variation.slave.append(sync_update)
@@ -1492,6 +1496,8 @@ def handle_failed_update(update, results, exc, settings, source=None):
 
 def usr_prompt_continue(settings):
     # TODO: this is completely broken. just read from stdin
+    if settings['force_update']:
+        return
     try:
         raw_in = input("\n".join([
             "Please read reports and then make your selection",
@@ -1510,7 +1516,7 @@ def usr_prompt_continue(settings):
 # TODO: collapse upload_new functions
 def upload_new_images_slave(parsers, results, settings, client, new_updates):
 
-    if not (new_updates and settings['update_slave']):
+    if not (new_updates and settings.update_slave):
         return
 
     if Registrar.DEBUG_PROGRESS:
@@ -1573,7 +1579,7 @@ def upload_image_changes_slave(parsers, results, settings, client, change_update
             len(change_updates), items_plural='%s updates' % client.endpoint_singular
         )
 
-    if not settings['update_slave']:
+    if not settings.update_slave:
         return
 
     for count, sync_update in enumerate(change_updates):
@@ -1692,7 +1698,7 @@ def upload_new_categories_slave(parsers, results, settings, client, new_updates)
             len(new_updates), items_plural='new %s' % client.endpoint_plural
         )
 
-    if not (new_updates and settings['update_slave']):
+    if not (new_updates and settings.update_slave):
         return
 
     sync_handles = settings.sync_handles_cat
@@ -1774,7 +1780,7 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
             len(change_updates), items_plural='%s updates' % client.endpoint_singular
         )
 
-    if not settings['update_slave']:
+    if not settings.update_slave:
         return
 
     for count, sync_update in enumerate(change_updates):
@@ -1787,11 +1793,6 @@ def upload_category_changes_slave(parsers, results, settings, client, change_upd
         try:
             pkey = sync_update.slave_id
             changes = sync_update.get_slave_updates_native()
-            # TODO: does this need replacing?
-            # if 'image' in changes:
-            #     # quick hack to stop syncing bad images
-            #     if 'src' in changes['image']:
-            #         del changes['image']
             response_raw = client.upload_changes(pkey, changes)
             response_api_data = response_raw.json()
         except Exception as exc:
@@ -1913,7 +1914,7 @@ def upload_new_products(parsers, results, settings, client, new_updates):
             len(new_updates), items_plural='new %s' % client.endpoint_plural
         )
 
-    if not (new_updates and settings['update_slave']):
+    if not (new_updates and settings.update_slave):
         return
 
     sync_handles = settings.sync_handles_prod
@@ -1985,7 +1986,7 @@ def upload_product_changes(parsers, results, settings, client, change_updates):
             len(change_updates), items_plural='%s updates' % client.endpoint_singular
         )
 
-    if not settings['update_slave']:
+    if not settings.update_slave:
         return
 
     for count, sync_update in enumerate(change_updates):
@@ -2074,9 +2075,6 @@ def do_updates_prod(updates, parsers, settings, results):
             )
 
 def do_updates_var_master(updates, parsers, settings, results):
-    # TODO: this is the next important one !!!
-
-
     for update in updates.variation.master:
         old_master_id = update.master_id
         if Registrar.DEBUG_UPDATE:
@@ -2094,8 +2092,124 @@ def do_updates_var_master(updates, parsers, settings, results):
             update.get_master_updates_native()
         )
 
-def do_updates_var_slave(updates, parsers, settings, results):
+def upload_new_variations_slave(parsers, results, settings, client, new_updates):
+    # TODO: this based off upload_new_categories_slave
+    if not (new_updates and settings.update_slave):
+        return
+
     raise NotImplementedError()
+
+def upload_variation_changes_slave(parsers, results, settings, client, change_updates):
+    """
+    Upload a list of variation changes
+    """
+
+    # TODO: this based off upload_category_changes_slave
+
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(change_updates), items_plural='%s updates' % client.endpoint_singular
+        )
+
+    if not settings.update_slave:
+        return
+
+    for count, sync_update in enumerate(change_updates):
+        if Registrar.DEBUG_PROGRESS:
+            update_progress_counter.maybe_print_update(count)
+
+        if not sync_update.s_updated:
+            continue
+
+        try:
+            pkey = sync_update.slave_id
+            import pudb; pudb.set_trace()
+            parent_pkey = sync_update.get('')
+            changes = sync_update.get_slave_updates_native()
+            response_raw = client.upload_changes(pkey, changes)
+            response_api_data = response_raw.json()
+        except Exception as exc:
+            handle_failed_update(
+                sync_update, results, exc, settings, settings.slave_name
+            )
+            continue
+
+        response_core_data = settings.coldata_class_cat.translate_data_from(
+            response_api_data, settings.coldata_cat_target
+        )
+        response_gen_data = settings.coldata_class_cat.translate_data_to(
+            response_core_data, settings.coldata_gen_target_write
+        )
+
+        if Registrar.DEBUG_API:
+            Registrar.register_message(
+                "%s being updated with parser data: %s" % (
+                    client.endpoint_singular,
+                    pformat(response_gen_data)
+                )
+            )
+
+        sync_update.old_s_object_gen.update(response_gen_data)
+        sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
+        sync_update.old_m_object_gen.update(response_gen_data)
+
+        results.successes.append(sync_update)
+
+
+
+def do_updates_var_slave(updates, parsers, settings, results):
+    # TODO: this based off do_updates_categories_slave
+
+    # TODO: fix references to sync_client.endpoint_(plural|singular)
+
+    results.variation = ResultsNamespace()
+    results.variation.new = ResultsNamespace()
+
+    sync_client_class = settings.slave_var_sync_client_class
+    sync_client_args = settings.slave_var_sync_client_args
+
+    # updates in which an item is modified
+    change_updates = updates.variation.slave
+    if settings.do_problematic:
+        change_updates += updates.variation.problematic
+
+    # updates in which a new item is created
+    new_updates = []
+    if settings.auto_create_new:
+        new_updates += updates.variation.new_slaves
+    else:
+        for update in new_updates:
+            new_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be created: {1}".format(
+                sync_client_class.endpoint_plural, new_item_api
+            ))
+            Registrar.register_warning(exc)
+    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
+        sync_client_class.endpoint_plural, len(change_updates), len(new_updates)
+    ))
+
+    if not (new_updates or change_updates):
+        return
+
+    if settings['ask_before_update']:
+        if usr_prompt_continue(settings) == 's':
+            return
+
+    with sync_client_class(**sync_client_args) as client:
+        if Registrar.DEBUG_CATS:
+            Registrar.register_message("created cat client")
+
+        if new_updates:
+            # create variations that do not yet exist on slave
+            upload_new_variations_slave(
+                parsers, results.variation.new, settings, client, new_updates
+            )
+
+        if change_updates:
+            upload_variation_changes_slave(
+                parsers, results.variation, settings, client, change_updates
+            )
+
 
 
 def main(override_args=None, settings=None):

@@ -270,6 +270,8 @@ class SyncClientLocal(SyncClientAbstract):
     """ Designed to act like a GDrive client but work on a local file instead """
 
     service_name = 'LOCAL'
+    endpoint_singular = 'api_item'
+    endpoint_plural = 'api_items'
 
     def __init__(self, **kwargs):
         self.dialect_suggestion = kwargs.pop('dialect_suggestion', None)

@@ -94,7 +94,10 @@ class SyncUpdate(Registrar):
         self.updates = 0
         self.important_updates = 0
         self.important_handles = []
+
+        # If there is a change in master that is not just an insertion
         self.m_deltas = False
+        # If there is a change in master that is not just an insertion
         self.s_deltas = False
 
         self.b_time = 0
