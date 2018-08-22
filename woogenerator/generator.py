@@ -1252,6 +1252,10 @@ def do_merge_prod(matches, parsers, updates, settings):
         # , "gcs %s is not variation but object is" % repr(gcs)
         assert not s_object.is_variation
 
+        if m_object.get('post_status') == 'trash':
+            matches.masterless.append(match)
+            continue
+
         sync_update = settings.syncupdate_class_prod(m_object, s_object)
 
         sync_update.update(sync_handles)
@@ -1290,8 +1294,11 @@ def do_merge_prod(matches, parsers, updates, settings):
             updates.slave.append(sync_update)
 
     for count, match in enumerate(matches.slaveless):
-
         m_object = match.m_object
+
+        if m_object.get('post_status') == 'trash':
+            continue
+
         Registrar.register_message(
             "will create product %d: %s" % (
                 count, m_object.identifier
@@ -1302,10 +1309,9 @@ def do_merge_prod(matches, parsers, updates, settings):
         updates.slaveless.append(sync_update)
 
     for count, match in enumerate(matches.masterless):
-        assert match.has_no_master
         s_object = match.s_object
 
-        sync_update = settings.syncupdate_class(None, s_object)
+        sync_update = settings.syncupdate_class_prod(None, s_object)
 
         Registrar.register_message("will delete product: %d:\n%s" % (
             count, s_object.identifier))
@@ -1313,7 +1319,6 @@ def do_merge_prod(matches, parsers, updates, settings):
         updates.masterless.append(sync_update)
 
 def do_merge_var(matches, parsers, updates, settings):
-    # TODO: finish and test based on do_merge_categories
 
     if not (settings.do_variations and settings.do_sync):
         return
@@ -1336,6 +1341,10 @@ def do_merge_var(matches, parsers, updates, settings):
                 count, match.tabulate()))
         m_object = match.m_object
         s_object = match.s_object
+
+        if m_object.get('post_status') == 'trash':
+            matches.variation.masterless.append(match)
+            continue
 
         sync_update = settings.syncupdate_class_var(m_object, s_object)
 
@@ -1365,8 +1374,10 @@ def do_merge_var(matches, parsers, updates, settings):
             updates.variation.slave.append(sync_update)
 
     for count, match in enumerate(matches.variation.slaveless):
-        assert match.has_no_slave
         m_object = match.m_object
+
+        if m_object.get('post_status') == 'trash':
+            continue
 
         sync_update = settings.syncupdate_class_var(m_object, None)
 
@@ -1379,7 +1390,6 @@ def do_merge_var(matches, parsers, updates, settings):
         # TODO: figure out which attribute terms to add to parent?
 
     for count, match in enumerate(matches.variation.masterless):
-        assert match.has_no_master
         s_object = match.s_object
 
         sync_update = settings.syncupdate_class_var(None, s_object)
@@ -1977,7 +1987,6 @@ def upload_new_products(parsers, results, settings, client, new_updates):
     """
     Create new products in client in an order which creates parents first.
     """
-    raise NotImplementedError()
 
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(

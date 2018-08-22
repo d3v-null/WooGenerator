@@ -35,15 +35,7 @@ class ImportObject(OrderedDict, Registrar):
     row_key = '_row'
     coldata_gen_target = 'gen-csv'
 
-    def __init__(self, *args, **kwargs):
-        if self.DEBUG_ABSTRACT:
-            self.register_message("args = %s\nkwargs = %s\n" % (
-                pformat(args), pformat(kwargs.items())
-            ))
-
-        if self.DEBUG_MRO:
-            self.register_message('ImportObject')
-        data = args[0]
+    def __init__(self, data, *args, **kwargs):
         try:
             assert \
                 isinstance(data, dict), \
@@ -69,7 +61,7 @@ class ImportObject(OrderedDict, Registrar):
         self._row = row
         if '_row' not in self.keys():
             self['_row'] = []
-        Registrar.__init__(self, *args, **kwargs)
+        Registrar.__init__(self, data, *args, **kwargs)
 
     def __hash__(self):
         return hash(self.index)

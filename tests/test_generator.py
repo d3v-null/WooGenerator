@@ -2534,8 +2534,9 @@ python -m woogenerator.generator \
 
 class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
     """
-    Stuff missing from original dummy:
+    Stuff missing from original dummy which this tests:
      - variations
+     - trashed products
      - attributes
      - collapsable categories (e.g. Product A > Company A Product A => Company A Product A)
 
@@ -2603,6 +2604,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
     @pytest.mark.first
     def test_super_dummy_populate_master_parsers(self):
+
         self.populate_master_parsers()
 
         prod_container = self.parsers.master.product_container.container
@@ -2621,8 +2623,8 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             )
             print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
 
-        self.assertEqual(len(self.parsers.master.objects.values()), 8)
-        self.assertEqual(len(self.parsers.master.items.values()), 5)
+        self.assertEqual(len(self.parsers.master.objects.values()), 9)
+        self.assertEqual(len(self.parsers.master.items.values()), 6)
         self.assertEqual(len(prod_list), 1)
 
         first_prod = prod_list[0]
@@ -2648,11 +2650,11 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         test_dict = {
             'attribute:pa_material': 'Cotton',
             'attribute:quantity': '5',
-            'attribute:size': 'Small|Medium|Large|XSmall',
+            'attribute:size': 'XSmall|Small|Medium|Large|XLarge',
             'attribute_data:pa_material': '0|1|0',
             'attribute_data:quantity': '0|1|0',
             'attribute_data:size': '0|1|1',
-            'attribute_default:size': u'Small',
+            'attribute_default:size': u'XSmall',
             'title': u'Cotton Glove Pack x5 Pairs',
             'CA': u'V',
         }
@@ -2663,14 +2665,15 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         self.assertEqual(
             set([variation.codesum for variation in first_prod.variations.values()]),
             set([
+                "AGL-CP5XS",
                 "AGL-CP5S",
                 "AGL-CP5M",
                 "AGL-CP5L",
-                "AGL-CP5XS",
+                "AGL-CP5XL",
             ])
         )
 
-        first_variation = first_prod.variations.values()[0]
+        first_variation = first_prod.variations.get('AGL-CP5S')
 
         test_dict = {
             'DNR': u'3.85',
@@ -2692,6 +2695,15 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         for key, value in test_dict.items():
             self.assertEqual(unicode(first_variation[key]), unicode(value))
+
+        trashed_variation = first_prod.variations.get('AGL-CP5XL')
+
+        test_dict = {
+            'post_status': 'trash'
+        }
+
+        for key, value in test_dict.items():
+            self.assertEqual(unicode(trashed_variation[key]), unicode(value))
 
     def test_super_dummy_populate_slave_parsers(self):
 
@@ -2729,7 +2741,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             ])
         )
 
-        first_variation = first_prod.variations.values()[0]
+        first_variation = first_prod.variations.get(27065)
 
         test_dict = {
             'DNR': u'3.85',
@@ -2764,7 +2776,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         prod_list = prod_container(self.parsers.master.products.values())
 
         first_prod = prod_list[0]
-        first_variation = first_prod.variations.values()[0]
+        first_variation = first_prod.variations.get('AGL-CP5S')
         coldata_target = 'wc-csv'
         coldata_class = ColDataProductMeridian
 
@@ -2781,11 +2793,11 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         test_dict = {
             'attribute:pa_material': 'Cotton',
             'attribute:quantity': '5',
-            'attribute:size': 'Small|Medium|Large|XSmall',
+            'attribute:size': 'XSmall|Small|Medium|Large|XLarge',
             'attribute_data:pa_material': '0|1|0',
             'attribute_data:quantity': '0|1|0',
             'attribute_data:size': '0|1|1',
-            'attribute_default:size': u'Small',
+            'attribute_default:size': u'XSmall',
             'post_title': u'Cotton Glove Pack x5 Pairs',
         }
 
@@ -2826,8 +2838,8 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_match_var(self.parsers, self.matches, self.settings)
 
-        self.assertEqual(len(self.matches.variation.globals), 3)
-        self.assertEqual(len(self.matches.variation.masterless), 1)
+        self.assertEqual(len(self.matches.variation.globals), 4)
+        self.assertEqual(len(self.matches.variation.masterless), 0)
         self.assertEqual(len(self.matches.variation.slaveless), 1)
 
         # For any two given variations, master should be newer than slave,
@@ -2874,8 +2886,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             self.assertIn('id', master_updates.keys())
 
             slave_updates = sync_update.get_slave_updates()
-            # TODO: enable this assertion
-            # self.assertIn('lc_wn_regular_price', slave_updates.keys())
+            self.assertIn('lc_wn_regular_price', slave_updates.keys())
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)

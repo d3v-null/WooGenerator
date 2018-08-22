@@ -99,15 +99,15 @@ class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
 
     verify_meta_keys = ImportGenObject.verify_meta_keys + ImportWooMixin.verify_meta_keys
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data, *args, **kwargs):
         if args \
-        and hasattr(args[0], 'get') \
-        and args[0].get(self.rowcount_key) is None \
-        and self.menu_order_key in args[0]:
-            args[0][self.rowcount_key] = args[0][self.menu_order_key]
+        and hasattr(data, 'get') \
+        and data.get(self.rowcount_key) is None \
+        and self.menu_order_key in data:
+            data[self.rowcount_key] = data[self.menu_order_key]
         for base_class in ImportWooObject.__bases__:
             if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+                base_class.__init__(self,data, *args, **kwargs)
         # ImportGenObject.__init__(self, *args, **kwargs)
         # ImportShopMixin.__init__(self, *args, **kwargs)
         # ImportWooMixin.__init__(self, *args, **kwargs)
@@ -178,12 +178,12 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
     name_delimeter = ' - '
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data, *args, **kwargs):
         if self.product_type:
-            args[0]['prod_type'] = self.product_type
+            data['prod_type'] = self.product_type
         for base_class in ImportWooProduct.__bases__:
             if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+                base_class.__init__(self, data, *args, **kwargs)
 
     def process_meta(self):
         super(ImportWooProduct, self).process_meta()
@@ -722,20 +722,13 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 parser_data.update(base_class.get_parser_data(self, **kwargs))
         return parser_data
 
-    def get_new_obj_container(self, *args, **kwargs):
+    def get_new_obj_container(self, data, *args, **kwargs):
         # TODO: isn't this exactly what gen does?
-        container = super(CsvParseWoo, self).get_new_obj_container(
-            *args, **kwargs)
-        try:
-            all_data = args[0]
-        except IndexError:
-            warn = UserWarning("all_data not specified")
-            self.register_error(warn)
-            self.raise_exception(warn)
+        container = super(CsvParseWoo, self).get_new_obj_container(data, *args, **kwargs)
 
         if issubclass(container, ImportTreeItem) \
-                and self.schema in all_data:
-            woo_type = all_data[self.schema]
+                and self.schema in data:
+            woo_type = data[self.schema]
             if woo_type:
                 try:
                     container = self.containers[woo_type]

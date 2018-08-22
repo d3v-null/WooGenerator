@@ -128,12 +128,12 @@ class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
 
     verify_meta_keys = ImportWooApiObject.verify_meta_keys
 
-    def __init__(self, *args, **kwargs):
-        if self.product_type and not 'prod_type' in args[0]:
-            args[0]['prod_type'] = self.product_type
+    def __init__(self, data, *args, **kwargs):
+        if self.product_type and not 'prod_type' in data:
+            data['prod_type'] = self.product_type
         for base_class in ImportWooApiProduct.__bases__:
             if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+                base_class.__init__(self, data, *args, **kwargs)
 
     def to_dict(self):
         response = {}
