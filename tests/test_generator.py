@@ -2830,6 +2830,15 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         self.assertEqual(len(self.matches.variation.masterless), 1)
         self.assertEqual(len(self.matches.variation.slaveless), 1)
 
+        # For any two given variations, master should be newer than slave,
+        # since master comes from a file that should have recently been touched
+        first_match = self.matches.variation.globals[0]
+        self.assertGreater(
+            first_match.m_objects[0].get('modified_gmt'),
+            first_match.s_objects[0].get('modified_gmt')
+        )
+
+
     def test_super_dummy_merge_var_only(self):
         self.settings.do_images = False
         self.settings.do_categories = False
@@ -2845,7 +2854,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         try:
             self.assertEqual(len(self.updates.variation.delta_master), 0)
-            self.assertEqual(len(self.updates.variation.delta_slave), 0)
+            self.assertEqual(len(self.updates.variation.delta_slave), 1)
             self.assertEqual(len(self.updates.variation.master), 3)
             self.assertEqual(len(self.updates.variation.slave), 2)
             self.assertEqual(len(self.updates.variation.slaveless), 1)
