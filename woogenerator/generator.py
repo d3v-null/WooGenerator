@@ -1784,7 +1784,7 @@ def upload_new_categories_slave(parsers, results, settings, client, new_updates)
 
 
         # have to refresh sync_update to get parent wpid since parente wpid is populated in do_updates_categories_master
-        sync_update = settings.syncupdate_class_prod(
+        sync_update = settings.syncupdate_class_cat(
             sync_update.old_m_object,
             sync_update.old_s_object
         )
