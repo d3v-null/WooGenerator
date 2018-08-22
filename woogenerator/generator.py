@@ -1784,7 +1784,10 @@ def upload_new_categories_slave(parsers, results, settings, client, new_updates)
 
 
         # have to refresh sync_update to get parent wpid since parente wpid is populated in do_updates_categories_master
-        sync_update.set_old_m_object_gen(sync_update.old_m_object)
+        sync_update = settings.syncupdate_class_prod(
+            sync_update.old_m_object,
+            sync_update.old_s_object
+        )
         sync_update.update(sync_handles)
 
         core_data = sync_update.get_slave_updates()
@@ -2014,10 +2017,22 @@ def upload_new_products(parsers, results, settings, client, new_updates):
            )
 
         # have to refresh sync_update to get parent wpid since parente wpid is populated in do_updates_categories_master
-        sync_update.set_old_m_object_gen(sync_update.old_m_object)
+        sync_update = settings.syncupdate_class_prod(
+            sync_update.old_m_object,
+            sync_update.old_s_object
+        )
         sync_update.update(sync_handles)
 
         core_data = sync_update.get_slave_updates()
+
+        if settings.do_categories:
+            sync_update.simplify_sync_warning_value_listed('product_categories', ['term_id'])
+
+        if settings.do_images:
+            sync_update.simplify_sync_warning_value_listed('attachment_objects', ['id', 'title', 'source_url', 'position'])
+
+        if settings.do_attributes:
+            sync_update.simplify_sync_warning_value_listed('attributes', ['term_id'])
 
         if Registrar.DEBUG_API:
             Registrar.register_message(

@@ -115,3 +115,4 @@ images-CA/*
 prod_sync_reportCA.html
 prod_sync_reportCA.html
 .swp
+.python-version

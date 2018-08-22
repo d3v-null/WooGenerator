@@ -3009,8 +3009,8 @@ class ColDataProduct(ColDataWpEntity):
                 'grouped',
                 'external',
                 'variable',
-                'composite',
-                'bundle'
+                # 'composite',
+                # 'bundle'
             ],
             'xero-api': {
                 'path': None

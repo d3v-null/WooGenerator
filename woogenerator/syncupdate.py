@@ -848,6 +848,10 @@ class SyncUpdate(Registrar):
 
     def containerize_master(self, master_data):
         master_data_gen = self.coldata_class.translate_data_to(deepcopy(master_data), self.object_target)
+        if 'rowcount' not in master_data_gen:
+            master_data_gen['rowcount'] = 0
+        if 'ID' not in master_data_gen:
+            master_data_gen['ID'] = ''
         return self.master_container(master_data_gen, parent=self.master_parent)
 
     def containerize_slave(self, slave_data):

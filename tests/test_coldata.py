@@ -871,9 +871,6 @@ class TestColDataWcProd(TestColData):
             data, expected
         )
 
-
-
-
     def test_translate_data_complex(self):
         api_data = {
             'meta_data':[

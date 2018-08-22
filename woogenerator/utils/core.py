@@ -17,7 +17,7 @@ import traceback
 import unicodedata
 import unidecode
 import numbers
-from six import integer_types, string_types
+from six import integer_types, string_types, text_type, binary_type
 from collections import Counter, OrderedDict
 from HTMLParser import HTMLParser
 from urlparse import parse_qs, urlparse
@@ -162,27 +162,27 @@ class SanitationUtils(object):
 
     @classmethod
     def unicode_to_utf8(cls, u_str):
-        assert isinstance(u_str, unicode),\
+        assert isinstance(u_str, text_type),\
             "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "utf8")
-        assert isinstance(byte_return, str),\
+        assert isinstance(byte_return, binary_type),\
             "something went wrong, should return str not %s" % type(
                 byte_return)
         return byte_return
 
     @classmethod
     def unicode_to_ascii(cls, u_str):
-        assert isinstance(u_str, unicode),\
+        assert isinstance(u_str, text_type),\
             "parameter should be unicode not %s" % type(u_str)
         byte_return = converters.to_bytes(u_str, "ascii", "backslashreplace")
-        assert isinstance(byte_return, str),\
+        assert isinstance(byte_return, binary_type),\
             "something went wrong, should return str not %s" % type(
                 byte_return)
         return byte_return
 
     @classmethod
     def unicode_to_xml(cls, u_str, ascii_only=False):
-        assert isinstance(u_str, unicode),\
+        assert isinstance(u_str, text_type),\
             "parameter should be unicode not %s" % type(u_str)
         if ascii_only:
             byte_return = converters.unicode_to_xml(u_str, encoding="ascii")
@@ -192,10 +192,10 @@ class SanitationUtils(object):
 
     @classmethod
     def utf8_to_unicode(cls, utf8_str):
-        assert isinstance(utf8_str, str),\
+        assert isinstance(utf8_str, binary_type),\
             "parameter should be str not %s" % type(utf8_str)
         byte_return = converters.to_unicode(utf8_str, "utf8")
-        assert isinstance(byte_return, unicode),\
+        assert isinstance(byte_return, text_type),\
             "something went wrong, should return unicode not %s" % type(
                 byte_return)
         return byte_return
@@ -207,12 +207,12 @@ class SanitationUtils(object):
 
     @classmethod
     def ascii_to_unicode(cls, ascii_str):
-        assert isinstance(ascii_str, str),\
+        assert isinstance(ascii_str, binary_type),\
             "parameter should be str not %s" % type(ascii_str)
         # literal_eval("b'{}'".format(ascii_str)).decode('utf-8')
         # unicode_return = converters.to_unicode(ascii_str, "ascii")
         unicode_return = ascii_str.decode('unicode-escape')
-        assert isinstance(unicode_return, unicode),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return unicode not %s" % type(
                 unicode_return)
         return unicode_return
@@ -223,7 +223,7 @@ class SanitationUtils(object):
             unicode_return = u""
         else:
             unicode_return = converters.to_unicode(thing, encoding="utf8")
-        assert isinstance(unicode_return, unicode),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return unicode not %s" % type(
                 unicode_return)
         return unicode_return
@@ -234,7 +234,7 @@ class SanitationUtils(object):
             cls.unicode_to_utf8,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(byte_return, str),\
+        assert isinstance(byte_return, binary_type),\
             "something went wrong, should return str not %s" % type(
                 byte_return)
         return byte_return
@@ -245,7 +245,7 @@ class SanitationUtils(object):
             cls.unicode_to_ascii,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(byte_return, str),\
+        assert isinstance(byte_return, binary_type),\
             "something went wrong, should return str not %s" % type(
                 byte_return)
         return byte_return
@@ -253,10 +253,11 @@ class SanitationUtils(object):
     @classmethod
     def coerce_xml(cls, thing):
         byte_return = cls.compose(
+            cls.coerce_unicode,
             cls.unicode_to_xml,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(byte_return, str),\
+        assert isinstance(byte_return, text_type),\
             "something went wrong, should return str not %s" % type(
                 byte_return)
         return byte_return
@@ -360,7 +361,7 @@ class SanitationUtils(object):
     def sanitize_for_table(cls, thing, tablefmt=None):
         if hasattr(thing, '_supports_tablefmt'):
             thing = thing.__unicode__(tablefmt)
-        if isinstance(thing, (str, unicode)) and tablefmt == 'simple':
+        if isinstance(thing, (str, text_type)) and tablefmt == 'simple':
             thing = thing[:64] + '...'
         unicode_return = cls.compose(
             cls.coerce_unicode,
@@ -368,7 +369,7 @@ class SanitationUtils(object):
             cls.escape_newlines,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(unicode_return, unicode),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return unicode not %s" % type(
                 unicode_return)
         return unicode_return
@@ -381,7 +382,7 @@ class SanitationUtils(object):
             cls.unicode_to_xml,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(unicode_return, unicode),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return unicode not %s" % type(
                 unicode_return)
         return unicode_return
@@ -400,7 +401,7 @@ class SanitationUtils(object):
             cls.strip_extra_whitespace,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(unicode_return, unicode),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return unicode not %s" % type(
                 unicode_return)
         return unicode_return
@@ -826,7 +827,7 @@ class SanitationUtils(object):
     def html_unescape_recursive(cls, things):
         if isinstance(things, list):
             return [cls.html_unescape_recursive(thing) for thing in things]
-        elif isinstance(things, (str, unicode)):
+        elif isinstance(things, (str, text_type)):
             return cls.html_unescape(cls.coerce_unicode(things))
         else:
             return things
@@ -915,9 +916,9 @@ class SanitationUtils(object):
 
     @classmethod
     def title_splitter(cls, instring):
-        assert isinstance(instring, (str, unicode)), \
+        assert isinstance(instring, (str, text_type)), \
             "param must be a string not %s" % type(instring)
-        if not isinstance(instring, unicode):
+        if not isinstance(instring, text_type):
             instring = instring.decode('utf-8')
         found = re.findall(r"^\s*(.*?)\s+[^\s\w&\(\)]\s+(.*?)\s*$", instring)
         if found:
@@ -979,7 +980,7 @@ class SanitationUtils(object):
 
     @classmethod
     def decode_json(cls, json_str, **kwargs):
-        assert isinstance(json_str, (str, unicode))
+        assert isinstance(json_str, (str, text_type))
         attrs = json.loads(json_str, **kwargs)
         return attrs
 
@@ -1037,7 +1038,7 @@ class DescriptorUtils(object):
             return SanitationUtils.normalize_val(self[key])
 
         def setter(self, value):
-            assert isinstance(value, (str, unicode)), "{} must be set with string not {}".format(
+            assert isinstance(value, (str, text_type)), "{} must be set with string not {}".format(
                 key, type(value))
             self[key] = value
 
@@ -2049,7 +2050,7 @@ class UnicodeCsvDialectUtils(object):
                 'delimeter', 'quotechar', 'doublequote', 'escapechar', 'quotechar',
                 'quoting',
         ]:
-            if isinstance(getattr(dialect, attr), unicode):
+            if isinstance(getattr(dialect, attr), text_type):
                 setattr(
                     dialect,
                     attr,

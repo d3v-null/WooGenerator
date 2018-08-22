@@ -304,7 +304,8 @@ class WooVarList(ShopProdList, WooListMixin):
 ImportWooProductVariation.container = WooVarList
 
 class ImportWooProductComposite(ImportWooProduct):
-    product_type = 'composite'
+    product_type = 'simple'
+    # product_type = 'composite'
 
 
 class ImportWooProductGrouped(ImportWooProduct):
@@ -312,7 +313,8 @@ class ImportWooProductGrouped(ImportWooProduct):
 
 
 class ImportWooProductBundled(ImportWooProduct):
-    product_type = 'bundle'
+    product_type = 'simple'
+    # product_type = 'bundle'
 
 
 class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
