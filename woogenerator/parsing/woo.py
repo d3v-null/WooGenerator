@@ -279,6 +279,7 @@ class ImportWooProductVariation(
 ):
     is_variation = ImportShopProductVariationMixin.is_variation
     product_type = ImportShopProductVariationMixin.product_type
+    variation_indexer = ImportWooObject.get_sku
 
     verify_meta_keys = SeqUtils.combine_lists(
         ImportWooProduct.verify_meta_keys,

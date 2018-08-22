@@ -96,6 +96,7 @@ import zipfile
 import itertools
 from bisect import insort
 from collections import OrderedDict
+from six import string_types
 from pprint import pformat, pprint
 
 from exitstatus import ExitStatus
@@ -1109,7 +1110,8 @@ def do_match_var(parsers, matches, settings):
 
 
 def do_merge_images(matches, parsers, updates, settings):
-    updates.image = UpdateNamespace()
+    if not getattr(updates, 'image', None):
+        updates.image = UpdateNamespace()
 
     if not hasattr(matches, 'image'):
         return updates
@@ -1134,23 +1136,32 @@ def do_merge_images(matches, parsers, updates, settings):
             if sync_update.s_updated:
                 updates.image.slave.append(sync_update)
 
-    if settings.auto_create_new:
-        for count, match in enumerate(matches.image.slaveless):
-            m_object = match.m_object
-            Registrar.register_message(
-                "will create image %d: %s" % (
-                    count, m_object.identifier
-                )
+    for count, match in enumerate(matches.image.slaveless):
+        m_object = match.m_object
+        Registrar.register_message(
+            "will create image %d: %s" % (
+                count, m_object.identifier
             )
-            if not (m_object.attaches.products or m_object.attaches.categories):
-                continue
+        )
+        if not (m_object.attaches.products or m_object.attaches.categories):
+            continue
 
-            empty_s_object = parsers.slave.get_empty_attachment_instance()
-            sync_update = settings.syncupdate_class_img(
-                m_object, empty_s_object
-            )
-            sync_update.update(sync_handles)
-            updates.image.new_slaves.append(sync_update)
+        empty_s_object = parsers.slave.get_empty_attachment_instance()
+        sync_update = settings.syncupdate_class_img(
+            m_object, empty_s_object
+        )
+        sync_update.update(sync_handles)
+        updates.image.slaveless.append(sync_update)
+
+    for count, match in enumerate(matches.image.masterless):
+        assert match.has_no_master
+        s_object = match.s_object
+
+        sync_update = settings.syncupdate_class_img(None, s_object)
+        Registrar.register_message("will delete image: %d:\n%s" % (
+            count, s_object.identifier))
+
+        updates.image.masterless.append(sync_update)
 
     return updates
 
@@ -1205,7 +1216,7 @@ def do_merge_categories(matches, parsers, updates, settings):
             empty_s_object = parsers.slave.get_empty_category_instance()
             sync_update = settings.syncupdate_class_cat(m_object, empty_s_object)
             sync_update.update(sync_handles)
-            updates.category.new_slaves.append(sync_update)
+            updates.category.slaveless.append(sync_update)
 
     return updates
 
@@ -1229,10 +1240,10 @@ def do_merge_prod(matches, parsers, updates, settings):
     if Registrar.DEBUG_UPDATE:
         Registrar.register_message("sync_handles: %s" % repr(sync_handles))
 
-    for match_count, match in enumerate(matches.globals):
+    for count, match in enumerate(matches.globals):
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message("processing match %d:\n%s" % (
-                match_count, match.tabulate()))
+                count, match.tabulate()))
         m_object = match.m_object
         s_object = match.s_object
 
@@ -1257,12 +1268,15 @@ def do_merge_prod(matches, parsers, updates, settings):
         # Assumes that GDrive is read only, doesn't care about master
         # updates
 
+        if sync_update.m_updated:
+            updates.master.append(sync_update)
+
         if not sync_update.s_updated:
             continue
 
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message("update %d:\n%s" % (
-                match_count, sync_update.tabulate()
+                count, sync_update.tabulate()
             ))
 
         if sync_update.s_updated and sync_update.s_deltas:
@@ -1275,20 +1289,28 @@ def do_merge_prod(matches, parsers, updates, settings):
         if sync_update.s_updated:
             updates.slave.append(sync_update)
 
-    if settings.auto_create_new:
-        for new_prod_count, new_prod_match in enumerate(matches.slaveless):
+    for count, match in enumerate(matches.slaveless):
 
-            m_object = new_prod_match.m_object
-            Registrar.register_message(
-                "will create product %d: %s" % (
-                    new_prod_count, m_object.identifier
-                )
+        m_object = match.m_object
+        Registrar.register_message(
+            "will create product %d: %s" % (
+                count, m_object.identifier
             )
-            sync_update = settings.syncupdate_class_prod(m_object)
-            sync_update.update(sync_handles)
-            updates.category.new_slaves.append(
-                sync_update
-            )
+        )
+        sync_update = settings.syncupdate_class_prod(m_object)
+        sync_update.update(sync_handles)
+        updates.slaveless.append(sync_update)
+
+    for count, match in enumerate(matches.masterless):
+        assert match.has_no_master
+        s_object = match.s_object
+
+        sync_update = settings.syncupdate_class(None, s_object)
+
+        Registrar.register_message("will delete product: %d:\n%s" % (
+            count, s_object.identifier))
+
+        updates.masterless.append(sync_update)
 
 def do_merge_var(matches, parsers, updates, settings):
     # TODO: finish and test based on do_merge_categories
@@ -1308,12 +1330,12 @@ def do_merge_var(matches, parsers, updates, settings):
         Registrar.register_error(exc)
         raise exc
 
-    for match_count, var_match in enumerate(matches.variation.globals):
+    for count, match in enumerate(matches.variation.globals):
         if Registrar.DEBUG_VARS:
-            Registrar.register_message("processing var_match %d:\n%s" % (
-                match_count, var_match.tabulate()))
-        m_object = var_match.m_object
-        s_object = var_match.s_object
+            Registrar.register_message("processing match %d:\n%s" % (
+                count, match.tabulate()))
+        m_object = match.m_object
+        s_object = match.s_object
 
         sync_update = settings.syncupdate_class_var(m_object, s_object)
 
@@ -1327,51 +1349,44 @@ def do_merge_var(matches, parsers, updates, settings):
 
         if Registrar.DEBUG_VARS:
             Registrar.register_message("var update %d:\n%s" % (
-                match_count, sync_update.tabulate()))
+                count, sync_update.tabulate()))
 
-        # TODO: I really don't get what this is about
         if sync_update.s_updated and sync_update.s_deltas:
-            updates.delta_slave.append(sync_update)
+            updates.variation.delta_slave.append(sync_update)
 
         if sync_update.m_updated:
             updates.variation.master.append(sync_update)
 
         if not sync_update.important_static:
             updates.variation.problematic.append(sync_update)
+            continue
 
         if sync_update.s_updated:
             updates.variation.slave.append(sync_update)
 
-    if settings.auto_create_new:
-        for match_count, var_match in enumerate(
-                matches.variation.slaveless):
-            assert var_match.has_no_slave
-            m_object = var_match.m_object
+    for count, match in enumerate(matches.variation.slaveless):
+        assert match.has_no_slave
+        m_object = match.m_object
 
-            sync_update = settings.syncupdate_class_var(m_object, None)
+        sync_update = settings.syncupdate_class_var(m_object, None)
 
-            sync_update.update(sync_handles)
+        sync_update.update(sync_handles)
 
-            Registrar.register_message("Will create variation %d:\n%s" % (
-                match_count, m_object.identifier))
+        Registrar.register_message("Will create variation %d:\n%s" % (
+            count, m_object.identifier))
 
-            updates.variation.new_slaves.append(sync_update)
+        updates.variation.slaveless.append(sync_update)
+        # TODO: figure out which attribute terms to add to parent?
 
-            # TODO: figure out which attribute terms to add to parent?
-
-    for match_count, var_match in enumerate(
-            matches.variation.masterless):
-        assert var_match.has_no_master
-        s_object = var_match.s_object
+    for count, match in enumerate(matches.variation.masterless):
+        assert match.has_no_master
+        s_object = match.s_object
 
         sync_update = settings.syncupdate_class_var(None, s_object)
-
-        sync_update.update()
-
         Registrar.register_message("will delete variation: %d:\n%s" % (
-            match_count, s_object.identifier))
+            count, s_object.identifier))
 
-
+        updates.variation.masterless.append(sync_update)
         # TODO: figure out which attribute terms to delete from parent?
 
 def do_report_images(reporters, matches, updates, parsers, settings):
@@ -1496,7 +1511,7 @@ def handle_failed_update(update, results, exc, settings, source=None):
 
 def usr_prompt_continue(settings):
     # TODO: this is completely broken. just read from stdin
-    if settings['force_update']:
+    if not settings.ask_before_update:
         return
     try:
         raw_in = input("\n".join([
@@ -1639,6 +1654,9 @@ def do_updates_images_master(updates, parsers, results, settings):
             update.get_master_updates_native()
         )
 
+def delete_images_slave(parsers, results, settings, client, delete_updates):
+    raise NotImplementedError()
+
 def do_updates_images_slave(updates, parsers, results, settings):
     """Perform a list of updates on attachments."""
 
@@ -1648,6 +1666,18 @@ def do_updates_images_slave(updates, parsers, results, settings):
     sync_client_class = settings.slave_img_sync_client_class
     sync_client_args = settings.slave_img_sync_client_args
 
+    try:
+        endpoint_singular = sync_client_class.endpoint_singular
+        assert isinstance(endpoint_singular, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_singular = "image"
+
+    try:
+        endpoint_plural = sync_client_class.endpoint_plural
+        assert isinstance(endpoint_plural, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_plural = "%s" % endpoint_singular
+
     # updates in which an item is modified
     change_updates = updates.image.slave
     if settings.do_problematic:
@@ -1655,19 +1685,31 @@ def do_updates_images_slave(updates, parsers, results, settings):
     # updates in which a new item is created
     new_updates = []
     if settings.auto_create_new:
-        new_updates += updates.image.new_slaves
+        new_updates += updates.image.slaveless
     else:
-        for update in new_updates:
+        for update in updates.image.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                sync_client_class.endpoint_singular, new_item_api
+                endpoint_singular, new_item_api
             ))
             Registrar.register_warning(exc)
-    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        sync_client_class.endpoint_plural, len(change_updates), len(new_updates)
+
+    delete_updates = []
+    if settings.auto_delete_old:
+        delete_updates += updates.image.masterless
+    else:
+        for update in updates.image.masterless:
+            deleted_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be deleted: {1}".format(
+                endpoint_singular, deleted_item_api
+            ))
+            Registrar.register_warning(exc)
+
+    Registrar.register_progress("Changing {1}, creating {2} and deleting {3} {0}".format(
+        endpoint_plural, len(change_updates), len(new_updates), len(delete_updates)
     ))
 
-    if not (new_updates or change_updates):
+    if not (new_updates or change_updates or delete_updates):
         return
 
     if settings['ask_before_update']:
@@ -1675,11 +1717,7 @@ def do_updates_images_slave(updates, parsers, results, settings):
             return
 
     with sync_client_class(**sync_client_args) as client:
-        if Registrar.DEBUG_IMG:
-            Registrar.register_message("created img client")
-
         if new_updates:
-            # create attachments that do not yet exist on slave
             upload_new_images_slave(
                 parsers, results.image.new, settings, client, new_updates
             )
@@ -1687,6 +1725,11 @@ def do_updates_images_slave(updates, parsers, results, settings):
         if change_updates:
             upload_image_changes_slave(
                 parsers, results.image, settings, client, change_updates
+            )
+
+        if delete_updates:
+            delete_images_slave(
+                parsers, results, settings, client, delete_updates
             )
 
 def upload_new_categories_slave(parsers, results, settings, client, new_updates):
@@ -1841,6 +1884,9 @@ def do_updates_categories_master(updates, parsers, results, settings):
             update.get_master_updates_native()
         )
 
+def delete_categories_slave(parsers, results, settings, client, delete_updates):
+    raise NotImplementedError()
+
 def do_updates_categories_slave(updates, parsers, results, settings):
     """Perform a list of updates on categories."""
     if not hasattr(updates, 'category'):
@@ -1852,26 +1898,49 @@ def do_updates_categories_slave(updates, parsers, results, settings):
     sync_client_class = settings.slave_cat_sync_client_class
     sync_client_args = settings.slave_cat_sync_client_args
 
-    # updates in which an item is modified
+    try:
+        endpoint_singular = sync_client_class.endpoint_singular
+        assert isinstance(endpoint_singular, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_singular = "product"
+
+    try:
+        endpoint_plural = sync_client_class.endpoint_plural
+        assert isinstance(endpoint_plural, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_plural = "%s" % endpoint_singular
+
     change_updates = updates.category.slave
     if settings.do_problematic:
         change_updates += updates.category.problematic
     # updates in which a new item is created
     new_updates = []
     if settings.auto_create_new:
-        new_updates += updates.category.new_slaves
+        new_updates += updates.category.slaveless
     else:
-        for update in new_updates:
+        for update in updates.category.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                sync_client_class.endpoint_plural, new_item_api
+                endpoint_singular, new_item_api
             ))
             Registrar.register_warning(exc)
-    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        sync_client_class.endpoint_plural, len(change_updates), len(new_updates)
+
+    delete_updates = []
+    if settings.auto_delete_old:
+        delete_updates += updates.category.masterless
+    else:
+        for update in updates.category.masterless:
+            deleted_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be deleted: {1}".format(
+                endpoint_singular, deleted_item_api
+            ))
+            Registrar.register_warning(exc)
+
+    Registrar.register_progress("Changing {1}, creating {2} and deleting {3} {0}".format(
+        endpoint_plural, len(change_updates), len(new_updates), len(delete_updates)
     ))
 
-    if not (new_updates or change_updates):
+    if not (new_updates or change_updates or delete_updates):
         return
 
     if settings['ask_before_update']:
@@ -1879,11 +1948,7 @@ def do_updates_categories_slave(updates, parsers, results, settings):
             return
 
     with sync_client_class(**sync_client_args) as client:
-        if Registrar.DEBUG_CATS:
-            Registrar.register_message("created cat client")
-
         if new_updates:
-            # create categories that do not yet exist on slave
             upload_new_categories_slave(
                 parsers, results.category.new, settings, client, new_updates
             )
@@ -1891,6 +1956,11 @@ def do_updates_categories_slave(updates, parsers, results, settings):
         if change_updates:
             upload_category_changes_slave(
                 parsers, results.category, settings, client, change_updates
+            )
+
+        if delete_updates:
+            delete_categories_slave(
+                parsers, results, settings, client, delete_updates
             )
 
 # TODO: do_updates_attributes_master ?
@@ -2028,6 +2098,9 @@ def upload_product_changes(parsers, results, settings, client, change_updates):
 
         results.successes.append(sync_update)
 
+def delete_products_slave(parsers, results, settings, client, delete_updates):
+    raise NotImplementedError()
+
 def do_updates_prod(updates, parsers, settings, results):
     """
     Update products in slave.
@@ -2035,8 +2108,20 @@ def do_updates_prod(updates, parsers, settings, results):
     # updates in which an item is modified
 
     results.new = ResultsNamespace()
-    slave_client_class = settings.slave_upload_client_class
-    slave_client_args = settings.slave_upload_client_args
+    sync_client_class = settings.slave_upload_client_class
+    sync_client_args = settings.slave_upload_client_args
+
+    try:
+        endpoint_singular = sync_client_class.endpoint_singular
+        assert isinstance(endpoint_singular, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_singular = "product"
+
+    try:
+        endpoint_plural = sync_client_class.endpoint_plural
+        assert isinstance(endpoint_plural, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_plural = "%s" % endpoint_singular
 
     change_updates = updates.slave
     if settings.do_problematic:
@@ -2044,27 +2129,38 @@ def do_updates_prod(updates, parsers, settings, results):
     # updates in which a new item is created
     new_updates = []
     if settings.auto_create_new:
-        new_updates += updates.new_slaves
+        new_updates += updates.slaveless
     else:
-        for update in new_updates:
+        for update in updates.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                slave_client_class.endpoint_singular, new_item_api
+                endpoint_singular, new_item_api
             ))
             Registrar.register_warning(exc)
-    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        slave_client_class.endpoint_plural, len(change_updates), len(new_updates)
+
+    delete_updates = []
+    if settings.auto_delete_old:
+        delete_updates += updates.masterless
+    else:
+        for update in updates.masterless:
+            deleted_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be deleted: {1}".format(
+                endpoint_singular, deleted_item_api
+            ))
+            Registrar.register_warning(exc)
+
+    Registrar.register_progress("Changing {1}, creating {2} and deleting {3} {0}".format(
+        endpoint_plural, len(change_updates), len(new_updates), len(delete_updates)
     ))
 
-    if not (new_updates or change_updates):
+    if not (new_updates or change_updates or delete_updates):
         return
 
     if settings['ask_before_update']:
         if usr_prompt_continue(settings) == 's':
             return
 
-
-    with slave_client_class(**slave_client_args) as client:
+    with sync_client_class(**sync_client_args) as client:
         if new_updates:
             upload_new_products(
                 parsers, results, settings, client, new_updates
@@ -2072,6 +2168,11 @@ def do_updates_prod(updates, parsers, settings, results):
         if change_updates:
             upload_product_changes(
                 parsers, results, settings, client, change_updates
+            )
+
+        if delete_updates:
+            delete_products_slave(
+                parsers, results, settings, client, delete_updates
             )
 
 def do_updates_var_master(updates, parsers, settings, results):
@@ -2155,40 +2256,59 @@ def upload_variation_changes_slave(parsers, results, settings, client, change_up
 
         results.successes.append(sync_update)
 
-
+def delete_variations_slave(parsers, results, settings, client, delete_updates):
+    raise NotImplementedError()
 
 def do_updates_var_slave(updates, parsers, settings, results):
-    # TODO: this based off do_updates_categories_slave
-
-    # TODO: fix references to sync_client.endpoint_(plural|singular)
-
     results.variation = ResultsNamespace()
     results.variation.new = ResultsNamespace()
 
     sync_client_class = settings.slave_var_sync_client_class
     sync_client_args = settings.slave_var_sync_client_args
 
-    # updates in which an item is modified
+    try:
+        endpoint_singular = sync_client_class.endpoint_singular
+        assert isinstance(endpoint_singular, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_singular = "variation"
+
+    try:
+        endpoint_plural = sync_client_class.endpoint_plural
+        assert isinstance(endpoint_plural, string_types)
+    except (AssertionError, AttributeError):
+        endpoint_plural = "%s" % endpoint_singular
+
     change_updates = updates.variation.slave
     if settings.do_problematic:
         change_updates += updates.variation.problematic
 
-    # updates in which a new item is created
     new_updates = []
     if settings.auto_create_new:
-        new_updates += updates.variation.new_slaves
+        new_updates += updates.variation.slaveless
     else:
-        for update in new_updates:
+        for update in updates.variation.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                sync_client_class.endpoint_plural, new_item_api
+                endpoint_singular, new_item_api
             ))
             Registrar.register_warning(exc)
-    Registrar.register_progress("Changing {1} {0} and creating {2} {0}".format(
-        sync_client_class.endpoint_plural, len(change_updates), len(new_updates)
+
+    delete_updates = []
+    if settings.auto_delete_old:
+        delete_updates += updates.variation.masterless
+    else:
+        for update in updates.variation.masterless:
+            deleted_item_api = update.get_slave_updates_native()
+            exc = UserWarning("{0} needs to be deleted: {1}".format(
+                endpoint_singular, deleted_item_api
+            ))
+            Registrar.register_warning(exc)
+
+    Registrar.register_progress("Changing {1}, creating {2} and deleting {3} {0}".format(
+        endpoint_plural, len(change_updates), len(new_updates), len(delete_updates)
     ))
 
-    if not (new_updates or change_updates):
+    if not (new_updates or change_updates or delete_updates):
         return
 
     if settings['ask_before_update']:
@@ -2196,11 +2316,7 @@ def do_updates_var_slave(updates, parsers, settings, results):
             return
 
     with sync_client_class(**sync_client_args) as client:
-        if Registrar.DEBUG_CATS:
-            Registrar.register_message("created cat client")
-
         if new_updates:
-            # create variations that do not yet exist on slave
             upload_new_variations_slave(
                 parsers, results.variation.new, settings, client, new_updates
             )
@@ -2210,7 +2326,10 @@ def do_updates_var_slave(updates, parsers, settings, results):
                 parsers, results.variation, settings, client, change_updates
             )
 
-
+        if delete_updates:
+            delete_variations_slave(
+                parsers, results, settings, client, delete_updates
+            )
 
 def main(override_args=None, settings=None):
     """Main function for generator."""

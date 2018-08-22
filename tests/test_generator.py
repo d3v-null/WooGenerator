@@ -28,7 +28,7 @@ from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_updates_images_slave,
                                     export_master_parser,
                                     populate_master_parsers,
-                                    populate_slave_parsers, do_updates_var_master)
+                                    populate_slave_parsers, do_updates_var_master, do_updates_var_slave)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
@@ -1194,13 +1194,13 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
         if self.debug:
             print("slaveless objects")
-            for update in self.updates.image.new_slaves:
+            for update in self.updates.image.slaveless:
                 slave_gen_object = update.old_m_object_gen
                 print(slave_gen_object)
 
-        self.assertEqual(len(self.updates.image.new_slaves), 2)
-        # sync_update = self.updates.image.new_slaves[0]
-        sync_update = self.updates.image.new_slaves.get_by_ids("14|ACARA-CCL.png", "")
+        self.assertEqual(len(self.updates.image.slaveless), 2)
+        # sync_update = self.updates.image.slaveless[0]
+        sync_update = self.updates.image.slaveless.get_by_ids("14|ACARA-CCL.png", "")
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -1475,20 +1475,20 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
         if self.debug:
             print("slaveless objects")
-            for update in self.updates.category.new_slaves:
+            for update in self.updates.category.slaveless:
                 slave_gen_object = update.old_m_object_gen
                 print(slave_gen_object)
 
         self.assertEqual(
             set([
                 self.parsers.slave.category_container.get_title(gen_data.old_m_object_gen)
-                for gen_data in self.updates.category.new_slaves
+                for gen_data in self.updates.category.slaveless
             ]),
             set(['Specials', 'Product A Specials'])
         )
 
-        # sync_update = self.updates.category.new_slaves[-1]
-        sync_update = self.updates.category.new_slaves.get_by_ids(167, '')
+        # sync_update = self.updates.category.slaveless[-1]
+        sync_update = self.updates.category.slaveless.get_by_ids(167, '')
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -1998,9 +1998,9 @@ r:3|a:317|Range A                  Company A have developed a range of unique bl
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        self.assertEqual(len(self.updates.category.new_slaves), 2)
+        self.assertEqual(len(self.updates.category.slaveless), 2)
 
-        for sync_update in self.updates.category.new_slaves:
+        for sync_update in self.updates.category.slaveless:
             try:
                 sync_update_cat_rudiments_test(sync_update)
             except AssertionError as exc:
@@ -2085,7 +2085,7 @@ display         identical                            0         0
 probbos:
 
         """
-        sync_update = self.updates.category.new_slaves.get_by_ids(167, '')
+        sync_update = self.updates.category.slaveless.get_by_ids(167, '')
 
         try:
             if self.debug:
@@ -2648,7 +2648,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         test_dict = {
             'attribute:pa_material': 'Cotton',
             'attribute:quantity': '5',
-            'attribute:size': 'Small|Medium|Large|XLarge',
+            'attribute:size': 'Small|Medium|Large|XSmall',
             'attribute_data:pa_material': '0|1|0',
             'attribute_data:quantity': '0|1|0',
             'attribute_data:size': '0|1|1',
@@ -2666,7 +2666,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
                 "AGL-CP5S",
                 "AGL-CP5M",
                 "AGL-CP5L",
-                "AGL-CP5XL",
+                "AGL-CP5XS",
             ])
         )
 
@@ -2677,7 +2677,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             'DPR': u'3.85',
             'RNR': u'',
             'RPR': u'',
-            'WNR': u'5.50',
+            'WNR': u'5.40',
             'WPR': u'4.95',
             'height': u'25',
             'length': u'100',
@@ -2781,7 +2781,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         test_dict = {
             'attribute:pa_material': 'Cotton',
             'attribute:quantity': '5',
-            'attribute:size': 'Small|Medium|Large|XLarge',
+            'attribute:size': 'Small|Medium|Large|XSmall',
             'attribute_data:pa_material': '0|1|0',
             'attribute_data:quantity': '0|1|0',
             'attribute_data:size': '0|1|1',
@@ -2807,7 +2807,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             'meta:lc_dp_regular_price': u'3.85',
             'meta:lc_rn_regular_price': u'',
             'meta:lc_rp_regular_price': u'',
-            'meta:lc_wn_regular_price': u'5.50',
+            'meta:lc_wn_regular_price': u'5.40',
             'meta:lc_wp_regular_price': u'4.95',
             'height': u'25',
             'length': u'100',
@@ -2826,7 +2826,9 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_match_var(self.parsers, self.matches, self.settings)
 
-        self.assertEqual(len(self.matches.variation.globals), 4)
+        self.assertEqual(len(self.matches.variation.globals), 3)
+        self.assertEqual(len(self.matches.variation.masterless), 1)
+        self.assertEqual(len(self.matches.variation.slaveless), 1)
 
     def test_super_dummy_merge_var_only(self):
         self.settings.do_images = False
@@ -2841,15 +2843,36 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
 
-        sync_update = self.updates.variation.slave.get_by_ids('AGL-CP5S', 27065)
+        self.assertEqual(len(self.updates.variation.delta_master), 0)
+        self.assertEqual(len(self.updates.variation.delta_slave), 0)
+        self.assertEqual(len(self.updates.variation.master), 3)
+        self.assertEqual(len(self.updates.variation.slave), 2)
+        self.assertEqual(len(self.updates.variation.slaveless), 1)
+        self.assertEqual(len(self.updates.variation.masterless), 1)
+        self.assertEqual(len(self.updates.variation.nonstatic_slave), 0)
+        self.assertEqual(len(self.updates.variation.nonstatic_master), 0)
+        self.assertEqual(len(self.updates.variation.problematic), 1)
 
-        self.assertNotIn('meta', sync_update.get_master_updates().keys())
-        self.assertNotIn('regular_price', sync_update.get_master_updates().keys())
+        sync_update = self.updates.variation.problematic.get_by_ids('AGL-CP5S', 27065)
+
+        try:
+            master_updates = sync_update.get_master_updates()
+            self.assertNotIn('meta', master_updates.keys())
+            self.assertNotIn('regular_price', master_updates.keys())
+            self.assertIn('id', master_updates.keys())
+
+            slave_updates = sync_update.get_slave_updates()
+            # TODO: enable this assertion
+            # self.assertIn('lc_wn_regular_price', slave_updates.keys())
+
+        except AssertionError as exc:
+            self.fail_syncupdate_assertion(exc, sync_update)
 
     def test_super_dummy_updates_var_only(self):
         self.settings.do_images = False
         self.settings.do_categories = False
         self.settings.do_attributes = False
+        self.settings.ask_before_update = False
         self.populate_master_parsers()
         self.populate_slave_parsers()
 
@@ -2859,8 +2882,10 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         do_updates_var_master(self.updates, self.parsers, self.settings, self.results)
 
         self.assertEqual(
-            self.parsers.master.variations.values()[0]['ID'], 27065
+            self.parsers.master.variations['AGL-CP5S']['ID'], 27065
         )
+
+        do_updates_var_slave(self.updates, self.parsers, self.settings, self.results)
 
 
     # def test_super_dummy_attributes(self):
@@ -3036,13 +3061,13 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
 
         self.assertEqual(len(self.updates.delta_master), 0)
         self.assertEqual(len(self.updates.delta_slave), 1)
-        self.assertEqual(len(self.updates.master), 0)
-        self.assertEqual(len(self.updates.new_masters), 0)
-        self.assertEqual(len(self.updates.new_slaves), 0)
+        self.assertEqual(len(self.updates.master), 10)
+        self.assertEqual(len(self.updates.slave), 1)
+        self.assertEqual(len(self.updates.slaveless), 5)
+        self.assertEqual(len(self.updates.masterless), 0)
         self.assertEqual(len(self.updates.nonstatic_slave), 0)
         self.assertEqual(len(self.updates.nonstatic_master), 0)
         self.assertEqual(len(self.updates.problematic), 0)
-        self.assertEqual(len(self.updates.slave), 1)
 
         # sync_update = self.updates.delta_slave[0]
         self.assertTrue(

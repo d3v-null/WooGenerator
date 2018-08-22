@@ -1406,7 +1406,6 @@ class SyncUpdateProd(SyncUpdateGen):
     Abstract class for product updates
     """
     coldata_class = ColDataProductMeridian
-    slave_target = 'wc-wp-api-v2-edit'
 
     def __init__(self, *args, **kwargs):
         super(SyncUpdateProd, self).__init__(*args, **kwargs)
@@ -1415,11 +1414,16 @@ class SyncUpdateProd(SyncUpdateGen):
     def slave_id(self):
         return self.get_new_subject_value('id', self.slave_name)
 
-class SyncUpdateProdWoo(SyncUpdateProd):
-    coldata_class = ColDataProductMeridian
+class SyncUpdateWooMixin(object):
+    slave_target = 'wc-wp-api-v2-edit'
+
+
+class SyncUpdateProdWoo(SyncUpdateProd, SyncUpdateWooMixin):
+    coldata_class = SyncUpdateProd.coldata_class
+    slave_target = SyncUpdateWooMixin.slave_target
 
 class SyncUpdateProdXero(SyncUpdateProd):
-    coldata_class = ColDataProductMeridian
+    coldata_class = SyncUpdateProd.coldata_class
     slave_target = 'xero-api'
 
     @property
@@ -1432,15 +1436,19 @@ class SyncUpdateVarWoo(SyncUpdateProdWoo):
 
     @property
     def master_id(self):
+        if not self.old_m_object_gen:
+            return
         old_m_object_gen = self.old_m_object_gen
-        return old_m_object_gen.parent.variation_indexer(old_m_object_gen)
+        return old_m_object_gen.variation_indexer(old_m_object_gen)
 
-class SyncUpdateImgWoo(SyncUpdateGen):
+class SyncUpdateImgWoo(SyncUpdateGen, SyncUpdateWooMixin):
     coldata_class = ColDataAttachment
-    slave_target = 'wp-api-v2-edit'
+    slave_target = SyncUpdateWooMixin.slave_target
 
     @property
     def master_id(self):
+        if not self.old_m_object_gen:
+            return
         old_m_object_gen = self.old_m_object_gen
         return old_m_object_gen.attachment_indexer(old_m_object_gen)
 
@@ -1448,9 +1456,9 @@ class SyncUpdateImgWoo(SyncUpdateGen):
     def slave_id(self):
         return self.get_new_subject_value('id', self.slave_name)
 
-class SyncUpdateCatWoo(SyncUpdateGen):
+class SyncUpdateCatWoo(SyncUpdateGen, SyncUpdateWooMixin):
     coldata_class = ColDataWcProdCategory
-    slave_target = 'wc-wp-api-v2-edit'
+    slave_target = SyncUpdateWooMixin.slave_target
     default_master_container = ImportWooCategory
     default_slave_container = ImportWooApiCategory
 
