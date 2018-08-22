@@ -572,6 +572,13 @@ class UpdateNamespace(argparse.Namespace):
         self.new_masters = UpdateList()
         self.new_slaves = UpdateList()
 
+    def tabulate(self, tablefmt=None):
+        response = ''
+        for attr_key, attr_val in self.__dict__.items():
+            if attr_val and hasattr(attr_val, 'tabulate'):
+                response += "updatelist %s:\n%s\n" % (attr_key, attr_val.tabulate(tablefmt=tablefmt))
+        return response
+
 
 class ResultsNamespace(argparse.Namespace):
     """ Collect information about failures into a single namespace. """

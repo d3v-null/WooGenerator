@@ -2843,15 +2843,18 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
 
-        self.assertEqual(len(self.updates.variation.delta_master), 0)
-        self.assertEqual(len(self.updates.variation.delta_slave), 0)
-        self.assertEqual(len(self.updates.variation.master), 3)
-        self.assertEqual(len(self.updates.variation.slave), 2)
-        self.assertEqual(len(self.updates.variation.slaveless), 1)
-        self.assertEqual(len(self.updates.variation.masterless), 1)
-        self.assertEqual(len(self.updates.variation.nonstatic_slave), 0)
-        self.assertEqual(len(self.updates.variation.nonstatic_master), 0)
-        self.assertEqual(len(self.updates.variation.problematic), 1)
+        try:
+            self.assertEqual(len(self.updates.variation.delta_master), 0)
+            self.assertEqual(len(self.updates.variation.delta_slave), 0)
+            self.assertEqual(len(self.updates.variation.master), 3)
+            self.assertEqual(len(self.updates.variation.slave), 2)
+            self.assertEqual(len(self.updates.variation.slaveless), 1)
+            self.assertEqual(len(self.updates.variation.masterless), 1)
+            self.assertEqual(len(self.updates.variation.nonstatic_slave), 0)
+            self.assertEqual(len(self.updates.variation.nonstatic_master), 0)
+            self.assertEqual(len(self.updates.variation.problematic), 1)
+        except BaseException as exc:
+            self.fail_update_namespace_assertion(exc, self.updates.variation)
 
         sync_update = self.updates.variation.problematic.get_by_ids('AGL-CP5S', 27065)
 

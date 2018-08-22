@@ -73,12 +73,12 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         print("master updates(%d):\n%s" % (
             len(updates.master), map(str, updates.master))
         )
-        # print("masterless updates(%d):\n%s" % (
-        #     len(updates.masterless), map(str, updates.masterless))
-        # )
-        # print("slaveless updates(%d):\n%s" % (
-        #     len(updates.slaveless), map(str, updates.slaveless))
-        # )
+        print("masterless updates(%d):\n%s" % (
+            len(updates.masterless), map(str, updates.masterless))
+        )
+        print("slaveless updates(%d):\n%s" % (
+            len(updates.slaveless), map(str, updates.slaveless))
+        )
         print("nonstatic_master updates(%d):\n%s" % (
             len(updates.nonstatic_master), map(str, updates.nonstatic_master))
         )
@@ -106,6 +106,13 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (
             pformat(sync_update.sync_warnings.items()),
             sync_update.tabulate(tablefmt='simple'),
+            traceback.format_exc(exc),
+        )
+        raise AssertionError(msg)
+
+    def fail_update_namespace_assertion(self, exc, update_namespace):
+        msg = "failed assertion: \nUPDATES:\n%s\nTRACEBACK:\n%s" % (
+            update_namespace.tabulate(tablefmt='simple'),
             traceback.format_exc(exc),
         )
         raise AssertionError(msg)

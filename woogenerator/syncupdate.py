@@ -1517,3 +1517,21 @@ class UpdateList(list, Registrar):
     def get_by_ids(self, master_id='', slave_id=''):
         index = self.supported_type.make_index(master_id, slave_id)
         return self.get_by_index(index)
+
+    def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
+        """
+        Returns a string that contains a representation of the updates in the
+        table format specified
+        """
+
+        prefix, suffix = "", ""
+        delimeter = "\n"
+        if tablefmt == 'html':
+            delimeter = ''
+            prefix = '<div class="updateList">'
+            suffix = '</div>'
+        return prefix + delimeter.join([
+            SanitationUtils.coerce_bytes(
+                update.tabulate(tablefmt=tablefmt
+            )) for update in self if update
+        ]) + suffix

@@ -382,23 +382,23 @@ class MatchList(list):
         Returns a string that contains a representation of the match in the
         table format specified
         """
-        if self:
-            prefix, suffix = "", ""
-            delimeter = "\n"
-            if tablefmt == 'html':
-                delimeter = ''
-                prefix = '<div class="matchList">'
-                suffix = '</div>'
-            return prefix + delimeter.join([
-                SanitationUtils.coerce_bytes(
-                    match.tabulate(
-                        cols=cols,
-                        tablefmt=tablefmt,
-                        highlight_rules=highlight_rules)) for match in self
-                if match
-            ]) + suffix
-        else:
+        if not self:
             return ""
+
+        prefix, suffix = "", ""
+        delimeter = "\n"
+        if tablefmt == 'html':
+            delimeter = ''
+            prefix = '<div class="matchList">'
+            suffix = '</div>'
+        return prefix + delimeter.join([
+            SanitationUtils.coerce_bytes(
+                match.tabulate(
+                    cols=cols,
+                    tablefmt=tablefmt,
+                    highlight_rules=highlight_rules)) for match in self
+            if match
+        ]) + suffix
 
 
 class ConflictingMatchList(MatchList):
