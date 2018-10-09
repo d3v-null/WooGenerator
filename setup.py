@@ -7,9 +7,11 @@ from setuptools import setup
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
+PKG_NAME = "woogenerator"
+
 # Get version from __init__.py file
 VERSION = ""
-with open("woogenerator/__init__.py", "r") as fd:
+with open("%s/__init__.py" % PKG_NAME, "r") as fd:
     try:
         VERSION = re.search(
             r"^__version__\s*=\s*['\"]([^\"]*)['\"]", fd.read(),
@@ -38,7 +40,7 @@ setup(
     author_email='derwent@laserphile.com',
     url='https://github.com/derwentx/WooGenerator',
     packages=[
-        'woogenerator', 'tests'
+        PKG_NAME, 'tests'
     ],
     install_requires=[
         'bleach',
@@ -64,8 +66,15 @@ setup(
         'dill',
         'lxml'
     ],
-    setup_requires=['pytest-runner'],
+    setup_requires=[
+        'pytest-runner'
+    ],
     tests_require=[
         'pytest'
     ],
+    entry_points={  # Creates a console script entry point on install
+        'console_scripts': [
+            '{0}={0}.generator:main'.format(PKG_NAME),
+        ],
+    },
 )
