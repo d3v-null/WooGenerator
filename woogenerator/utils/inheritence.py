@@ -6,7 +6,8 @@ class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
     @classmethod
     def gcs(cls, *instances):
         """
-        Taken from http://stackoverflow.com/questions/25786566/greatest-common-superclass
+        Taken from
+        http://stackoverflow.com/questions/25786566/greatest-common-superclass
         """
         if len(instances) == 0:
             return
@@ -25,6 +26,7 @@ class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
                 return None
         return list(set.intersection(*class_sets))[0]
 
+
 def overrides(interface_class):
     """ decorator for specifying where attribute overrides a superclass """
     def overrider(method):
@@ -32,3 +34,16 @@ def overrides(interface_class):
         assert method.__name__ in dir(interface_class)
         return method
     return overrider
+
+
+def call_bases(bases, func_name, *args, **kwargs):
+    for base in bases:
+        if hasattr(base, func_name):
+            getattr(base, func_name)(*args, **kwargs)
+
+
+def collect_bases(bases, func_name, collection, *args, **kwargs):
+    for base in bases:
+        if hasattr(base, func_name):
+            collection.update(getattr(base, func_name)(*args, **kwargs))
+    return collection

@@ -10,7 +10,6 @@ from ..coldata import ColDataUser
 from ..contact_objects import (ContactAddress, ContactName, ContactPhones,
                                RoleGroup, SocialMediaFields)
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
-from ..utils.clock import TimeUtils
 from .abstract import CsvParseBase, ImportObject, ObjList
 
 
@@ -26,7 +25,6 @@ class UsrObjList(ObjList):
         super(UsrObjList, self).__init__(objects, indexer=None)
         self._obj_list_type = 'User'
 
-
     def get_sanitizer(self, tablefmt=None):
         if tablefmt == 'html':
             return SanitationUtils.sanitize_for_xml
@@ -34,18 +32,17 @@ class UsrObjList(ObjList):
             return SanitationUtils.sanitize_for_table
         return super(UsrObjList, self).get_sanitizer(tablefmt)
 
+
 class ImportUser(ImportObject):
     container = UsrObjList
 
     wpid = DescriptorUtils.safe_key_property('Wordpress ID')
     # TODO: does this break anything?
     email = DescriptorUtils.safe_normalized_key_property('E-mail')
-    # email = DescriptorUtils.safe_key_property('E-mail')
     MYOBID = DescriptorUtils.safe_key_property('MYOB Card ID')
     username = DescriptorUtils.safe_key_property('Wordpress Username')
     role = DescriptorUtils.safe_key_property('Role Info')
     direct_brand = DescriptorUtils.safe_key_property('Direct Brand')
-    # contact_schema = DescriptorUtils.safe_key_property('contact_schema')
     billing_address = DescriptorUtils.safe_key_property('Address')
     shipping_address = DescriptorUtils.safe_key_property('Home Address')
     name = DescriptorUtils.safe_key_property('Name')
@@ -53,34 +50,6 @@ class ImportUser(ImportObject):
     phones = DescriptorUtils.safe_key_property('Phone Numbers')
 
     alias_mapping = {}
-    # alias_mapping = ColDataUser.get_alias_mapping()
-
-    # alias_mapping = {
-    #     'Address':[
-    #         'Address 1', 'Address 2', 'City', 'Postcode', 'State', 'Country'
-    #     ],
-    #     'Home Address': [
-    #         'Home Address 1', 'Home Address 2', 'Home City', 'Home Postcode',
-    #         'Home State', 'Home Country'
-    #     ],
-    #     'Name': [
-    #         'Name Prefix', 'First Name', 'Middle Name', 'Surname',
-    #         'Name Suffix', 'Company', 'Memo', 'Contact'
-    #     ],
-    #     'Phone Numbers': ['Phone', 'Mobile Phone', 'Fax'],
-    #     'Social Media': [
-    #         'Facebook Username',
-    #         'Twitter Username',
-    #         'GooglePlus Username',
-    #         'Instagram Username',
-    #         'Web Site',
-    #     ],
-    #     'Role Info': [
-    #         'Role',
-    #         'Direct Brand'
-    #     ],
-    #     # 'E-mails': ['E-mail', 'Personal E-mail']
-    # }
 
     @property
     def index(self):
@@ -89,56 +58,6 @@ class ImportUser(ImportObject):
             str(self.wpid),
             str(self.MYOBID)
         ]))
-
-    # TODO: rewrite these to handle datetime objects
-    # @property
-    # def act_modtime(self):
-    #     time_str = self.get('Edited in Act')
-    #     if time_str:
-    #         return TimeUtils.act_strp_mktime(time_str)
-    #
-    # @property
-    # def act_created(self):
-    #     time_str = self.get('Create Date')
-    #     if time_str:
-    #         return TimeUtils.act_strp_mktime(time_str)
-    #
-    # @property
-    # def wp_created(self):
-    #     time_str = self.get('Wordpress Start Date')
-    #     if time_str:
-    #         return TimeUtils.wp_strp_mktime(time_str)
-    #
-    # @property
-    # def wp_modtime(self):
-    #     time_str = self.get('Edited in Wordpress')
-    #     if time_str and time_str != u'False':
-    #         return TimeUtils.wp_server_to_local_time(
-    #             TimeUtils.wp_strp_mktime(time_str))
-    #
-    # @property
-    # def last_sale(self):
-    #     time_str = self.get('Last Sale')
-    #     if time_str:
-    #         return TimeUtils.act_strp_mkdate(time_str)
-    #
-    # @property
-    # def last_modtime(self):
-    #     times = [
-    #         self.act_modtime, self.wp_modtime, self.act_created,
-    #         self.wp_created, self.last_sale
-    #     ]
-    #     return max(times)
-    #
-    # @property
-    # def act_last_transaction(self):
-    #     """ effective last sale (if no last sale, use act create date) """
-    #     response = self.last_sale
-    #     if not response:
-    #         response = self.act_created
-    #     # assert response, "customer should always have a create (%s) or last sale (%s)" % (
-    #     #     self.act_created, self.last_sale)
-    #     return response
 
     def __init__(self, data, **kwargs):
         try:
@@ -168,25 +87,10 @@ class ImportUser(ImportObject):
         self.init_contact_objects(data)
 
     def init_contact_objects(self, data):
-        # emails_kwargs = OrderedDict(filter(None, [\
-        #     ((key, data.get(value)) if data.get(value) else None) for key, value in\
-        #     {
-        #         'email'         : 'E-mail',
-        #         'personal_email': 'Personal E-mail',
-        #     }.items()
-        # ]))
-        #
-        # self['E-mails'] = EmailFields(
-        #     **emails_kwargs
-        # )
-
         schema = data.get('schema')
-        # if self.DEBUG_MESSAGE:
-        #     self.register_message("setting schema to %s" % schema)
-
         name_kwargs = OrderedDict(filter(None, [
-            ((key, data.get(value)) if data.get(value) else None) for key, value in
-            {
+            ((key, data.get(value)) if data.get(value) else None)
+            for key, value in {
                 'first_name': 'First Name',
                 'middle_name': 'Middle Name',
                 'family_name': 'Surname',
@@ -194,9 +98,6 @@ class ImportUser(ImportObject):
                 'name_suffix': 'Name Suffix',
                 'contact': 'Contact',
                 'company': 'Company',
-                # 'city': 'City',
-                # 'country': 'Country',
-                # 'state': 'State',
                 'display_name': 'Display Name',
                 'memo': 'Memo',
                 'business_owner': 'Spouse',
@@ -229,7 +130,8 @@ class ImportUser(ImportObject):
         self['Address'] = ContactAddress(schema, **address_kwargs)
 
         alt_address_kwargs = OrderedDict(filter(None, [
-            ((key, data.get(value)) if data.get(value) else None) for key, value in
+            ((key, data.get(value)) if data.get(value) else None)
+            for key, value in
             {
                 'line1': 'Home Address 1',
                 'line2': 'Home Address 2',
@@ -244,7 +146,8 @@ class ImportUser(ImportObject):
         self['Home Address'] = ContactAddress(schema, **alt_address_kwargs)
 
         phone_kwargs = OrderedDict(filter(None, [
-            ((key, data.get(value)) if data.get(value) else None) for key, value in
+            ((key, data.get(value)) if data.get(value) else None)
+            for key, value in
             {
                 'mob_number': 'Mobile Phone',
                 'tel_number': 'Phone',
@@ -258,7 +161,8 @@ class ImportUser(ImportObject):
         self['Phone Numbers'] = ContactPhones(schema, **phone_kwargs)
 
         social_media_kwargs = OrderedDict(filter(None, [
-            ((key, data.get(value)) if data.get(value) else None) for key, value in
+            ((key, data.get(value)) if data.get(value) else None)
+            for key, value in
             {
                 'facebook': 'Facebook Username',
                 'twitter': 'Twitter Username',
@@ -283,15 +187,17 @@ class ImportUser(ImportObject):
         self['Social Media'] = SocialMediaFields(schema, **social_media_kwargs)
 
         if self.DEBUG_USR and self.DEBUG_CONTACT:
-            self.register_message("Social Media: %s, type: %s, properties\n%s, kwargs\n%s" % (
-                str(self['Social Media']),
-                type(self['Social Media']),
-                pformat(self['Social Media'].properties.items()),
-                pformat(self['Social Media'].kwargs.items()),
-            ))
+            self.register_message(
+                "Social Media: %s, type: %s, properties\n%s, kwargs\n%s" % (
+                    str(self['Social Media']),
+                    type(self['Social Media']),
+                    pformat(self['Social Media'].properties.items()),
+                    pformat(self['Social Media'].kwargs.items()),
+                ))
 
         role_info_kwargs = OrderedDict(filter(None, [
-            ((key, data.get(value)) if data.get(value) else None) for key, value in
+            ((key, data.get(value)) if data.get(value) else None)
+            for key, value in
             {
                 'role': 'Role',
                 'direct_brand': 'Direct Brand'
@@ -431,15 +337,8 @@ class CsvParseUser(CsvParseBase):
         if self.DEBUG_MRO:
             self.register_message(' ')
         self.schema = schema
-        extra_cols = [
-            # 'ABN', 'Added to mailing list', 'Address 1', 'Address 2', 'Agent', 'Birth Date',
-            # 'book_spray_tan', 'Book-a-Tan Expiry', 'Business Type', 'Canvasser', ''
-            # 'post_status'
-        ]
-        extra_defaults = OrderedDict([
-            # ('post_status', 'publish'),
-            # ('last_import', import_name),
-        ])
+        extra_cols = []
+        extra_defaults = OrderedDict([])
         cols = SeqUtils.combine_lists(cols, extra_cols)
         defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
         super(CsvParseUser, self).__init__(
@@ -489,7 +388,8 @@ class CsvParseUser(CsvParseBase):
 
     def register_role(self, object_data, role):
         self.register_anything(
-            object_data, self.roles, role, singular=False, register_name='roles')
+            object_data, self.roles, role,
+            singular=False, register_name='roles')
 
     def register_no_role(self, object_data):
         self.register_anything(
@@ -501,7 +401,8 @@ class CsvParseUser(CsvParseBase):
 
     def register_card(self, object_data, card):
         self.register_anything(
-            object_data, self.cards, card, singular=False, register_name='cards')
+            object_data, self.cards, card,
+            singular=False, register_name='cards')
 
     def register_no_card(self, object_data):
         self.register_anything(
@@ -650,34 +551,25 @@ class CsvParseUser(CsvParseBase):
                 self.register_warning("invalid username: %s" % username)
             self.register_no_username(object_data)
 
-        # company = object_data['Company']
-        # # if self.DEBUG_USR: SanitationUtils.safe_print(repr(object_data), company)
-        # if company:
-        #     self.registerCompany(object_data, company)
-
         addresses = [object_data.billing_address, object_data.shipping_address]
         for address in filter(None, addresses):
             if not address.valid:
                 reason = address.reason
-                assert reason, "there must be a reason that this address is invalid: " + address
+                assert reason, \
+                    (
+                        "there must be a reason that this address is invalid: "
+                        + address
+                    )
                 self.register_bad_address(object_data, address)
             else:
                 self.register_address(object_data, address)
 
         name = object_data.name
-        # print "NAME OF %s IS %s" % (repr(object_data),
-        # name.__str__(out_schema="flat"))
         if not name.valid:
             reason = name.reason
-            assert reason, "there must be a reason that this name is invalid: " + name
-            # print "registering bad name: ",
-            # SanitationUtils.coerce_bytes(name)
+            assert reason, \
+                "there must be a reason that this name is invalid: " + name
             self.register_bad_name(object_data, name)
-
-        # emails = object_data.emails
-        # if not emails.valid:
-        #     reason = emails.reason
-        #     self.registerBadEmail(object_data, emails)
 
         super(CsvParseUser, self).register_object(object_data)
 
@@ -689,26 +581,6 @@ class CsvParseUser(CsvParseBase):
             data['schema'] = self.schema
         return data
 
-    # def processRoles(self, object_data):
-    #     role = object_data.role
-    #     if not self.roles.get(role): self.roles[role] = OrderedDict()
-    #     self.register_anything(
-    #         object_data,
-    #         self.roles[role],
-    #         self.getUsername,
-    #         singular = True,
-    #         register_name = 'roles'
-    #     )
-
-    # def process_object(self, object_data):
-    #     # object_data.username = self.getMYOBID(object_data)
-    #     super(CsvParseFlat, self).process_object(object_data)
-    #     self.processRoles(object_data)
-
-    # def analyzeRow(self, row, object_data):
-    #     object_data = super(CsvParseFlat, self).analyseRow(row, object_data)
-    #     return object_data
-
 
 class ApiParseUser(CsvParseUser):
 
@@ -719,10 +591,8 @@ class ApiParseUser(CsvParseUser):
         """
         parser_data = OrderedDict()
         api_data = kwargs.get('api_data', {})
-        # print "api_data before: %s" % str(api_data)
         api_data = dict([(key, SanitationUtils.html_unescape_recursive(value))
                          for key, value in api_data.items()])
-        # print "api_data after:  %s" % str(api_data)
         parser_data = OrderedDict()
         core_translation = OrderedDict()
         for col, col_data in ColDataUser.get_wpapi_core_cols().items():
@@ -734,17 +604,12 @@ class ApiParseUser(CsvParseUser):
         if Registrar.DEBUG_API:
             Registrar.register_message("core_translation: %s" %
                                        pformat(core_translation))
-        parser_data.update(**cls.translate_handle_keys(api_data, core_translation))
+        parser_data.update(
+            **cls.translate_handle_keys(api_data, core_translation))
 
         if 'meta' in api_data:
             meta_translation = OrderedDict()
             meta_data = api_data['meta']
-            # if Registrar.DEBUG_API:
-            #     Registrar.register_message(
-            #         "meta data: %s" % pformat(
-            #             ColDataUser.get_wpapi_meta_cols().items()
-            #         )
-            #     )
             for col, col_data in ColDataUser.get_wpapi_meta_cols().items():
                 try:
                     if 'wp-api' in col_data:
@@ -758,12 +623,8 @@ class ApiParseUser(CsvParseUser):
             if Registrar.DEBUG_API:
                 Registrar.register_message("meta_translation: %s" %
                                            pformat(meta_translation))
-            meta_translation_result = cls.translate_handle_keys(meta_data,
-                                                         meta_translation)
-            # if Registrar.DEBUG_API:
-            #     Registrar.register_message(
-            #         "meta_translation_result: %s" % pformat(meta_translation_result)
-            #     )
+            meta_translation_result = cls.translate_handle_keys(
+                meta_data, meta_translation)
             parser_data.update(**meta_translation_result)
 
         if Registrar.DEBUG_API:
@@ -782,5 +643,4 @@ class ApiParseUser(CsvParseUser):
         self.register_object(object_data)
         if self.DEBUG_API:
             self.register_message("REGISTERED: %s" % object_data.identifier)
-        # self.register_message("mro: {}".format(container.mro()))
         self.rowcount += 1

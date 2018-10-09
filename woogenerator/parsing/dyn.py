@@ -18,16 +18,7 @@ class ImportDynObject(ImportTreeObject):
     """
     Abstract class encompasing Dynamic rule lines and rules.
     """
-
-    # def is_rule_line(self):
-    #     return False
-
-    # def validate(self):
-    #     for key, validation in self.validations:
-    #         assert callable(validation)
-    #         if not validation(self.get(key)):
-    #             raise UserWarning("%s could be be validated by %s" %
-    #                               (key, self.__class__.__name__))
+    pass
 
 
 class ImportDynRuleLine(ImportDynObject, ImportTreeItem):
@@ -90,7 +81,10 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
         super(ImportDynRule, self).__init__(*args, **kwargs)
         self.rule_lines = []
         assert self.rule_id, \
-            "Rule ID must be valid in ImportDynRule initialized with args %s and kwargs %s" % (
+            (
+                "Rule ID must be valid in ImportDynRule initialized with "
+                "args %s and kwargs %s"
+            ) % (
                 str(args), str(kwargs)
             )
 
@@ -213,7 +207,10 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
     def to_html(self):
         col_names = self.get_col_names()
 
-        html = u'<table class="shop_table lasercommerce pricing_table table table-striped">'
+        html = (
+            u'<table class="shop_table lasercommerce '
+            u'pricing_table table table-striped">'
+        )
         html += '<thead><tr>'
         for col, name in col_names.items():
             col_class = SanitationUtils.sanitize_class(col)
@@ -255,7 +252,9 @@ class CsvParseDyn(CsvParseTree):
             defaults = {}
         extra_cols = [
             'ID', 'Qty. Base', 'Rule Mode', 'Roles',
-            'Min ( Buy )', 'Max ( Receive )', 'Discount Type', 'Discount', 'Repeating', 'Meaning']
+            'Min ( Buy )', 'Max ( Receive )', 'Discount Type', 'Discount',
+            'Repeating', 'Meaning'
+        ]
 
         extra_defaults = {
             'Discount Type': 'PDSC',
@@ -264,8 +263,8 @@ class CsvParseDyn(CsvParseTree):
 
         cols = SeqUtils.combine_lists(cols, extra_cols)
         defaults = SeqUtils.combine_ordered_dicts(extra_defaults, defaults)
-        super(CsvParseDyn, self).__init__(cols, defaults,
-                                          taxo_depth=1, item_depth=1, meta_width=0)
+        super(CsvParseDyn, self).__init__(
+            cols, defaults, taxo_depth=1, item_depth=1, meta_width=0)
 
         self.taxo_indexer = self.get_object_index
 

@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 from ..utils import (DescriptorUtils, Registrar, SanitationUtils, SeqUtils,
                      TimeUtils)
+from ..utils.inheritence import call_bases
 from .abstract import BLANK_CELL
 from .tree import (CsvParseTree, ImportTreeItem, ImportTreeObject,
                    ImportTreeTaxo, ItemList, TaxoList)
@@ -30,6 +31,7 @@ class SpecialGruopList(TaxoList):
 
 class SpecialRuleList(ItemList):
     pass
+
 
 SpecialGruopList.child_container = SpecialRuleList
 
@@ -82,8 +84,8 @@ class ImportSpecialGroup(ImportTreeTaxo, ImportSpecialMixin):
     def __init__(self, data, **kwargs):
         for key in ["FROM", "TO"]:
             if key not in data:
-                raise UserWarning(
-                    "Missing %s field. data: %s, kwargs: %s" % (key, data, kwargs))
+                raise UserWarning("Missing %s field. data: %s, kwargs: %s" % (
+                    key, data, kwargs))
 
         data = self.init_from_to(data)
         super(ImportSpecialGroup, self).__init__(data, **kwargs)
@@ -172,24 +174,16 @@ class CsvParseSpecial(CsvParseTree):
         ]
         cols = SeqUtils.combine_lists(cols, extra_cols)
 
-        for base_class in CsvParseSpecial.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(
-                    self,
-                    cols,
-                    defaults,
-                    taxo_depth=1,
-                    item_depth=1,
-                    meta_width=1
-                )
+        super(CsvParseSpecial, self).__init__(
+            cols, defaults, taxo_depth=1, item_depth=1, meta_width=1
+        )
+
         self.object_indexer = self.get_object_id
         self.register_item = self.register_rule
         self.register_taxo = self.register_rule_group
 
     def clear_transients(self):
-        for base_class in CsvParseSpecial.__bases__:
-            if hasattr(base_class, 'clear_transients'):
-                base_class.clear_transients(self)
+        call_bases(CsvParseSpecial.__bases__, 'clear_transients', self)
         self.rule_groups = OrderedDict()
         self.rules = OrderedDict()
 
@@ -212,12 +206,20 @@ class CsvParseSpecial(CsvParseTree):
             Registrar.register_message(
                 "registering rule:\n%s" % rule_data.identifier)
         assert rule_data.is_item
-        if rule_data.start_time and rule_data.end_time \
-        and rule_data.end_time <= rule_data.start_time:
+        if (
+            rule_data.start_time and rule_data.end_time
+            and rule_data.end_time <= rule_data.start_time
+        ):
             Registrar.register_error(
-                "error registering rule '%s' in rule group '%s': start time (%s) later than end time (%s)" % (
+                (
+                    "error registering rule '%s' in rule group '%s': "
+                    "start time (%s) later than end time (%s)"
+                ) % (
                     rule_data.special_id,
-                    rule_data.parent.special_id if rule_data.parent else "UNKN",
+                    (
+                        rule_data.parent.special_id
+                        if rule_data.parent else "UNKN"
+                    ),
                     rule_data.start_time,
                     rule_data.end_time
                 )
@@ -276,8 +278,8 @@ class CsvParseSpecial(CsvParseTree):
             if all_future:
                 response = all_future
         if Registrar.DEBUG_SPECIAL:
-            Registrar.register_message(
-                "returning %s <- %s, %s" % (response, specials_mode, current_special))
+            Registrar.register_message("returning %s <- %s, %s" % (
+                    response, specials_mode, current_special))
         return response
 
     @classmethod

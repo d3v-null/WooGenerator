@@ -6,13 +6,14 @@ from __future__ import absolute_import
 import re
 from collections import OrderedDict
 from copy import deepcopy
-from pprint import pformat
+
 from six import integer_types
 
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataWcProdCategory)
 from ..utils import (DescriptorUtils, PHPUtils, Registrar, SanitationUtils,
                      SeqUtils, TimeUtils)
+from ..utils.inheritence import call_bases, collect_bases
 from .abstract import ObjList
 from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
 from .shop import (CsvParseShopMixin, ImportShopAttachmentMixin,
@@ -62,7 +63,8 @@ class ImportWooMixin(object):
         if isinstance(special_search, ImportSpecialGroup):
             special_search = special_search.special_id
         for special_compare in [
-                SanitationUtils.normalize_val(special) for special in self.specials
+            SanitationUtils.normalize_val(special)
+            for special in self.specials
         ]:
             if self.DEBUG_SPECIAL:
                 self.register_message(
@@ -74,6 +76,7 @@ class ImportWooMixin(object):
     def register_special(self, special):
         if special not in self.specials:
             self.specials.append(special)
+
 
 class ImportWooChildMixin(object):
     """
@@ -87,37 +90,34 @@ class ImportWooChildMixin(object):
                     response['parent_id'] = self.parent.wpid
         return response
 
+
 class ImportWooObject(ImportGenObject, ImportShopMixin, ImportWooMixin):
     container = ShopObjList
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooObject.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(ImportWooObject.__bases__, 'to_dict', {}, self)
 
-    verify_meta_keys = ImportGenObject.verify_meta_keys + ImportWooMixin.verify_meta_keys
+    verify_meta_keys = SeqUtils.combine_lists(
+        ImportGenObject.verify_meta_keys,
+        ImportWooMixin.verify_meta_keys
+    )
 
     def __init__(self, data, *args, **kwargs):
-        if args \
-        and hasattr(data, 'get') \
-        and data.get(self.rowcount_key) is None \
-        and self.menu_order_key in data:
+        if (
+            args and hasattr(data, 'get')
+            and data.get(self.rowcount_key) is None
+            and self.menu_order_key in data
+        ):
             data[self.rowcount_key] = data[self.menu_order_key]
-        for base_class in ImportWooObject.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self,data, *args, **kwargs)
-        # ImportGenObject.__init__(self, *args, **kwargs)
-        # ImportShopMixin.__init__(self, *args, **kwargs)
-        # ImportWooMixin.__init__(self, *args, **kwargs)
+        call_bases(
+            ImportWooObject.__bases__, '__init__', self, data, *args, **kwargs
+        )
 
     def process_meta(self):
-        for base_class in ImportWooObject.__bases__:
-            if hasattr(base_class, 'process_meta'):
-                base_class.process_meta(self)
+        call_bases(ImportWooObject.__bases__, 'process_meta', self)
         if not isinstance(self.menu_order_key, integer_types):
             self.menu_order = self.rowcount
+
 
 class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
     verify_meta_keys = ImportShopAttachmentMixin.verify_meta_keys
@@ -130,11 +130,7 @@ class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
     title_key = 'title'
 
     def __init__(self, *args, **kwargs):
-        for base_class in ImportWooImg.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
-        # ImportWooObject.__init__(self, *args, **kwargs)
-        # ImportShopAttachmentMixin.__init__(self, *args, **kwargs)
+        call_bases(ImportWooImg.__bases__, '__init__', self, *args, **kwargs)
 
     @classmethod
     def get_identifier(cls, data):
@@ -148,11 +144,11 @@ class ImportWooImg(ImportWooObject, ImportShopAttachmentMixin):
         return self.get_identifier(self)
 
     def process_meta(self):
-        for base_class in ImportWooImg.__bases__:
-            if hasattr(base_class, 'process_meta'):
-                base_class.process_meta(self)
+        call_bases(ImportWooImg.__bases__, 'process_meta', self)
+
 
 ImportWooObject.attachment_indexer = ImportWooImg.get_identifier
+
 
 class WooListMixin(object):
     coldata_class = ColDataProductMeridian
@@ -160,6 +156,7 @@ class WooListMixin(object):
     coldata_var_class = ColDataProductVariationMeridian
     coldata_img_class = ColDataAttachment
     supported_type = ImportWooObject
+
 
 class ImportWooItem(ImportWooObject, ImportGenItem):
 
@@ -170,9 +167,9 @@ class ImportWooItem(ImportWooObject, ImportGenItem):
     is_item = ImportGenItem.is_item
 
     def __init__(self, *args, **kwargs):
-        for base_class in [ImportWooObject]:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        # TODO: why arent' bases ImportWooItem.__bases__ ?
+        call_bases([ImportWooObject], '__init__', self, *args, **kwargs)
+
 
 class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
@@ -181,9 +178,9 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     def __init__(self, data, *args, **kwargs):
         if self.product_type:
             data['prod_type'] = self.product_type
-        for base_class in ImportWooProduct.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, data, *args, **kwargs)
+        call_bases(
+            ImportWooProduct.__bases__, '__init__', self, data, *args, **kwargs
+        )
 
     def process_meta(self):
         super(ImportWooProduct, self).process_meta()
@@ -209,7 +206,8 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
     @property
     def inheritence_ancestors(self):
         return SeqUtils.filter_unique_true(
-            self.categories.values() + super(ImportWooProduct, self).inheritence_ancestors
+            self.categories.values()
+            + super(ImportWooProduct, self).inheritence_ancestors
         )
 
     def get_extra_special_category_components(self, specials_name):
@@ -226,7 +224,9 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
             if fullname_ancestor and code_ancestor:
                 break
         if fullname_ancestor:
-            fullname_component = ' '.join([fullname_ancestor.fullname, specials_name])
+            fullname_component = ' '.join([
+                fullname_ancestor.fullname, specials_name
+            ])
         if code_ancestor:
             code_component = code_ancestor.code
         components[self.fullname_key] = fullname_component
@@ -234,23 +234,24 @@ class ImportWooProduct(ImportWooItem, ImportShopProductMixin):
         return components
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooProduct.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-
+        response = collect_bases(
+            ImportWooProduct.__bases__, 'to_dict', {}, self
+        )
         response['category_objects'] = sorted(
             response['category_objects'],
             lambda cat_a, cat_b: cmp(cat_a.wpid, cat_b.wpid)
         )
         return response
 
+
 class WooProdList(ShopProdList, WooListMixin):
     coldata_class = WooListMixin.coldata_class
     supported_type = ImportWooProduct
     report_cols = coldata_class.get_col_data_native('report')
 
+
 ImportWooProduct.container = WooProdList
+
 
 class ImportWooProductSimple(ImportWooProduct, ImportShopProductSimpleMixin):
     product_type = ImportShopProductSimpleMixin.product_type
@@ -263,16 +264,16 @@ class ImportWooProductVariable(
     variation_indexer = ImportWooObject.get_sku
 
     def __init__(self, *args, **kwargs):
-        for base_class in ImportWooProductVariable.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        call_bases(
+            ImportWooProductVariable.__bases__, '__init__',
+            self, *args, **kwargs
+        )
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooProductVariable.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(
+            ImportWooProductVariable.__bases__, 'to_dict', {}, self
+        )
+
 
 class ImportWooProductVariation(
         ImportWooProduct, ImportShopProductVariationMixin, ImportWooChildMixin
@@ -290,18 +291,19 @@ class ImportWooProductVariation(
     verify_meta_keys.remove(ImportWooProduct.namesum_key)
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooProductVariation.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(
+            ImportWooProductVariation.__bases__, 'to_dict', {}, self
+        )
+
 
 class WooVarList(ShopProdList, WooListMixin):
     supported_type = ImportWooProductVariation
     coldata_class = WooListMixin.coldata_var_class
     report_cols = coldata_class.get_col_data_native('report')
 
+
 ImportWooProductVariation.container = WooVarList
+
 
 class ImportWooProductComposite(ImportWooProduct):
     product_type = 'simple'
@@ -318,6 +320,7 @@ class ImportWooProductBundled(ImportWooProduct):
 
 
 class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
+    # TODO: fix diamond inheritence. inherits from GenObject twice
     namesum_key = ImportGenTaxo.namesum_key
     namesum = DescriptorUtils.safe_key_property(namesum_key)
 
@@ -328,19 +331,22 @@ class ImportWooTaxo(ImportWooObject, ImportGenTaxo):
     is_taxo = ImportGenTaxo.is_taxo
 
     def __init__(self, *args, **kwargs):
-        for base_class in [ImportWooObject]:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        call_bases([ImportWooObject], '__init__', self, *args, **kwargs)
 
-class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMixin):
+
+class ImportWooCategory(
+    ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMixin
+):
     is_category = ImportShopCategoryMixin.is_category
     is_product = ImportShopCategoryMixin.is_product
     cat_name = ImportShopCategoryMixin.cat_name
 
     def __init__(self, *args, **kwargs):
-        for base_class in [ImportWooTaxo, ImportShopCategoryMixin]:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        # TODO why isn't bases just ImportWooCategory.__bases__ ?
+        call_bases(
+            [ImportWooTaxo, ImportShopCategoryMixin], '__init__',
+            self, *args, **kwargs
+        )
 
     def find_child_category(self, index):
         for child in self.children:
@@ -354,9 +360,7 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMi
         return None
 
     def process_meta(self):
-        for base_class in self.__class__.__bases__:
-            if hasattr(base_class, 'process_meta'):
-                base_class.process_meta(self)
+        call_bases(ImportWooCategory.__bases__, 'process_meta', self)
         if not self.title:
             self.title = self.fullname
         if not self.cat_name:
@@ -378,25 +382,26 @@ class ImportWooCategory(ImportWooTaxo, ImportShopCategoryMixin, ImportWooChildMi
         ])
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooCategory.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(ImportWooCategory.__bases__, 'to_dict', {}, self)
+
 
 class WooCatList(ShopCatList, WooListMixin):
     coldata_class = WooListMixin.coldata_cat_class
     supported_type = ImportWooCategory
     report_cols = coldata_class.get_col_data_native('report')
 
+
 ImportWooCategory.container = WooCatList
+
 
 class WooImgList(ObjList, WooListMixin, ShopImgListMixin):
     coldata_class = WooListMixin.coldata_img_class
     supported_type = ImportWooImg
     report_cols = coldata_class.get_col_data_native('report')
 
+
 ImportWooImg.container = WooImgList
+
 
 class CsvParseWooMixin(object):
     """ All the stuff that's common to Woo Parser classes """
@@ -431,7 +436,6 @@ class CsvParseWooMixin(object):
             self.category_container.namesum_key,
         ]
 
-
     @property
     def img_search_keys(self):
         return [
@@ -465,19 +469,25 @@ class CsvParseWooMixin(object):
     @property
     def img_defaults(self):
         if not hasattr(self, '_coldata_img_class_defaults'):
-            self._coldata_img_class_defaults = self.coldata_img_class.get_col_values_native('default')
+            self._coldata_img_class_defaults = (
+                self.coldata_img_class.get_col_values_native('default')
+            )
         return deepcopy(self._coldata_img_class_defaults)
 
     @property
     def cat_defaults(self):
         if not hasattr(self, '_coldata_cat_class_defaults'):
-            self._coldata_cat_class_defaults = self.coldata_cat_class.get_col_values_native('default')
+            self._coldata_cat_class_defaults = (
+                self.coldata_cat_class.get_col_values_native('default')
+            )
         return deepcopy(self._coldata_cat_class_defaults)
 
     @property
     def var_defaults(self):
         if not hasattr(self, '_coldata_var_class_defaults'):
-            self._coldata_var_class_defaults = self.coldata_var_class.get_col_values_native('default')
+            self._coldata_var_class_defaults = (
+                self.coldata_var_class.get_col_values_native('default')
+            )
         return deepcopy(self._coldata_var_class_defaults)
 
     def process_image(self, img_raw_data, object_data=None, **kwargs):
@@ -630,8 +640,14 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             # ('EzeBreathe', 'Tanning Accessories > EzeBreathe'),
             # ('My Tan', 'Tanning Accessories > My Tan'),
             # ('Tan Sleeper', 'Tanning Accessories > Tan Sleeper'),
-            # ('Tanning Advantage Application Equipment', 'Equipment > Application Equipment'),
-            # ('Generic Application Equipment', 'Equipment > Application Equipment'),
+            # (
+            #     'Tanning Advantage Application Equipment',
+            #     'Equipment > Application Equipment'
+            # ),
+            # (
+            #     'Generic Application Equipment',
+            #     'Equipment > Application Equipment'
+            # ),
             # ('Generic Tanning Booths', 'Equipment > Tanning Booths'),
         ])
 
@@ -663,7 +679,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             kwargs.get('taxo_subs', {}), extra_taxo_subs)
         kwargs['item_subs'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('item_subs', {}), extra_item_subs)
-        # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
 
         self.cat_mapping = SeqUtils.combine_ordered_dicts(
             kwargs.pop('cat_mapping', {}), extra_cat_maps)
@@ -672,8 +687,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.special_rules = kwargs.pop('special_rules', {})
         self.current_special_groups = kwargs.pop(
             'current_special_groups', None)
-        # print "settings current_special_groups: %s" % self.current_special_groups
-        # self.specialGroups = kwargs.pop('specialGroups', {})
         if kwargs.get('meta_width') is None:
             kwargs['meta_width'] = 2
         if kwargs.get('item_depth') is None:
@@ -683,22 +696,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         super(CsvParseWoo, self).__init__(cols, defaults, **kwargs)
 
-        # self.category_indexer = self.product_indexer
-
-        # if self.DEBUG_WOO:
-        #     self.register_message("cat_mapping woo post: %s" % str(cat_mapping))
-
-        # if self.DEBUG_WOO:
-        #     print "WOO initializing: "
-        #     print "-> taxo_depth: ", self.taxo_depth
-        #     print "-> item_depth: ", self.item_depth
-        #     print "-> max_depth: ", self.max_depth
-        #     print "-> meta_width: ", self.meta_width
-
     def clear_transients(self):
-        for base_class in CsvParseWoo.__bases__:
-            if hasattr(base_class, 'clear_transients'):
-                base_class.clear_transients(self)
+        call_bases(CsvParseWoo.__bases__, 'clear_transients', self)
         self.special_items = OrderedDict()
         self.updated_products = OrderedDict()
         self.updated_variations = OrderedDict()
@@ -706,30 +705,30 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         self.onspecial_variations = OrderedDict()
 
     def register_object(self, object_data):
-        for base_class in CsvParseWoo.__bases__:
-            if hasattr(base_class, 'register_object'):
-                base_class.register_object(self, object_data)
+        call_bases(CsvParseWoo.__bases__, 'register_object', self, object_data)
 
     def get_defaults(self, **kwargs):
-        defaults = {}
-        for base_class in CsvParseWoo.__bases__:
-            if hasattr(base_class, 'get_defaults'):
-                defaults.update(base_class.get_defaults(self, **kwargs))
-        return defaults
+        return collect_bases(
+            CsvParseWoo.__bases__, 'get_defaults', {}, self, **kwargs
+        )
 
     def get_parser_data(self, **kwargs):
         parser_data = kwargs.get('row_data', {})
-        for base_class in CsvParseWoo.__bases__:
-            if hasattr(base_class, 'get_parser_data'):
-                parser_data.update(base_class.get_parser_data(self, **kwargs))
-        return parser_data
+        return collect_bases(
+            CsvParseWoo.__bases__, 'get_parser_data', parser_data,
+            self,  **kwargs
+        )
 
     def get_new_obj_container(self, data, *args, **kwargs):
         # TODO: isn't this exactly what gen does?
-        container = super(CsvParseWoo, self).get_new_obj_container(data, *args, **kwargs)
+        container = super(CsvParseWoo, self).get_new_obj_container(
+            data, *args, **kwargs
+        )
 
-        if issubclass(container, ImportTreeItem) \
-                and self.schema in data:
+        if (
+            issubclass(container, ImportTreeItem)
+            and self.schema in data
+        ):
             woo_type = data[self.schema]
             if woo_type:
                 try:
@@ -749,8 +748,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         """
         try:
             special = str(special)
-            assert isinstance(special, (str, unicode)), 'Special must be a string not {}'.format(
-                type(special).__name__)
+            assert isinstance(special, (str, unicode)), \
+                'Special must be a string not {}'.format(
+                    type(special).__name__)
             assert special is not '', 'Attribute must not be empty'
         except AssertionError as exc:
             self.register_error("could not register special: {}".format(exc))
@@ -854,21 +854,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             if self.DEBUG_WOO:
                 self.register_message("HAS EXTRA LAYERS")
             if object_data.is_product:
-                # self.register_message("ANCESTOR NAMESUM: %s" % \
-                #     str(object_data.get_ancestor_key('namesum')))
-                # self.register_message("ANCESTOR DESCSUM: %s" % \
-                #     str(object_data.get_ancestor_key('descsum')))
-                # self.register_message("ANCESTOR CATSUM: %s" % \
-                #     str(object_data.get_ancestor_key('catsum')))
-                # self.register_message("ANCESTOR ITEMSUM: %s" % \
-                #     str(object_data.get_ancestor_key('itemsum')))
-                # self.register_message("ANCESTOR TAXOSUM: %s" % \
-                #     str(object_data.get_ancestor_key('taxosum')))
-                # self.register_message("ANCESTOR NAME: %s" % \
-                #     str(object_data.get_ancestor_key('name')))
                 taxo_ancestor_names = [ancestorData.get(
                     'name') for ancestorData in object_data.taxo_ancestors]
-                # self.register_message("TAXO ANCESTOR NAMES: %s" % str(taxo_ancestor_names))
 
                 # I'm so sorry for this code, it is utter horse shit but it
                 # works
@@ -896,8 +883,12 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     extra_name = re.sub(r' ?Trial Sizes?', '',
                                         extra_name, flags=re.I)
                 elif re.search('10g', extra_name, flags=re.I):
-                    if re.search('Bronzing Powder', extra_taxo_name, flags=re.I) \
-                            or re.search('Foundation', extra_taxo_name, flags=re.I):
+                    if (
+                        re.search(
+                            'Bronzing Powder', extra_taxo_name, flags=re.I
+                        )
+                        or re.search('Foundation', extra_taxo_name, flags=re.I)
+                    ):
                         extra_suffix = 'Jars'
 
                 if re.search('Brushes', extra_taxo_name, flags=re.I):
@@ -910,7 +901,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 elif re.search('Tan Care Kits', extra_taxo_name, flags=re.I):
                     extra_suffix = 'Items'
                     extra_taxo_name = ''
-                elif re.search('Natural Soy Wax Candles', extra_taxo_name, flags=re.I):
+                elif re.search(
+                    'Natural Soy Wax Candles', extra_taxo_name, flags=re.I
+                ):
                     extra_suffix = ''
                     extra_taxo_name = ''
                     if not extra_name.endswith('s'):
@@ -922,7 +915,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     extra_suffix = 'Packs'
                 elif re.search('Hair Care', extra_taxo_name, flags=re.I):
                     extra_name = re.sub(' Sachet', '', extra_name, flags=re.I)
-                elif re.search('Tanbience Product Packs', extra_taxo_name, flags=re.I):
+                elif re.search(
+                    'Tanbience Product Packs', extra_taxo_name, flags=re.I
+                ):
                     extra_taxo_name = ''
 
                 extra_depth = self.taxo_depth - 1
@@ -934,34 +929,12 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 extra_code = object_data.code
                 extra_row = object_data.row
 
-                # print "SKU: %s" % object_data.codesum
-                # print "-> EXTRA LAYER NAME: %s" % str(extra_name)
-                # print "-> EXTRA STACK: %s" % repr(extra_stack)
-                # print "-> EXTRA LAYER CODE: %s" % extra_code
-                # print "-> EXTRA ROW: %s" % str(extra_row)
-
-                # extraCodesum = (extra_layer).codesum
-
                 siblings = extra_stack.get_top().children
-                # code_ancestors = [ancestor.code for ancestor in extra_stack if ancestor.code ]
-                # code_ancestors += [extra_code]
-                # extraCodesum = ''.join(code_ancestors)
 
-                # assert issubclass(type(extra_layer), ImportTreeObject), \
-                # "needs to subclass ImportTreeObject to do siblings"
-                # siblings = getattr(extra_layer, 'siblings')
-                # siblings = extra_layer.siblings
                 extra_layer = None
                 for sibling in siblings:
-                    # print "sibling meta: %s" % repr(sibling.meta)
                     if sibling.name == extra_name:
                         extra_layer = sibling
-                    # if sibling.codesum == extraCodesum:
-                    #     if sibling.rowcount != extra_rowcount:
-                    #         extra_layer = sibling
-                    #         found_sibling = True
-                    #         # if self.DEBUG_WOO: self.register_message("found sibling: %s"% extra_layer.index )
-                    #         break
 
                 if extra_layer:
                     if self.DEBUG_WOO:
@@ -972,8 +945,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         self.register_category(extra_layer)
                 else:
                     if self.DEBUG_WOO:
-                        identifier = extra_layer.identifier if extra_layer \
-                        else 'None'
+                        identifier = (
+                            extra_layer.identifier if extra_layer else 'None'
+                        )
                         self.register_message(
                             "did not find sibling: %s" % identifier)
 
@@ -988,24 +962,17 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         stack=extra_stack
                     )
 
-                    # assert isinstance(extra_layer, ImportWooCategory )
-                    # extra_stack.append(extra_layer)
-                    # print "-> EXTRA LAYER ANCESTORS: %s" %
-                    # repr(extra_layer.ancestors)
                     if self.DEBUG_WOO:
-                        self.register_message("extra_layer name: %s; type: %s" % (
-                            str(extra_name), str(type(extra_layer))))
+                        self.register_message(
+                            "extra_layer name: %s; type: %s" % (
+                                str(extra_name), str(type(extra_layer))
+                            )
+                        )
                     assert issubclass(type(extra_layer), ImportGenTaxo)
-                    # assert issubclass(type(extra_layer), ImportGenMixin), \
-                    #     "needs to subclass ImportGenMixin to do codesum"
 
                     self.register_category(extra_layer)
 
                 self.join_category(extra_layer, object_data)
-
-                # print "-> FINAL EXTRA LAYER: %s" % repr(extra_layer)
-
-                # self.register_join_category(extra_layer, object_data)
 
     def process_variation(self, var_data):
         pass
@@ -1030,7 +997,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     self.register_attribute(object_data, attr, val)
             except Exception as exc:
                 self.register_error(
-                    "could not decode attributes: %s | %s" % (attrs, exc), object_data)
+                    "could not decode attributes: %s | %s" % (attrs, exc),
+                    object_data
+                )
 
         if object_data.is_variation:
             parent_data = object_data.parent
@@ -1051,12 +1020,15 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         try:
             super(CsvParseWoo, self).process_object(object_data)
         except AssertionError as exc:
-            if hasattr(object_data, 'parent') and object_data.parent.namesum == self.specials_category_name:
+            if (
+                hasattr(object_data, 'parent')
+                and object_data.parent.namesum == self.specials_category_name
+            ):
                 raise UserWarning(
                     (
                         "Could not add specials category %s.\n%s\n"
-                        "Make sure the specials category '%s' exists at the bottom "
-                        "of the generator file"
+                        "Make sure the specials category '%s' exists at the "
+                        "bottom of the generator file"
                     ) % (
                         str(object_data),
                         str(exc),
@@ -1069,8 +1041,10 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     str(exc)
                 )
             )
-        assert issubclass(
-            object_data.__class__, ImportWooObject), "object_data should subclass ImportWooObject not %s" % object_data.__class__.__name__
+        assert issubclass(object_data.__class__, ImportWooObject), \
+            "object_data should subclass ImportWooObject not %s" % (
+                object_data.__class__.__name__
+            )
         self.process_categories(object_data)
         if object_data.is_product:
             cat_skus = map(
@@ -1090,7 +1064,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         if self.do_images:
             self.process_attachments(object_data)
             if self.DEBUG_WOO:
-                self.register_message("attachments: {}".format(object_data.attachments))
+                self.register_message("attachments: {}".format(
+                    object_data.attachments
+                ))
         if self.do_specials:
             self.process_specials(object_data)
             if self.DEBUG_WOO:
@@ -1173,8 +1149,9 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
                 pricing_rules = {}
                 for rule in object_data.get('dprplist', ''):
-                    pricing_rules[PHPUtils.ruleset_uniqid()] = PHPUtils.unserialize(
-                        rule.to_pricing_rule())
+                    pricing_rules[PHPUtils.ruleset_uniqid()] = (
+                        PHPUtils.unserialize(rule.to_pricing_rule())
+                    )
 
                 object_data['pricing_rules'] = PHPUtils.serialize(
                     pricing_rules)
@@ -1206,20 +1183,28 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
     def post_process_attachments(self, object_data):
         # self.register_message(object_data.index)
         object_data['imgsum'] = '|'.join([
-            attachment.file_name for attachment in object_data.attachments.values()
+            attachment.file_name
+            for attachment in object_data.attachments.values()
         ])
 
-        if self.do_images and object_data.is_product and not object_data.is_variation:
+        if (
+            self.do_images and object_data.is_product
+            and not object_data.is_variation
+        ):
             try:
-                assert object_data['imgsum'], "All Products should have attachments"
+                assert object_data['imgsum'], \
+                    "All Products should have attachments"
             except AssertionError as exc:
                 self.register_warning(exc, object_data)
                 if self.strict:
                     self.raise_exception(exc)
 
         if self.DEBUG_WOO:
-            self.register_message("imgsum of %s is %s" %
-                                  (object_data.index, object_data.get('imgsum')))
+            self.register_message(
+                "imgsum of %s is %s" % (
+                    object_data.index, object_data.get('imgsum')
+                )
+            )
 
     def post_process_attributes(self, object_data):
         # self.register_message(object_data.index)
@@ -1418,8 +1403,8 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
     def get_special_category(self, special_components=None):
         """
-        Find the special category corresponding to the product type specified in
-        `special_components` if it exists, else create it.
+        Find the special category corresponding to the product type specified
+        in `special_components` if it exists, else create it.
         If special_components is None, then find the parent special category.
         """
         # TODO: Generate HTML Descriptions properly
@@ -1480,21 +1465,27 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                         special_category_object = self.get_special_category()
                         if self.DEBUG_SPECIAL:
                             self.register_message(
-                                "joining special category: %s" % special_category_object.identifier)
+                                "joining special category: %s" % (
+                                    special_category_object.identifier))
                         self.register_join_category(
                             special_category_object, object_data)
-                        assert special_category_object.index in object_data.categories
-                        extra_special_category_object = self.get_special_category(
-                            object_data.get_extra_special_category_components(
-                                self.specials_category_name
-                            )
-                        )
+                        assert \
+                            special_category_object.index \
+                            in object_data.categories
+                        extra_special_category_object = \
+                            self.get_special_category(
+                                object_data
+                                .get_extra_special_category_components(
+                                    self.specials_category_name))
                         if self.DEBUG_SPECIAL:
                             self.register_message(
-                                "joining extra special category: %s" % extra_special_category_object.identifier)
+                                "joining extra special category: %s" % (
+                                    extra_special_category_object.identifier))
                         self.register_join_category(
                             extra_special_category_object, object_data)
-                        assert extra_special_category_object.index in object_data.categories
+                        assert \
+                            extra_special_category_object.index \
+                            in object_data.categories
                         object_data['catsum'] = "|".join(
                             filter(None, [
                                 object_data.get('catsum', ""),
@@ -1507,8 +1498,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     else:
                         self.register_current_spec_prod(object_data)
                     break
-            # else:
-                # print ("%s does not match special %s | %s"%(str(object_data), self.current_special, str(object_data.splist)))
 
     def post_process_shipping(self, object_data):
         if object_data.is_product and not object_data.is_variable:
@@ -1545,7 +1534,6 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         if self.DEBUG_WOO:
             self.register_message("post_processing %d objects" % len(objects))
 
-
         for index, object_data in self.objects.items():
             # print '%s POST' % object_data.get_identifier()
             if self.do_dyns:
@@ -1565,8 +1553,10 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         return objects
 
+
 class CsvParseMeridian(CsvParseWoo):
     pass
+
 
 class CsvParseTT(CsvParseMeridian):
 
@@ -1593,18 +1583,6 @@ class CsvParseTT(CsvParseMeridian):
             ('CTPP', 'CTKPP')
         ])
 
-        # cols = SeqUtils.combine_lists( cols, extra_cols )
-        # defaults = SeqUtils.combine_ordered_dicts( defaults, extra_defaults )
-        # taxo_subs = SeqUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
-        # item_subs = SeqUtils.combine_ordered_dicts( item_subs, extra_item_subs )
-        # cat_mapping = SeqUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
-        #
-        #
-        # super(CsvParseTT, self).__init__( cols, defaults, schema, import_name,\
-        #         taxo_subs, item_subs, taxo_depth, item_depth, meta_width, \
-        #         dprc_rules, dprp_rules, specials, cat_mapping)
-
-        #
         cols = SeqUtils.combine_lists(cols, extra_cols)
         defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
         kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
@@ -1614,17 +1592,7 @@ class CsvParseTT(CsvParseMeridian):
         kwargs['cat_mapping'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('cat_mapping', {}), extra_cat_maps)
         kwargs['schema'] = "TT"
-        # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
         super(CsvParseTT, self).__init__(cols, defaults, **kwargs)
-
-        # if self.DEBUG_WOO:
-        #     self.register_message("cat_mapping: %s" % str(cat_mapping))
-        # if self.DEBUG_WOO:
-        #     print "WOO initializing: "
-        #     print "-> taxo_depth: ", self.taxo_depth
-        #     print "-> item_depth: ", self.item_depth
-        #     print "-> max_depth: ", self.max_depth
-        #     print "-> meta_width: ", self.meta_width
 
 
 class CsvParseVT(CsvParseMeridian):
@@ -1651,20 +1619,6 @@ class CsvParseVT(CsvParseMeridian):
 
         extra_cat_maps = OrderedDict()
 
-        # cols = SeqUtils.combine_lists( cols, extra_cols )
-        # defaults = SeqUtils.combine_ordered_dicts( defaults, extra_defaults )
-        # taxo_subs = SeqUtils.combine_ordered_dicts( taxo_subs, extra_taxo_subs )
-        # item_subs = SeqUtils.combine_ordered_dicts( item_subs, extra_item_subs )
-        # cat_mapping = SeqUtils.combine_ordered_dicts( cat_mapping, extra_cat_maps )
-        #
-        # self.register_message("cat_mapping: %s" % str(cat_mapping))
-        #
-        # super(CsvParseVT, self).__init__( cols, defaults, schema, import_name,\
-        #         taxo_subs, item_subs, taxo_depth, item_depth, meta_width, \
-        #         dprc_rules, dprp_rules, specials, cat_mapping)
-        #
-
-        #
         cols = SeqUtils.combine_lists(cols, extra_cols)
         defaults = SeqUtils.combine_ordered_dicts(defaults, extra_defaults)
         kwargs['taxo_subs'] = SeqUtils.combine_ordered_dicts(
@@ -1674,5 +1628,4 @@ class CsvParseVT(CsvParseMeridian):
         kwargs['cat_mapping'] = SeqUtils.combine_ordered_dicts(
             kwargs.get('cat_mapping', {}), extra_cat_maps)
         kwargs['schema'] = "VT"
-        # import_name = kwargs.pop('import_name', time.strftime("%Y-%m-%d %H:%M:%S") )
         super(CsvParseVT, self).__init__(cols, defaults, **kwargs)

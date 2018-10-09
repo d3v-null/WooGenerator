@@ -1,23 +1,18 @@
 from __future__ import absolute_import
 
-import json
-import time
-from collections import OrderedDict
-from pprint import pformat
-
-from ..coldata import ColDataProductMeridian
-from ..utils import DescriptorUtils, SanitationUtils, SeqUtils
+from ..utils import DescriptorUtils, SeqUtils
+from ..utils.inheritence import call_bases, collect_bases
 from .abstract import CsvParseBase
 from .api import ApiListMixin, ApiParseMixin, ImportApiObjectMixin
-from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject, ImportGenTaxo
-from .myo import CsvParseMyo
+from .gen import CsvParseGenTree, ImportGenItem, ImportGenObject
 from .shop import (CsvParseShopMixin, ImportShopMixin, ImportShopProductMixin,
-                   ImportShopProductSimpleMixin, ShopMixin, ShopProdList)
+                   ShopMixin, ShopProdList)
 from .tree import CsvParseTreeMixin, ImportTreeRoot
 
 
 class ApiXeroMixin(object):
     coldata_target = 'xero-api'
+
 
 class ImportXeroMixin(object):
     description_key = 'Xero Description'
@@ -36,23 +31,22 @@ class ImportXeroRoot(ImportTreeRoot, ImportXeroMixin):
     child_indexer = ImportXeroMixin.child_indexer
 
 
-class ImportXeroObject(ImportGenObject, ImportShopMixin, ImportXeroMixin, ApiXeroMixin):
+class ImportXeroObject(
+    ImportGenObject, ImportShopMixin, ImportXeroMixin, ApiXeroMixin
+):
     description_key = ImportXeroMixin.description_key
     description = ImportXeroMixin.description
     coldata_target = ApiXeroMixin.coldata_target
     child_indexer = ImportXeroMixin.child_indexer
 
     def __init__(self, *args, **kwargs):
-        for base_class in [ImportGenObject, ImportShopMixin]:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        call_bases(
+            ImportXeroObject.__bases__, '__init__', self, *args, **kwargs
+        )
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportXeroObject.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(ImportXeroObject.__bases__, 'to_dict', {}, self)
+
 
 class ImportXeroItem(ImportXeroObject, ImportGenItem):
     is_item = ImportGenItem.is_item
@@ -61,32 +55,30 @@ class ImportXeroItem(ImportXeroObject, ImportGenItem):
         ImportGenItem.verify_meta_keys
     )
 
+
 class ImportXeroProduct(ImportXeroItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
     name_delimeter = ' - '
 
     def __init__(self, *args, **kwargs):
-        for base_class in [ImportXeroItem, ImportShopProductMixin]:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        call_bases(
+            ImportXeroProduct.__bases__, '__init__', self, *args, **kwargs
+        )
 
     def process_meta(self):
-        # import pudb; pudb.set_trace()
-        for base_class in ImportXeroProduct.__bases__:
-            if hasattr(base_class, 'process_meta'):
-                base_class.process_meta(self)
+        call_bases(ImportXeroProduct.__bases__, 'process_meta', self)
+
 
 class ImportXeroApiObject(ImportXeroObject, ImportApiObjectMixin):
     is_item = ImportGenItem.is_item
 
     def process_meta(self):
-        # import pudb; pudb.set_trace()
-        for base_class in ImportXeroApiObject.__bases__:
-            if hasattr(base_class, 'process_meta'):
-                base_class.process_meta(self)
+        call_bases(ImportXeroApiObject.__bases__, 'process_meta', self)
+
 
 class ImportXeroApiItem(ImportXeroApiObject, ImportGenItem):
     pass
+
 
 class ImportXeroApiProduct(ImportXeroApiItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
@@ -97,6 +89,7 @@ class ImportXeroApiProduct(ImportXeroApiItem, ImportShopProductMixin):
         # ImportXeroItem.namesum_key
     ]
 
+
 class XeroApiProdList(ShopProdList, ApiListMixin, ApiXeroMixin):
     supported_type = ImportXeroApiProduct
 
@@ -104,7 +97,9 @@ class XeroApiProdList(ShopProdList, ApiListMixin, ApiXeroMixin):
     def report_cols(self):
         return CsvParseXero.coldata_class.get_col_data_native('report')
 
+
 ImportXeroApiProduct.container = XeroApiProdList
+
 
 class ParseXeroMixin(object):
     """
@@ -174,7 +169,9 @@ class CsvParseXero(CsvParseGenTree, CsvParseShopMixin, ParseXeroMixin):
         CsvParseShopMixin.register_object(self, object_data)
 
     def get_new_obj_container(self, all_data, **kwargs):
-        container = super(CsvParseXero, self).get_new_obj_container(all_data, **kwargs)
+        container = super(CsvParseXero, self).get_new_obj_container(
+            all_data, **kwargs
+        )
 
         if issubclass(container, self.item_container) \
                 and self.schema in all_data:
@@ -186,8 +183,10 @@ class CsvParseXero(CsvParseGenTree, CsvParseShopMixin, ParseXeroMixin):
                     pass
         return container
 
+
 class ApiParseXero(
-    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, ParseXeroMixin, ApiParseMixin
+    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, ParseXeroMixin,
+    ApiParseMixin
 ):
     """
     Provide Xero API data parsing functionality

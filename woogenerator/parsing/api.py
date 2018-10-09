@@ -4,21 +4,21 @@ Introduce woo api structure to shop classes.
 from __future__ import absolute_import, print_function
 
 import datetime
-import io
 from collections import OrderedDict
 from copy import deepcopy
-from pprint import pformat, pprint
+from pprint import pformat
 
-from ..coldata import (ColDataProductMeridian, ColDataSubAttachment,
-                       ColDataWcProdCategory, ColDataProductVariationMeridian)
+from ..coldata import (ColDataProductMeridian, ColDataProductVariationMeridian,
+                       ColDataSubAttachment, ColDataWcProdCategory)
 from ..utils import DescriptorUtils, Registrar, SanitationUtils, SeqUtils
+from ..utils.inheritence import call_bases, collect_bases
+from .abstract import CsvParseBase
 from .gen import ImportGenItem, ImportGenObject, ImportGenTaxo
-from .shop import (CsvParseShopMixin, ImportShopCategoryMixin,
-                   ImportShopAttachmentMixin, ImportShopMixin, ImportShopProductMixin,
-                   ImportShopProductSimpleMixin,
+from .shop import (CsvParseShopMixin, ImportShopAttachmentMixin,
+                   ImportShopCategoryMixin, ImportShopMixin,
+                   ImportShopProductMixin, ImportShopProductSimpleMixin,
                    ImportShopProductVariableMixin,
                    ImportShopProductVariationMixin)
-from .abstract import CsvParseBase
 from .tree import CsvParseTreeMixin, ImportTreeRoot
 from .woo import (CsvParseWooMixin, ImportWooImg, ImportWooMixin, WooCatList,
                   WooImgList, WooProdList)
@@ -29,16 +29,10 @@ class ApiListMixin(object):
     def json_serial(obj):
         if isinstance(obj, (datetime.datetime, datetime.date)):
             return obj.isoformat()
-        raise TypeError ("Type %s not serializable" % type(obj))
+        raise TypeError("Type %s not serializable" % type(obj))
 
     def export_api_data(self, file_path, encoding='utf-8'):
-        """
-        Export the items in the object list to a json file in the given file path.
-        """
-        # exc = DeprecationWarning("don't store api_data along with item")
-        # self.register_warning(exc)
-        # return
-
+        """Export items in the object list to json file in the file path."""
         assert file_path, "needs a filepath"
         assert self.objects, "meeds items"
         with open(file_path, 'wb') as out_file:
@@ -48,15 +42,18 @@ class ApiListMixin(object):
                     data.append(dict(item['api_data']))
                 except KeyError:
                     raise UserWarning("could not get api_data from item")
-            data = SanitationUtils.encode_json(data, default=ApiListMixin.json_serial)
+            data = SanitationUtils.encode_json(
+                data, default=ApiListMixin.json_serial)
             data = data.encode(encoding)
             print(data, file=out_file)
         self.register_message("WROTE FILE: %s" % file_path)
+
 
 class ImportApiMixin(object):
     api_id_key = ImportWooMixin.wpid_key
     rowcount_key = 'rowcount'
     api_id = DescriptorUtils.safe_key_property(api_id_key)
+
 
 class ImportApiObjectMixin(ImportApiMixin):
     child_indexer = Registrar.get_object_index
@@ -90,7 +87,10 @@ class ImportApiObjectMixin(ImportApiMixin):
 class ImportApiRoot(ImportTreeRoot):
     child_indexer = ImportApiObjectMixin.child_indexer
 
-class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, ImportApiObjectMixin):
+
+class ImportWooApiObject(
+    ImportGenObject, ImportShopMixin, ImportWooMixin, ImportApiObjectMixin
+):
     child_indexer = ImportApiObjectMixin.child_indexer
     category_indexer = ImportApiObjectMixin.category_indexer
     process_meta = ImportApiObjectMixin.process_meta
@@ -104,16 +104,12 @@ class ImportWooApiObject(ImportGenObject, ImportShopMixin, ImportWooMixin, Impor
     verify_meta_keys.remove(ImportGenObject.descsum_key)
 
     def __init__(self, *args, **kwargs):
-        for base_class in ImportWooApiObject.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        call_bases(
+            ImportWooApiObject.__bases__, '__init__', self, *args, **kwargs)
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooApiObject.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(ImportWooApiObject.__bases__, 'to_dict', {}, self)
+
 
 class ImportWooApiItem(ImportWooApiObject, ImportGenItem):
     verify_meta_keys = SeqUtils.combine_lists(
@@ -123,32 +119,37 @@ class ImportWooApiItem(ImportWooApiObject, ImportGenItem):
     verify_meta_keys.remove(ImportGenItem.namesum_key)
     is_item = ImportGenItem.is_item
 
+
 class ImportWooApiProduct(ImportWooApiItem, ImportShopProductMixin):
     is_product = ImportShopProductMixin.is_product
 
     verify_meta_keys = ImportWooApiObject.verify_meta_keys
 
     def __init__(self, data, *args, **kwargs):
-        if self.product_type and not 'prod_type' in data:
+        if self.product_type and 'prod_type' not in data:
             data['prod_type'] = self.product_type
-        for base_class in ImportWooApiProduct.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, data, *args, **kwargs)
+        call_bases(
+            ImportWooApiProduct.__bases__, '__init__',
+            self, data, *args, **kwargs
+        )
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooApiProduct.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(
+            ImportWooApiProduct.__bases__, 'to_dict', {}, self)
+
 
 class WooApiProdList(WooProdList, ApiListMixin):
     supported_type = ImportWooApiProduct
 
+
 ImportWooApiProduct.container = WooApiProdList
 
-class ImportWooApiProductSimple(ImportWooApiProduct, ImportShopProductSimpleMixin):
+
+class ImportWooApiProductSimple(
+    ImportWooApiProduct, ImportShopProductSimpleMixin
+):
     product_type = ImportShopProductSimpleMixin.product_type
+
 
 class ImportWooApiProductSimpleLegacy(ImportWooApiProductSimple):
     verify_meta_keys = SeqUtils.subtrace_two_lists(
@@ -158,6 +159,7 @@ class ImportWooApiProductSimpleLegacy(ImportWooApiProductSimple):
         ]
     )
 
+
 class ImportWooApiProductVariable(
         ImportWooApiProduct, ImportShopProductVariableMixin):
     is_variable = ImportShopProductVariableMixin.is_variable
@@ -165,9 +167,10 @@ class ImportWooApiProductVariable(
     variation_indexer = ImportApiObjectMixin.get_index
 
     def __init__(self, *args, **kwargs):
-        for base_class in ImportWooApiProductVariable.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        call_bases(
+            ImportWooApiProductVariable.__bases__, '__init__', self, *args,
+            **kwargs
+        )
 
 
 class ImportWooApiProductVariation(
@@ -197,11 +200,9 @@ class ImportWooApiProductVariation(
         return "|".join(map(str, identifiers))
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooApiProductVariation.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(
+            ImportWooApiProductVariation.__bases__, 'to_dict', {}, self)
+
 
 class ImportWooApiTaxo(ImportWooApiObject, ImportGenTaxo):
     is_taxo = ImportGenTaxo.is_taxo
@@ -221,34 +222,30 @@ class ImportWooApiCategory(ImportWooApiTaxo, ImportShopCategoryMixin):
     cat_name = ImportShopCategoryMixin.cat_name
 
     def __init__(self, *args, **kwargs):
-        for base_class in ImportWooApiCategory.__bases__:
-            if hasattr(base_class, '__init__'):
-                base_class.__init__(self, *args, **kwargs)
+        call_bases(
+            ImportWooApiCategory.__bases__, '__init__', self, *args, **kwargs)
 
     def process_meta(self):
-        for base_class in ImportWooApiCategory.__bases__:
-            if hasattr(base_class, 'process_meta'):
-                base_class.process_meta(self)
+        call_bases(ImportWooApiCategory.__bases__, 'process_meta', self)
         if not self.title:
             self.title = self.cat_name
-
 
     @property
     def index(self):
         return self.title
 
     def to_dict(self):
-        response = {}
-        for base_class in ImportWooApiCategory.__bases__:
-            if hasattr(base_class, 'to_dict'):
-                response.update(base_class.to_dict(self))
-        return response
+        return collect_bases(
+            ImportWooApiCategory.__bases__, 'to_dict', {}, self)
+
 
 class WooApiCatList(WooCatList, ApiListMixin):
     supported_type = ImportWooApiCategory
     report_cols = WooCatList.report_cols
 
+
 ImportWooApiCategory.container = WooApiCatList
+
 
 class ImportWooApiCategoryLegacy(ImportWooApiCategory):
     verify_meta_keys = SeqUtils.subtrace_two_lists(
@@ -259,7 +256,9 @@ class ImportWooApiCategoryLegacy(ImportWooApiCategory):
         ]
     )
 
+
 ImportWooApiCategoryLegacy.container = WooApiCatList
+
 
 class ImportWooApiImg(ImportWooImg, ImportApiMixin):
 
@@ -277,14 +276,15 @@ class ImportWooApiImg(ImportWooImg, ImportApiMixin):
         ]))
 
     def process_meta(self):
-        for base_class in ImportWooApiImg.__bases__:
-            if hasattr(base_class, 'process_meta'):
-                base_class.process_meta(self)
+        call_bases(ImportWooApiImg.__bases__, 'process_meta', self)
+
 
 class WooApiImgList(WooImgList, ApiListMixin):
     supported_type = ImportWooApiImg
 
+
 ImportWooApiImg.container = WooApiImgList
+
 
 class ApiParseMixin(object):
     root_container = ImportApiRoot
@@ -295,8 +295,10 @@ class ApiParseMixin(object):
 
     def analyse_stream(self, byte_file_obj, **kwargs):
 
-        limit, encoding, stream_name = \
-            (kwargs.get('limit'), kwargs.get('encoding'), kwargs.get('stream_name'))
+        limit, encoding, stream_name = (
+            kwargs.get('limit'), kwargs.get('encoding'),
+            kwargs.get('stream_name')
+        )
 
         if encoding is None:
             encoding = "utf8"
@@ -336,7 +338,7 @@ class ApiParseMixin(object):
 
     def analyse_api_obj(self, api_data, **kwargs):
         """
-        Analyse an object from the wp api. Assume api_data has not been convert to gen data
+        Analyse object from wp api. Assume api_data not convert to gen data
         """
 
         coldata_class = kwargs.get('coldata_class', self.coldata_class)
@@ -351,7 +353,7 @@ class ApiParseMixin(object):
 
         if self.save_api_data:
             row_data['api_data'] = api_data
-        if not 'type' in row_data:
+        if 'type' not in row_data:
             row_data['type'] = row_data.get('prod_type')
         kwargs['row_data'] = row_data
 
@@ -368,8 +370,10 @@ class ApiParseMixin(object):
 
         return object_data
 
+
 class ApiParseWoo(
-    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin, ApiParseMixin
+    CsvParseBase, CsvParseTreeMixin, CsvParseShopMixin, CsvParseWooMixin,
+    ApiParseMixin
 ):
     root_container = ApiParseMixin.root_container
     object_container = ImportWooApiObject
@@ -395,14 +399,10 @@ class ApiParseWoo(
     get_kwargs = ApiParseMixin.get_kwargs
 
     def clear_transients(self):
-        for base_class in ApiParseWoo.__bases__:
-            if hasattr(base_class, 'clear_transients'):
-                base_class.clear_transients(self)
+        call_bases(ApiParseWoo.__bases__, 'clear_transients', self)
 
     def register_object(self, object_data):
-        for base_class in ApiParseWoo.__bases__:
-            if hasattr(base_class, 'register_object'):
-                base_class.register_object(self, object_data)
+        call_bases(ApiParseWoo.__bases__, 'register_object', self, object_data)
 
     def analyse_api_image_raw(self, img_api_data, object_data=None, **kwargs):
 
@@ -420,7 +420,7 @@ class ApiParseWoo(
         return self.analyse_api_image_gen(img_gen_data, object_data, **kwargs)
 
     def analyse_api_image_gen(self, img_gen_data, object_data=None, **kwargs):
-        """ Create object for and analyse an API image object that is in gen format. """
+        """Create object / analyse API image object in gen format."""
         file_name = self.attachment_container.get_file_name(img_gen_data)
         if not file_name:
             warn = UserWarning(
@@ -439,9 +439,12 @@ class ApiParseWoo(
 
         img_gen_data['type'] = 'image'
 
-        return super(ApiParseWoo, self).process_image(img_gen_data, object_data, **kwargs)
+        return super(ApiParseWoo, self).process_image(
+            img_gen_data, object_data, **kwargs)
 
-    def process_api_sub_image_raw(self, sub_img_api_data, object_data, **kwargs):
+    def process_api_sub_image_raw(
+        self, sub_img_api_data, object_data, **kwargs
+    ):
         coldata_class = kwargs.get('coldata_class', self.coldata_sub_img_class)
         coldata_target = kwargs.get('coldata_target', self.coldata_target)
         sub_img_core_data = coldata_class.translate_data_from(
@@ -452,20 +455,28 @@ class ApiParseWoo(
         )
         if self.save_api_data:
             sub_img_gen_data['api_data'] = sub_img_api_data
-        return self.process_api_sub_image_gen(sub_img_gen_data, object_data, **kwargs)
+        return self.process_api_sub_image_gen(
+            sub_img_gen_data, object_data, **kwargs
+        )
 
-    def process_api_sub_image_gen(self, sub_img_gen_data, object_data, **kwargs):
+    def process_api_sub_image_gen(
+        self, sub_img_gen_data, object_data, **kwargs
+    ):
         """
         Process an api image that is a sub-entity in gen format.
         """
-        if sub_img_gen_data.get(self.attachment_container.attachment_id_key) == 0:
+        if (
+            sub_img_gen_data.get(self.attachment_container.attachment_id_key)
+            == 0
+        ):
             # drop the Placeholder image
             return
 
         sub_img_gen_data['type'] = 'sub-image'
 
-        return super(ApiParseWoo, self).process_image(sub_img_gen_data, object_data, **kwargs)
-
+        return super(ApiParseWoo, self).process_image(
+            sub_img_gen_data, object_data, **kwargs
+        )
 
     def translate_category_api_gen(self, category_raw_data, **kwargs):
         """
@@ -483,19 +494,27 @@ class ApiParseWoo(
             category_gen_data['api_data'] = category_raw_data
         return category_gen_data
 
+    def process_api_category_raw(
+        self, category_raw_data, object_data=None, **kwargs
+    ):
+        """
+        Create category if not exist or find if exist, then assign object_data
+        to category. Category must be in raw format, already converted.
+        """
+        category_gen_data = self.translate_category_api_gen(
+            category_raw_data, **kwargs
+        )
+        return self.process_api_category_gen(
+            category_gen_data, object_data, **kwargs
+        )
 
-    def process_api_category_raw(self, category_raw_data, object_data=None, **kwargs):
+    def process_api_category_gen(
+        self, category_gen_data, object_data=None, **kwargs
+    ):
         """
-        Create category if not exist of find if exist, then assign object_data to category.
-        Category must be in raw format, already converted.
-        """
-        category_gen_data = self.translate_category_api_gen(category_raw_data, **kwargs)
-        return self.process_api_category_gen(category_gen_data, object_data, **kwargs)
+        Create category if not exist or find if exist, then assign object_data
+        to category Has to emulate CsvParseBase.new_object()
 
-    def process_api_category_gen(self, category_gen_data, object_data=None, **kwargs):
-        """
-        Create category if not exist or find if exist, then assign object_data to category
-        Has to emulate CsvParseBase.new_object()
         category data must be in gen format, i.e. already converted.
         """
         if self.DEBUG_API:
@@ -525,10 +544,6 @@ class ApiParseWoo(
         if not cat_data:
             category_search_data = deepcopy(category_gen_data)
 
-            # if 'itemsum' in category_search_data:
-            #     category_search_data['taxosum'] = category_search_data['itemsum']
-            #     del category_search_data['itemsum']
-
             if self.DEBUG_API:
                 self.register_message("SEARCHING FOR CATEGORY: %s" %
                                       repr(category_search_data))
@@ -547,7 +562,8 @@ class ApiParseWoo(
 
             parent_category_data = None
             if self.category_container.parent_id_key in category_gen_data:
-                parent_id = category_gen_data.get(self.category_container.parent_id_key)
+                parent_id = category_gen_data.get(
+                    self.category_container.parent_id_key)
                 parent_category_search_data = {
                     self.category_container.wpid_key: parent_id
                 }
@@ -594,39 +610,31 @@ class ApiParseWoo(
         Translate and process a list of api-formatted categories.
         """
         categories_gen = [
-            self.translate_category_api_gen(category_api_data) \
+            self.translate_category_api_gen(category_api_data)
             for category_api_data in categories_api
         ]
         self.process_api_categories_gen(categories_gen)
 
     def process_api_categories_gen(self, categories_gen):
         """
-        Process a list of gen-formatted categories in an order such that parents
-        are always processed before children.
+        Process a list of gen-formatted categories in an order such that
+        parents are always processed before children.
         """
 
         while categories_gen:
             category_gen = categories_gen.pop(0)
-            # self.register_message("analysing category: %s" % category)
             if category_gen.get('parent_id'):
                 parent_id = category_gen.get('parent_id')
-                # self.register_message("parent id: %s" % parent)
                 queue_category_ids = [queue_category.get(
                     'ID') for queue_category in categories_gen]
                 if parent_id in queue_category_ids:
-                    # self.register_message('analysing later')
                     categories_gen.append(category_gen)
                     continue
-                # self.register_message("queue categories_gen: %s" % queue_category_ids)
-                # for queue_category in categories_gen:
-                #     # If category_gen's parent exists in queue
-                #     if queue_category.get('id') == parent:
-                #         # then put it at the end of the queue
-                #         categories_gen.append(category_gen)
             self.process_api_category_gen(category_gen)
 
-
-    def process_api_attribute_gen(self, object_data, attribute_data_gen, var=False):
+    def process_api_attribute_gen(
+        self, object_data, attribute_data_gen, var=False
+    ):
         # TODO: finish this
         pass
 
@@ -645,16 +653,6 @@ class ApiParseWoo(
                 var_data = self.variations.get(variation_index)
             except:
                 pass
-
-        # UN-NECESSARY?: implement self.find_variation(variation_search_data) based off self.find_category
-        # if not var_data:
-        #     variation_search_data = deepcopy(variation_data_gen)
-        #
-        #     if self.DEBUG_API:
-        #         self.register_message("SEARCHING FOR VARIATION: %s" %
-        #                               repr(variation_search_data))
-        #
-        #     var_data = self.find_variation(variation_search_data)
 
         if not var_data:
             if self.DEBUG_API:
@@ -716,11 +714,10 @@ class ApiParseWoo(
             var_gen_data['api_data'] = var_api_data
         return self.analyse_api_sub_var_gen(None, var_gen_data)
 
-
     def get_parser_data(self, **kwargs):
         """
-        Gets data ready for the parser, in this case from api_data which has already been
-        converted to gen format
+        Get data ready for the parser, in this case from api_data which has
+        already been converted to gen format.
         """
 
         parser_data = {}
@@ -728,18 +725,12 @@ class ApiParseWoo(
             if hasattr(base_class, 'get_parser_data'):
                 parser_data.update(base_class.get_parser_data(self, **kwargs))
 
-        # assert self.object_container.title_key in parser_data, \
-        # "parser_data should have title(%s):\n%s" % (
-        #     self.object_container.title_key,
-        #     pformat(parser_data.items())
-        # )
-
         if parser_data.get('type') == 'category':
             assert self.category_container.slug_key in parser_data, \
-            "parser_data should have slug(%s):\n%s" % (
-                self.category_container.slug_key,
-                pformat(parser_data.items()),
-            )
+                "parser_data should have slug(%s):\n%s" % (
+                    self.category_container.slug_key,
+                    pformat(parser_data.items()),
+                )
             parser_data[self.category_container.codesum_key] = parser_data[
                 self.category_container.slug_key]
         elif parser_data.get('type') in ['sub-image', 'image']:
@@ -751,32 +742,32 @@ class ApiParseWoo(
             # )
         elif parser_data.get('type') in ['variation']:
             assert self.variation_container.api_id_key in parser_data, \
-            "parser_data should have api_id(%s):\n%s" % (
-                self.variation_container.api_id_key,
-                parser_data
-            )
+                "parser_data should have api_id(%s):\n%s" % (
+                    self.variation_container.api_id_key,
+                    parser_data
+                )
             assert self.variation_container.parent_id_key in parser_data, \
-            "parser_data should have parent_id(%s):\n%s" % (
-                self.variation_container.parent_id_key,
-                parser_data
-            )
+                "parser_data should have parent_id(%s):\n%s" % (
+                    self.variation_container.parent_id_key,
+                    parser_data
+                )
         else:
             assert self.object_container.codesum_key in parser_data, \
-            "parser_data should have codesum(%s):\n%s" % (
-                self.object_container.codesum_key,
-                parser_data
-            )
+                "parser_data should have codesum(%s):\n%s" % (
+                    self.object_container.codesum_key,
+                    parser_data
+                )
             assert self.object_container.descsum_key in parser_data, \
-            "parser_data should have description(%s): \n%s" % (
-                self.object_container.descsum_key,
-                pformat(parser_data.items()),
-            )
-        if parser_data.get(self.object_container.descsum_key)\
-        and not parser_data.get(self.object_container.description_key):
+                "parser_data should have description(%s): \n%s" % (
+                    self.object_container.descsum_key,
+                    pformat(parser_data.items()),
+                )
+        if (
+            parser_data.get(self.object_container.descsum_key)
+            and not parser_data.get(self.object_container.description_key)
+        ):
             parser_data[self.object_container.description_key] \
-            = parser_data[self.object_container.descsum_key]
-
-
+                = parser_data[self.object_container.descsum_key]
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
@@ -814,7 +805,8 @@ class ApiParseWoo(
                     category_depths[depth] = []
                 category_depths[depth].append(category)
             if category_depths:
-                deepest_category = list(reversed(sorted(category_depths.items())))[0][1][0]
+                deepest_category = list(reversed(sorted(
+                    category_depths.items())))[0][1][0]
                 deepest_category.register_child(object_data)
                 object_data.parent = deepest_category
                 self.rowcount += 1
@@ -839,6 +831,7 @@ class ApiParseWoo(
                     )
 
         return object_data
+
 
 class ApiParseWooLegacy(ApiParseWoo):
     simple_container = ImportWooApiProductSimpleLegacy

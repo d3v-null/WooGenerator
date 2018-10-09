@@ -4,7 +4,7 @@ import time
 from collections import OrderedDict
 
 from ..coldata import ColDataProductMeridian
-from ..utils import SanitationUtils, SeqUtils
+from ..utils import SeqUtils
 from .gen import CsvParseGenTree
 from .shop import ImportShopProductMixin, ShopProdList
 
@@ -210,8 +210,11 @@ class CsvParseMyo(CsvParseGenTree):
 
     ])
 
-    def __init__(self, cols=None, defaults=None, schema='MY', import_name="",
-                 taxo_subs=None, item_subs=None, taxo_depth=3, item_depth=2, meta_width=2):
+    def __init__(
+        self, cols=None, defaults=None, schema='MY', import_name="",
+        taxo_subs=None, item_subs=None, taxo_depth=3, item_depth=2,
+        meta_width=2
+    ):
         if defaults is None:
             defaults = {}
         if cols is None:
@@ -223,8 +226,10 @@ class CsvParseMyo(CsvParseGenTree):
 
         if not import_name:
             import_name = time.strftime("%Y-%m-%d %H:%M:%S")
-        taxo_subs = SeqUtils.combine_ordered_dicts(taxo_subs, CsvParseMyo.extra_taxo_subs)
-        item_subs = SeqUtils.combine_ordered_dicts(item_subs, CsvParseMyo.extra_item_subs)
+        taxo_subs = SeqUtils.combine_ordered_dicts(
+            taxo_subs, CsvParseMyo.extra_taxo_subs)
+        item_subs = SeqUtils.combine_ordered_dicts(
+            item_subs, CsvParseMyo.extra_item_subs)
         if not schema:
             schema = "MY"
 

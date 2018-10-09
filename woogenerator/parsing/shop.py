@@ -6,14 +6,14 @@ from __future__ import absolute_import
 import bisect
 import os
 import re
-import weakref
 from collections import OrderedDict
 
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataSubAttachment,
                        ColDataWcProdCategory)
-from ..utils import FileUtils, Registrar, SanitationUtils, SeqUtils, DescriptorUtils
-from .abstract import ImportObject, ObjList
+from ..utils import (DescriptorUtils, FileUtils, Registrar, SanitationUtils,
+                     SeqUtils)
+from .abstract import ObjList
 from .gen import CsvParseGenMixin
 from .tree import ItemList, TaxoList
 
@@ -24,6 +24,7 @@ class ShopMixin(object):
     coldata_img_class = ColDataAttachment
     coldata_sub_img_class = ColDataSubAttachment
     coldata_var_class = ColDataProductVariationMeridian
+
 
 class ImportShopAttachmentMixin(ShopMixin):
     file_path_key = 'file_path'
@@ -48,13 +49,13 @@ class ImportShopAttachmentMixin(ShopMixin):
     @classmethod
     def get_alt_text(cls, data):
         assert cls.alt_text_key in data, \
-        "expected alt_text key (%s) in img data" % cls.alt_text_key
+            "expected alt_text key (%s) in img data" % cls.alt_text_key
         return data.get(cls.alt_text_key)
 
     @classmethod
     def get_caption(cls, data):
         assert cls.caption_key in data, \
-        "expected caption key (%s) in img data" % cls.caption_key
+            "expected caption key (%s) in img data" % cls.caption_key
         return data.get(cls.caption_key)
 
     @classmethod
@@ -129,7 +130,8 @@ class ImportShopAttachmentMixin(ShopMixin):
         before = ''
         after = name
         if attachee_skus:
-            code_re = r'^(?P<before>%s)(?P<after>.*)$' % re.escape(attachee_skus)
+            code_re = r'^(?P<before>%s)(?P<after>.*)$' % (
+                re.escape(attachee_skus))
             code_match = re.match(code_re, name)
             if code_match:
                 code_match = code_match.groupdict()
@@ -169,13 +171,15 @@ class ImportShopAttachmentMixin(ShopMixin):
         self.is_valid = False
 
     def process_meta(self):
-        if not self.file_name_key in self:
+        if self.file_name_key not in self:
             self[self.file_name_key] = self.get_file_name(self)
         if self.get(self.file_name_key) is None:
             raise UserWarning("couldn't get file_path")
 
+
 class ShopImgListMixin(object):
     supported_type = ImportShopAttachmentMixin
+
 
 class ImportShopMixin(object):
     "Base mixin class for shop objects (products, categories, attachments)"
@@ -183,7 +187,6 @@ class ImportShopMixin(object):
     is_category = None
     is_variable = None
     is_variation = None
-    #container = ObjList
     attachment_indexer = ImportShopAttachmentMixin.attachment_indexer
     # attachment_resolver = Registrar.exception_resolver
     menu_order_key = 'menu_order'
@@ -191,13 +194,6 @@ class ImportShopMixin(object):
 
     def __init__(self, *args, **kwargs):
         # TODO: Remove any dependencies on __init__ in mixins
-        if Registrar.DEBUG_SHOP:
-            self.register_message("creating shop object; %s %s %s %s" % (
-                'is_product' if self.is_product else '!is_product',
-                'is_category' if self.is_category else '!is_category',
-                'is_variable' if self.is_variable else '!is_variable',
-                'is_variation' if self.is_variation else '!is_variation'
-            ))
         self.attachments = OrderedDict()
         self.attributes = OrderedDict()
 
@@ -224,7 +220,8 @@ class ImportShopMixin(object):
                 attrs[attr]['default'] = val
             attrs[attr]['variation'] = 1
 
-        assert attrs == self.attributes, "sanity: something went wrong assigning attribute"
+        assert attrs == self.attributes, \
+            "sanity: something went wrong assigning attribute"
 
     def register_attachment(self, img_data):
         assert isinstance(img_data, ImportShopAttachmentMixin)
@@ -243,27 +240,32 @@ class ImportShopMixin(object):
         gen_data = self.to_dict()
         if self.is_category:
             coldata_class = self.coldata_cat_class
-            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
+            core_data = coldata_class.translate_data_from(
+                gen_data, self.coldata_gen_target)
             if self.parent and self.parent.wpid:
                 api_data['term_parent_id'] = self.parent.wpid
             api_data = coldata_class.translate_data_to(core_data, target_api)
         elif self.is_variation:
             coldata_class = self.coldata_var_class
-            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
+            core_data = coldata_class.translate_data_from(
+                gen_data, self.coldata_gen_target)
             if self.parent and self.parent.wpid:
                 api_data['parent_id'] = self.parent.wpid
             api_data = coldata_class.translate_data_to(core_data, target_api)
         elif getattr(self, 'is_image'):
             coldata_class = self.coldata_img_class
-            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
+            core_data = coldata_class.translate_data_from(
+                gen_data, self.coldata_gen_target)
             api_data = coldata_class.translate_data_to(core_data, target_api)
         else:
             assert self.is_product
             coldata_class = self.coldata_class
-            core_data = coldata_class.translate_data_from(gen_data, self.coldata_gen_target)
+            core_data = coldata_class.translate_data_from(
+                gen_data, self.coldata_gen_target)
             variations = []
             for variation in self.variations.values():
-                variation_data = variation.to_api_data(coldata_class, target_api)
+                variation_data = variation.to_api_data(
+                    coldata_class, target_api)
                 variations.append(variation_data)
             core_data['variations'] = variations
             categories = []
@@ -277,26 +279,27 @@ class ImportShopMixin(object):
     @classmethod
     def get_slug(cls, data):
         assert cls.slug_key in data, \
-        "expected slug key (%s) in data" % cls.slug_key
+            "expected slug key (%s) in data" % cls.slug_key
         return data.get(cls.slug_key)
 
     @classmethod
     def get_title(cls, data):
         assert cls.title_key in data, \
-        "expected title key (%s) in data" % cls.title_key
+            "expected title key (%s) in data" % cls.title_key
         return data.get(cls.title_key)
 
     @classmethod
     def get_sku(cls, data):
         assert cls.codesum_key in data, \
-        "expected codesum key (%s) in data" % cls.codesum_key
+            "expected codesum key (%s) in data" % cls.codesum_key
         return data.get(cls.codesum_key)
 
     @classmethod
     def get_description(cls, data):
         assert cls.description_key in data, \
-        "expected description key (%s) in data" % cls.description_key
+            "expected description key (%s) in data" % cls.description_key
         return data.get(cls.description_key)
+
 
 class ImportShopProductMixin(object):
     "Base mixin class for shop products which also have categories"
@@ -336,12 +339,15 @@ class ImportShopProductMixin(object):
             response['category_objects'] = self.categories.values()
         if hasattr(self, 'attachments'):
             response['attachment_objects'] = self.attachments.values()
-            for count, attachment_object in enumerate(response['attachment_objects']):
+            for count, attachment_object in enumerate(
+                response['attachment_objects']
+            ):
                 attachment_object['position'] = count
         # TODO: enable attributes later
         # if hasattr(self, 'attributes'):
         #     response['attribute_objects'] = self.attributes.values()
         return response
+
 
 class ShopProdList(ItemList):
     "Container for shop products"
@@ -361,7 +367,9 @@ class ShopProdList(ItemList):
         )
         return super(ShopProdList, self).append(object_data)
 
+
 ImportShopProductMixin.container = ShopProdList
+
 
 class ImportShopProductSimpleMixin(object):
     product_type = 'simple'
@@ -436,14 +444,18 @@ class ImportShopCategoryMixin(object):
             response['attachment_object'] = self.attachments.values()[0]
         return response
 
+
 class ShopCatList(TaxoList):
     coldata_class = ColDataWcProdCategory
     supported_type = ImportShopCategoryMixin
+
     @property
     def report_cols(self):
         return self.coldata_class.get_col_data_native('report')
 
+
 ImportShopCategoryMixin.container = ShopCatList
+
 
 class ShopObjList(ObjList):
     supported_type = ImportShopMixin
@@ -452,7 +464,7 @@ class ShopObjList(ObjList):
         self.is_valid = True
         self.products = ShopProdList()
         self.categories = ShopCatList()
-        self._objects = ObjList() # objects that are not products or categories
+        self._objects = ObjList()  # not products or categories
         super(ShopObjList, self).__init__(objects, indexer=indexer)
 
     @property
@@ -462,7 +474,6 @@ class ShopObjList(ObjList):
     @property
     def products_and_categories(self):
         return self.products + self.categories
-
 
     @property
     def title(self):
@@ -491,9 +502,6 @@ class ShopObjList(ObjList):
             container = self.products
         else:
             container = self._objects
-            # warn = UserWarning("shopObjList appended non-product, non-category: %s" % object_data)
-            # self.register_warning(warn)
-            # raise warn
 
         bisect.insort(container, object_data)
         self[:] = list(self.__iter__())
@@ -532,6 +540,7 @@ class ShopObjList(ObjList):
             return self.products.remove(value)
         if value in self._objects:
             return self._objects.remove(value)
+
 
 class CsvParseShopMixin(object):
     """
@@ -578,17 +587,11 @@ class CsvParseShopMixin(object):
         }
 
     def clear_transients(self):
-        # TODO: what if products, categories, variations, attachments were weakrefs?
-
         self.products = OrderedDict()
-        # self.products = weakref.WeakValueDictionary()
         self.categories = OrderedDict()
-        # self.categories = weakref.WeakValueDictionary()
         self.attributes = OrderedDict()
         self.vattributes = OrderedDict()
         self.variations = OrderedDict()
-        # self.variations = weakref.WeakValueDictionary()
-
         self.attachments = OrderedDict()
 
         self.categories_name = OrderedDict()
@@ -596,7 +599,6 @@ class CsvParseShopMixin(object):
     @property
     def images():
         raise DeprecationWarning('.images replaced with .attachments')
-
 
     def register_product(self, prod_data):
         if Registrar.DEBUG_SHOP:
@@ -614,9 +616,11 @@ class CsvParseShopMixin(object):
 
     def register_attachment(self, img_data, object_data=None):
         if self.DEBUG_IMG:
-            self.register_message("attaching %s to %s" % (img_data, object_data))
+            self.register_message("attaching %s to %s" % (
+                img_data, object_data))
         assert isinstance(img_data, ImportShopAttachmentMixin), \
-        "expected to register ImportShopMixin instead found %s" % type(img_data)
+            "expected to register ImportShopMixin instead found %s" % type(
+                img_data)
         self.register_anything(
             img_data,
             self.attachments,
@@ -628,8 +632,10 @@ class CsvParseShopMixin(object):
         if object_data:
             object_data.register_attachment(img_data)
             if self.DEBUG_IMG:
-                self.register_message("object_data.attachments: %s" % (object_data.attachments.keys()))
-                self.register_message("img_data.attachments: %s" % list(img_data.attachments.__iter__()))
+                self.register_message("object_data.attachments: %s" % (
+                    object_data.attachments.keys()))
+                self.register_message("img_data.attachments: %s" % list(
+                    img_data.attachments.__iter__()))
 
     def get_products(self):
         exc = DeprecationWarning("Use .products instead of .get_products()")
@@ -642,10 +648,11 @@ class CsvParseShopMixin(object):
     def register_object(self, object_data):
         if issubclass(type(object_data), ImportShopProductMixin):
             if issubclass(type(object_data), ImportShopProductVariationMixin):
-                assert \
-                    object_data.is_variation, \
-                    "object_data not variation %s, obj is_variation: %s, cls is_variation; %s" \
-                    % (
+                assert object_data.is_variation, \
+                    (
+                        "object_data not variation %s, "
+                        "obj is_variation: %s, cls is_variation; %s"
+                    ) % (
                         type(object_data),
                         repr(object_data.is_variation),
                         repr(type(object_data).is_variation)
@@ -687,8 +694,6 @@ class CsvParseShopMixin(object):
                 issubclass(type(item_data), ImportShopProductMixin), \
                 "item_data should be ImportShopProductMixin not %s" % str(
                     type(item_data))
-            # for product_cat in item_data.categories:
-            #     assert self.category_indexer(product_cat) != self.category_indexer(cat_data)
             item_data.join_category(cat_data)
 
     def register_join_category(self, cat_data, item_data=None):
@@ -697,16 +702,18 @@ class CsvParseShopMixin(object):
 
     def register_variation(self, parent_data, var_data):
         assert issubclass(type(parent_data), ImportShopProductVariableMixin)
-        assert \
-            issubclass(type(var_data), ImportShopProductVariationMixin), \
-            "var_data should subclass ImportShopProductVariationMixin instead %s" % type(
-                var_data)
+        assert issubclass(type(var_data), ImportShopProductVariationMixin), \
+            (
+                "var_data should subclass "
+                "ImportShopProductVariationMixin, instead %s"
+            ) % type(
+                var_data
+            )
         assert parent_data.is_variable
-        assert var_data.is_variation, "var_data should be a variation, is %s instead. type: %s" \
-            % (repr(var_data.is_variable), repr(type(var_data)))
-        # if self.DEBUG_API:
-        # self.register_message("about to register variation: %s with %s" %
-        # self.)
+        assert var_data.is_variation, \
+            "var_data should be a variation, is %s instead. type: %s" % (
+                repr(var_data.is_variable), repr(type(var_data)))
+
         self.register_anything(
             var_data,
             self.variations,
@@ -721,11 +728,11 @@ class CsvParseShopMixin(object):
     def register_attribute(self, object_data, attr, val, var=False):
         try:
             attr = str(attr)
-            assert isinstance(attr, (str, unicode)), 'Attribute must be a string not {}'.format(
-                type(attr).__name__)
+            assert isinstance(attr, (str, unicode)), \
+                'Attribute must be a string not {}'.format(type(attr).__name__)
             assert attr is not '', 'Attribute must not be empty'
-            assert attr[
-                0] is not ' ', 'Attribute must not start with whitespace or '
+            assert attr[0] is not ' ', \
+                'Attribute must not start with whitespace or '
         except AssertionError as exc:
             warn = UserWarning("could not register attribute: {}".format(exc))
             self.register_error(warn)
@@ -758,32 +765,16 @@ class CsvParseShopMixin(object):
             registered = self.category_indexer(child) in self.categories.keys()
             response += " | ".join([
                 "%-5s" % ((child.depth) * ' ' + '*'),
-                "%-16s" % str(child.get(self.object_container.codesum_key))[:16],
+                "%-16s" % str(
+                    child.get(self.object_container.codesum_key))[:16],
                 "%50s" % str(child.get(self.object_container.title_key))[:50],
                 "r:%5s" % str(child.rowcount)[:10],
                 "w:%5s" % str(child.get(self.object_container.wpid_key))[:10],
                 "%1s" % "R" if registered else " "
-                # "%5s" % child.wpid
             ])
             response += '\n'
             response += self.to_str_tree_recursive(child)
         return response
-    #
-    # def get_parser_data(cls, **kwargs):
-    #     parser_data = kwargs.get('row_data', {})
-    #     # TODO: why not move this to process_meta ?
-    #     if kwargs.get('container') and issubclass(kwargs.get('container'), cls.attachment_container):
-    #         if not cls.attachment_container.file_name_key in parser_data:
-    #             if parser_data.get(cls.attachment_container.file_path_key):
-    #                 parser_data[cls.attachment_container.file_name_key]\
-    #                 = FileUtils.get_path_basename(parser_data[cls.attachment_container.file_path_key])
-    #             elif parser_data.get(cls.attachment_container.source_url_key):
-    #                 parser_data[cls.attachment_container.file_name_key]\
-    #                 = FileUtils.get_path_basename(parser_data[cls.attachment_container.source_url_key])
-    #             else:
-    #                 raise UserWarning("couldn't get file_path from parser_data: %s" % parser_data)
-    #     return parser_data
-
 
     def to_str_tree(self):
         return self.to_str_tree_recursive(self.root_data)

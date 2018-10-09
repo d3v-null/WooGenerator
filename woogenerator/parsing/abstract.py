@@ -1,11 +1,13 @@
 """
 Utilities for parsing and handling data import files.
 
-Abstract base classes originally intended to be used for parsing and storing CSV data in a
-convenient accessible dictionary structure, but modified to parse data in other formats.
-Parse classes store Import objects in their internal structure and output ObjList instances
-for easy analyis.
-Here be dragons. Some of the design decisions are pretty bizarre, so please have a full read
+Abstract base classes originally intended to be used for parsing and storing
+CSV data in a convenient accessible dictionary structure, but modified to
+parse data in other formats.
+Parse classes store Import objects in their internal structure and output
+ObjList instances for easy analyis.
+Here be dragons.
+Some of the design decisions are pretty bizarre, so please have a full read
 through before changing anything. Sorry about that.
 """
 from __future__ import absolute_import
@@ -23,6 +25,7 @@ from ..utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
                      UnicodeCsvDialectUtils)
 
 BLANK_CELL = ''
+
 
 class ImportObject(OrderedDict, Registrar):
     """
@@ -93,23 +96,6 @@ class ImportObject(OrderedDict, Registrar):
                     data[name] = self[col]
         return data
 
-    # def to_target_type_with_attributes(self, **kwargs):
-    #     """
-    #     Return the object as a dictionary which has had types converted to
-    #     `coldata_target` format. and also preserve any key that begins with attribute.
-    #     """
-    #     preserve_columns = []
-    #     for key in self.keys():
-    #         if key.startswith('attribute'):
-    #             preserve_columns.append(key)
-    #
-    #     data = self.to_target_type(**kwargs)
-    #
-    #     for key in preserve_columns:
-    #         data[key] = self[key]
-    #
-    #     return data
-
     # TODO: refactor to get rid of row property, rename _row to row
     @property
     def row(self):
@@ -122,7 +108,7 @@ class ImportObject(OrderedDict, Registrar):
     @property
     def index(self):
         """
-        Return a unique identifier to differentiate this from others within import.
+        Return a unique identifier to differentiate this from others imported.
         """
 
         return self.rowcount
@@ -130,7 +116,7 @@ class ImportObject(OrderedDict, Registrar):
     @property
     def identifier_delimeter(self):
         """
-        Return the delimeter used in creating the identifier for this instance.
+        Get the delimeter used in creating the identifier for this instance.
 
         Override in subclasses.
         """
@@ -140,7 +126,7 @@ class ImportObject(OrderedDict, Registrar):
     @property
     def type_name(self):
         """
-        Return the name of the type of this instance for creating an identifier.
+        Get the name of the type of this instance for creating an identifier.
         """
 
         return type(self).__name__
@@ -148,7 +134,7 @@ class ImportObject(OrderedDict, Registrar):
     @property
     def identifier(self):
         """
-        Return a unique identifier to distinguish this from others outside import.
+        Get a unique identifier to distinguish this from others outside import.
         """
 
         index = self.index
@@ -182,7 +168,7 @@ class ImportObject(OrderedDict, Registrar):
         return self.container([self])
 
     def update(self, other):
-        """ Update the ImportObject with the values from another ImportObject or dict"""
+        """Update ImportObject with values from another ImportObject/dict."""
         if isinstance(other, ImportObject):
             other_dict = other.to_dict()
         else:
@@ -228,6 +214,7 @@ class ImportObject(OrderedDict, Registrar):
         if not isinstance(other, ImportObject):
             return -1
         return cmp(self.rowcount, other.rowcount)
+
 
 class ObjList(list, Registrar):
     """
@@ -371,9 +358,7 @@ class ObjList(list, Registrar):
         self, file_path, col_names, dialect=None, encoding="utf8",
         coldata_target=None, coldata_class=None, extra_colnames=None
     ):
-        """
-        Export the items in the object list to a csv file in the given file path.
-        """
+        """Export items in object list to csv in the given file path."""
         assert file_path, "needs a filepath"
         assert col_names, "needs col_names"
         assert self.objects, "meeds items"
@@ -385,8 +370,8 @@ class ObjList(list, Registrar):
             if dialect is None:
                 csvdialect = UnicodeCsvDialectUtils.ActOut
             else:
-                csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
-                    dialect)
+                csvdialect = \
+                    UnicodeCsvDialectUtils.get_dialect_from_suggestion(dialect)
             if self.DEBUG_ABSTRACT:
                 self.register_message(
                     UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
@@ -415,7 +400,9 @@ class ObjList(list, Registrar):
 
     report_cols = OrderedDict([('_row', {'label': 'Row'}), ('index', {})])
 
+
 ImportObject.container = ObjList
+
 
 class CsvParseBase(Registrar):
     """
@@ -489,7 +476,6 @@ class CsvParseBase(Registrar):
             warn = UserWarning("could not find any indices")
             self.raise_exception(warn)
 
-
     def retrieve_col_from_row(self, col, row):
         # if self.DEBUG_PARSER: print "retrieve_col_from_row | col: ", col
         try:
@@ -549,9 +535,7 @@ class CsvParseBase(Registrar):
         if matching_sets:
             matches = set.intersection(*matching_sets)
             if matches:
-                assert \
-                len(matches) == 1, \
-                (
+                assert len(matches) == 1, (
                     "should only have one match:\n"
                     "-> search_data:\n%s\n"
                     "-> match_keys:\n%s\n"
@@ -609,9 +593,9 @@ class CsvParseBase(Registrar):
 
     def get_kwargs(self, all_data, **kwargs):  # pylint: disable=unused-argument
         """
-        Use all_data, container and other kwargs to get kwargs for creating new_object.
+        Get kwargs for creating new_object.
 
-        Override in subclasses.
+        Use all_data, container and other kwargs. Override in subclasses.
         """
 
         return kwargs
@@ -630,10 +614,13 @@ class CsvParseBase(Registrar):
         Create a new ImportObject subclass instance from provided args.
 
         An import object is created with two pieces of information:
-         - data: a dict containing the raw data in the import_object as a dictionary
-         - kwargs: extra arguments passed to subclass __init__s to initialize the object
-        Subclasses of CsvParseBase override the get_kwargs and get_parser_data methods
-        so that they can supply their own arguments to an object's initialization
+         - data: a dict containing the raw data in the import_object as a
+            dictionary
+         - kwargs: extra arguments passed to subclass __init__s to initialize
+            the object
+        Subclasses of CsvParseBase override the get_kwargs and get_parser_data
+        methods so that they can supply their own arguments to an object's
+        initialization
         """
 
         if self.DEBUG_PARSER:
@@ -656,7 +643,8 @@ class CsvParseBase(Registrar):
             self.register_message("all_data: {}".format(all_data))
         kwargs['container'] = self.get_new_obj_container(all_data, **kwargs)
         if self.DEBUG_PARSER:
-            self.register_message("container: {}".format(kwargs['container'].__name__))
+            self.register_message("container: {}".format(
+                kwargs['container'].__name__))
         kwargs = self.get_kwargs(all_data, **kwargs)
         if self.DEBUG_PARSER:
             self.register_message("kwargs: {}".format(kwargs))
@@ -690,8 +678,8 @@ class CsvParseBase(Registrar):
                 for row in unicode_rows:
                     rows.append(row)
             except Exception as exc:
-                warn = Exception("could not append row %d, %s: \n\t%s" %
-                                (len(rows), str(exc), repr(rows[-1:])))
+                warn = Exception("could not append row %d, %s: \n\t%s" % (
+                    len(rows), str(exc), repr(rows[-1:])))
                 self.raise_exception(warn)
             rowlen = len(rows)
             self.progress_counter = ProgressCounter(rowlen)
@@ -704,22 +692,15 @@ class CsvParseBase(Registrar):
                 break
             if self.DEBUG_PROGRESS:
                 self.progress_counter.maybe_print_update(self.rowcount)
-                # now = time()
-                # if now - last_print > 1:
-                #     last_print = now
-                #     print "%d of %d rows processed" % (self.rowcount, rowlen)
 
             if unicode_row:
                 non_unicode = [
                     cell for cell in unicode_row
                     if not isinstance(cell, unicode)
                 ]
-                # non_unicode = filter(
-                #     lambda unicode_cell: not isinstance(unicode_cell, unicode) \
-                #                          if unicode_cell else False,
-                #     unicode_row)
-                assert not non_unicode, "non-empty cells must be unicode objects, {}".format(
-                    repr(non_unicode))
+                assert not non_unicode, \
+                    "non-empty cells must be unicode objects, {}".format(
+                        repr(non_unicode))
 
             if not any(unicode_row):
                 continue
@@ -732,7 +713,8 @@ class CsvParseBase(Registrar):
                 #     import pudb; pudb.set_trace()
                 object_data = self.new_object(self.rowcount, row=unicode_row)
             except UserWarning as exc:
-                warn = UserWarning("could not process new object: {}". format(exc))
+                warn = UserWarning("could not process new object: {}".format(
+                    exc))
                 self.register_warning(
                     warn,
                     "%s:%d" % (file_name, self.rowcount))
@@ -749,7 +731,8 @@ class CsvParseBase(Registrar):
                     self.register_message("%s PROCESSED" %
                                           object_data.identifier)
             except UserWarning as exc:
-                warn = UserWarning("could not process new object: {}".format(exc))
+                warn = UserWarning("could not process new object: {}".format(
+                    exc))
                 self.register_error(
                     warn,
                     object_data
@@ -806,7 +789,8 @@ class CsvParseBase(Registrar):
 
         if hasattr(self, 'rowcount') and self.rowcount > 1:
             warn = UserWarning(
-                'rowcount should be 0. Make sure clear_transients is being called on ancestors'
+                'rowcount should be 0. '
+                'Make sure clear_transients is being called on ancestors'
             )
             self.raise_exception(warn)
         if encoding is None:
@@ -874,9 +858,7 @@ class CsvParseBase(Registrar):
 
     @classmethod
     def translate_handle_keys(cls, object_data, key_translation):
-        """
-        Translate keys from one type of dict to another using the key_translation.
-        """
+        """Translate keys between types of dicts using key_translation."""
         raise DeprecationWarning("Use API whisperer to translate stuff")
         translated = OrderedDict()
         for col, translation in key_translation.items():
@@ -885,29 +867,24 @@ class CsvParseBase(Registrar):
         return translated
 
     def get_obj_list(self):
-        """
-        Return the objects parsed by this instance in their preferred container.
-        """
+        """Gen objects parsed by this instance in their container."""
         list_class = self.object_container.container
         objlist = list_class(self.objects.values())
         return objlist
 
     def tabulate(self, cols=None, tablefmt=None):
-        """
-        Provide a string table representation of the objects parsed by this instance.
-        """
+        """Render a table of the objects parsed by this instance."""
         objlist = self.get_obj_list()
         return SanitationUtils.coerce_bytes(objlist.tabulate(cols, tablefmt))
 
     @classmethod
     def print_basic_columns(cls, objects):
-        """
-        Provide a basic string table representation of the objects parsed by this instance.
-        """
+        """Render a table of the objects parsed by this instance."""
         obj_list = cls.object_container.container()
         for _object in objects:
             obj_list.append(_object)
 
-        cols = cls.object_container.container.coldata_class.get_col_data_native('basic')
+        coldata_class = cls.object_container.container.coldata_class
+        cols = coldata_class.get_col_data_native('basic')
 
         SanitationUtils.safe_print(obj_list.tabulate(cols, tablefmt='simple'))
