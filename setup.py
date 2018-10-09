@@ -64,7 +64,8 @@ setup(
         'pyxero',
         'bs4',
         'dill',
-        'lxml'
+        'lxml',
+        'pudb'
     ],
     setup_requires=[
         'pytest-runner'
