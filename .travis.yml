@@ -1,6 +1,6 @@
-# env:
-#     global:
-#         - CC_TEST_REPORTER_ID=???
+env:
+    global:
+        - CC_TEST_REPORTER_ID=63e5a0509a5ba6da03bbc7694368894b41020539e476ccd85ac5aafab308e65f
 language: python
 python:
     - "2.7"
@@ -9,14 +9,13 @@ install:
     - pip install -r requirements.txt
     - pip install coverage pytest
     - python setup.py install
-# before_script:
-#     - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-#     - chmod +x ./cc-test-reporter
-#     - ./cc-test-reporter before-build
+before_script:
+    - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+    - chmod +x ./cc-test-reporter
+    - ./cc-test-reporter before-build
 script:
-    - pytest --run-slow
-    # - coverage run setup.py test
-# after_script:
-#     - coverage report -m
-#     - coverage xml
-#     - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT --debug
+    - coverage run setup.py test
+after_script:
+    - coverage report -m
+    - coverage xml
+    - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT --debug

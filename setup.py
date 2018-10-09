@@ -11,7 +11,10 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 VERSION = ""
 with open("woogenerator/__init__.py", "r") as fd:
     try:
-        VERSION = re.search(r"^__version__\s*=\s*['\"]([^\"]*)['\"]", fd.read(), re.MULTILINE)
+        VERSION = re.search(
+            r"^__version__\s*=\s*['\"]([^\"]*)['\"]", fd.read(),
+            re.MULTILINE
+        )
         VERSION = VERSION.group(1)
     except AttributeError:
         pass
@@ -23,28 +26,7 @@ if not VERSION:
 README = open(os.path.join(os.path.dirname(__file__), "README.md")).read()
 
 requirements = [
-    'bleach',
-    'ConfigArgParse',
-    'exitstatus',
-    'httplib2',
-    'kitchen',
-    'npyscreen',
-    'paramiko',
-    'phpserialize',
-    'piexif',
-    'PyMySQL',
-    'requests',
-    'simplejson',
-    'sshtunnel',
-    'tabulate',
-    'unicodecsv',
-    'google_api_python_client',
-    'PyYAML',
-    'wordpress-api',
-    'pyxero',
-    'bs4',
-    'dill',
-    'lxml'
+
 ]
 
 setup(
@@ -58,7 +40,32 @@ setup(
     packages=[
         'woogenerator', 'tests'
     ],
-    install_requires=requirements,
+    install_requires=[
+        'bleach',
+        'ConfigArgParse',
+        'exitstatus',
+        'httplib2',
+        'kitchen',
+        'npyscreen',
+        'paramiko',
+        'phpserialize',
+        'piexif',
+        'PyMySQL',
+        'requests',
+        'simplejson',
+        'sshtunnel',
+        'tabulate',
+        'unicodecsv',
+        'google_api_python_client',
+        'PyYAML',
+        'wordpress-api',
+        'pyxero',
+        'bs4',
+        'dill',
+        'lxml'
+    ],
     setup_requires=['pytest-runner'],
-    tests_require=requirements + ['pytest'],
+    tests_require=[
+        'pytest'
+    ],
 )
