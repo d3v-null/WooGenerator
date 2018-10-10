@@ -157,7 +157,7 @@ class SyncUpdate(Registrar):
         """
         Reduce the values in the sync warning for `handle` so that each object
         only shows the value for the `sub_handle`.
-        Assumes core representation of `handles` has a singular structure.
+        Assumes core representation of `handle` has a singular structure.
         `sub_handle` is most likely the primary key of the sub object.
         """
         if handle in self.sync_warnings_core:
@@ -179,9 +179,8 @@ class SyncUpdate(Registrar):
     def simplify_sync_warning_value_listed(self, handle, sub_handles):
         """
         Reduce the values in the sync warning for `handle` so that each object
-        only shows the value for the `sub_handle`.
-        Assumes core representation of `handles` has a listed structure.
-        `sub_handle` is most likely the primary key of the sub object.
+        only shows the value for the `sub_handles`.
+        Assumes core representation of `handle` has a listed structure.
         """
         if handle in self.sync_warnings_core:
             for sync_warning in self.sync_warnings_core.get(handle, {}):
