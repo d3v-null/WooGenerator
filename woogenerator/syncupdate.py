@@ -4,23 +4,22 @@ Utilites for storing and performing operations on pending updates
 
 from __future__ import absolute_import
 
-import traceback
 from collections import OrderedDict
 from copy import copy, deepcopy
 
+from past.builtins import cmp
 from tabulate import tabulate
+
+from six import text_type
 
 from .coldata import (ColDataAbstract, ColDataAttachment,
                       ColDataProductMeridian, ColDataProductVariationMeridian,
-                      ColDataWcProdCategory, ColDataWcProdCategory)
-# from .coldata import ColDataBase, ColDataProd, ColDataUser, ColDataWoo, ColDataXero, ColDataAttachment
-from .contact_objects import ContactAddress, FieldGroup
+                      ColDataWcProdCategory)
 from .matching import Match
 from .parsing.abstract import ImportObject
-from .utils import Registrar, SanitationUtils, TimeUtils
 from .parsing.api import ImportWooApiCategory
 from .parsing.woo import ImportWooCategory
-
+from .utils import Registrar, SanitationUtils, TimeUtils
 
 
 class SyncViolation(UserWarning):
@@ -33,6 +32,7 @@ class InvincibilityViolation(SyncViolation):
 
 class SemistaticViolation(SyncViolation):
     """Update violates a semistatic condition."""
+
 
 class UnwritableViolation(SyncViolation):
     """Update violates an unwritable condition."""
@@ -47,7 +47,7 @@ class SyncUpdate(Registrar):
     merge_mode = None
     master_target = None
     slave_target = None
-    # The target format of (m|s)_object, which gets immediately converted to core
+    # The target format of (m|s)_object, gets immediately converted to core
     object_target = 'gen-api'
     default_master_container = ImportObject
     default_slave_container = ImportObject
@@ -61,9 +61,10 @@ class SyncUpdate(Registrar):
         cls.merge_mode = merge_mode
         cls.default_last_sync = default_last_sync
 
-    def __init__(self, old_m_object_gen=None, old_s_object_gen=None, last_sync=None):
+    def __init__(
+        self, old_m_object_gen=None, old_s_object_gen=None, last_sync=None
+    ):
         super(SyncUpdate, self).__init__()
-
 
         if last_sync is None:
             last_sync = self.default_last_sync
@@ -112,7 +113,9 @@ class SyncUpdate(Registrar):
             excluding_properties=['sync']
         )
         if self.old_m_object_core.get('modified_gmt'):
-            self.m_time = self.parse_m_time(self.old_m_object_core['modified_gmt'])
+            self.m_time = self.parse_m_time(
+                self.old_m_object_core['modified_gmt']
+            )
 
     def set_old_s_object_gen(self, old_s_object_gen):
         self.old_s_object_gen = old_s_object_gen
@@ -124,7 +127,9 @@ class SyncUpdate(Registrar):
             excluding_properties=['sync']
         )
         if self.old_s_object_core.get('modified_gmt'):
-            self.s_time = self.parse_s_time(self.old_s_object_core['modified_gmt'])
+            self.s_time = self.parse_s_time(
+                self.old_s_object_core['modified_gmt']
+            )
 
     def set_new_m_object_gen(self, new_m_object_gen):
         self.master_container = type(new_m_object_gen)
@@ -287,8 +292,8 @@ class SyncUpdate(Registrar):
     @classmethod
     def make_index(cls, master_id, slave_id):
         return u"|".join([
-            u"m:%s" % unicode(master_id),
-            u"s:%s" % unicode(slave_id)
+            u"m:%s" % text_type(master_id),
+            u"s:%s" % text_type(slave_id)
         ])
 
     @property
@@ -296,7 +301,7 @@ class SyncUpdate(Registrar):
         return self.make_index(self.master_id, self.slave_id)
 
     def get_winner_name(self, m_time, s_time):
-        """Get the name of the database containing the winning object (master / slave)."""
+        """Get name of database containing winning object (master / slave)."""
         if not s_time:
             return self.master_name
         elif not m_time:
@@ -384,7 +389,7 @@ class SyncUpdate(Registrar):
         return response
 
     def old_handle_identical(self, handle):
-        """For given handle, check if the master value is similar to the slave value in old objects."""
+        """Check if handle's master / slave values are identical in old."""
         m_value = self.get_old_subject_value(handle, self.master_name)
         s_value = self.get_old_subject_value(handle, self.slave_name)
         response = m_value == s_value
@@ -395,7 +400,7 @@ class SyncUpdate(Registrar):
         return response
 
     def new_handle_similar(self, handle):
-        """For given handle, check if the master value is similar to the slave value in new objects."""
+        """Check if handle's master / slave values are similar in new."""
         m_value = self.get_new_subject_value(handle, self.master_name)
         s_value = self.get_new_subject_value(handle, self.slave_name)
         response = self.values_similar(handle, m_value, s_value)
@@ -406,7 +411,7 @@ class SyncUpdate(Registrar):
         return response
 
     def new_handle_identical(self, handle):
-        """For given handle, check if the master value is equal to the slave value in new objects."""
+        """Check if handle's master / slave values are identical in new."""
         m_value = self.get_new_subject_value(handle, self.master_name)
         s_value = self.get_new_subject_value(handle, self.slave_name)
         response = m_value == s_value
@@ -417,7 +422,7 @@ class SyncUpdate(Registrar):
         return response
 
     def col_static(self, handle, subject):
-        """For given handle, check if the old value is similar to the new value in subject."""
+        """Check if handle's old / new values are identical in `subject`."""
         o_value = self.get_old_subject_value(handle, subject)
         n_value = self.get_new_subject_value(handle, subject)
         response = o_value == n_value
@@ -428,7 +433,7 @@ class SyncUpdate(Registrar):
         return response
 
     def col_semi_static(self, handle, subject):
-        """For given handle, check if the old value is equal to the new value in subject."""
+        """Check if handle's old / new values are similar in `subject`."""
         o_value = self.get_old_subject_value(handle, subject)
         n_value = self.get_new_subject_value(handle, subject)
         response = self.values_similar(handle, o_value, n_value)
@@ -439,22 +444,22 @@ class SyncUpdate(Registrar):
         return response
 
     def m_handle_static(self, handle):
-        """For given handle, check if the old value is equal to the new value in master."""
+        """Check if handle's old / new values are identical in master."""
         # TODO: deprecate this
         return self.col_static(handle, self.master_name)
 
     def s_handle_static(self, handle):
-        """For given handle, check if the old value is equal to the new value in slave."""
+        """Check if handle's old / new values are identical in slave."""
         # TODO: deprecate this
         return self.col_static(handle, self.slave_name)
 
     def m_handle_semi_static(self, handle):
-        """For given handle, check if the old value is similar to the new value in master."""
+        """Check if handle's old / new values are similar in master."""
         # TODO: deprecate this
         return self.col_semi_static(handle, self.master_name)
 
     def s_handle_semi_static(self, handle):
-        """For given handle, check if the old value is similar to the new value in slave."""
+        """Check if handle's old / new values are similar in slave."""
         # TODO: deprecate this
         return self.col_semi_static(handle, self.slave_name)
 
@@ -467,7 +472,7 @@ class SyncUpdate(Registrar):
             right += " (%s %s)" % (norm2, type(norm2))
 
         return u"testing handle %s: %s | %s -> %s" % (
-            unicode(handle),
+            text_type(handle),
             left,
             right,
             SanitationUtils.bool_to_truish_string(res)
@@ -598,7 +603,7 @@ class SyncUpdate(Registrar):
                 # stupid fix for tabulate
                 table = [
                     OrderedDict([
-                        (key, "_%s" % value) \
+                        (key, "_%s" % value)
                         for key, value in odict.items()
                     ]) for odict in table
                 ]
@@ -645,8 +650,9 @@ class SyncUpdate(Registrar):
 
     def set_loser_value(self, **update_params):
         for key in ['handle', 'subject', 'old_value', 'new_value']:
-            assert key in update_params, 'missing mandatory update param, %s from %s' % (
-                key, update_params)
+            assert key in update_params, \
+                'missing mandatory update param, %s from %s' % (
+                    key, update_params)
 
         loser = update_params['subject']
         handle = update_params['handle']
@@ -664,7 +670,8 @@ class SyncUpdate(Registrar):
         prev_loser_val = deepcopy(new_loser_object.get(handle))
 
         loser_target = self.get_subject_target(loser)
-        loser_delta = self.coldata_class.get_handle_property(handle, 'delta', loser_target)
+        loser_delta = self.coldata_class.get_handle_property(
+            handle, 'delta', loser_target)
         if loser_delta:
             delta_col = self.coldata_class.delta_col(handle)
             if not new_loser_object.get(delta_col):
@@ -691,7 +698,8 @@ class SyncUpdate(Registrar):
                 self.m_deltas = True
 
         self.updates += 1
-        static = self.coldata_class.get_handle_property(handle, 'static', loser_target)
+        static = self.coldata_class.get_handle_property(
+            handle, 'static', loser_target)
         if static:
             self.static = False
         if(reason in ['updating', 'deleting', 'reflect']):
@@ -702,13 +710,15 @@ class SyncUpdate(Registrar):
                 self.important_static = False
 
         assert \
-            prev_old_val_hash == self.snapshot_hash(update_params['old_value']), \
+            prev_old_val_hash == \
+            self.snapshot_hash(update_params['old_value']), \
             "should never update old_value"
 
     def loser_update(self, **update_params):
         for key in ['handle', 'subject', 'old_value', 'new_value']:
-            assert key in update_params, 'missing mandatory update param, %s from %s' % (
-                key, update_params)
+            assert key in update_params, \
+                'missing mandatory update param, %s from %s' % (
+                    key, update_params)
 
         try:
             self.set_loser_value(**update_params)
@@ -716,10 +726,7 @@ class SyncUpdate(Registrar):
             update_params['reason'] = 'invincible'
         except SemistaticViolation:
             update_params['reason'] = 'semistatic'
-        # except Exception as exc:
-        #     raise UserWarning("Unhandled Exception in set_loser_value:\n%s" % (
-        #         traceback.format_exc(exc)
-        #     ))
+
         else:
             self.add_sync_warning(**update_params)
             return
@@ -762,10 +769,14 @@ class SyncUpdate(Registrar):
 
         winner = None
 
-        master_read = self.coldata_class.get_handle_property(handle, 'read', self.master_target)
-        slave_read = self.coldata_class.get_handle_property(handle, 'read', self.slave_target)
-        # master_write = self.coldata_class.get_handle_property(handle, 'write', self.master_target)
-        # slave_write = self.coldata_class.get_handle_property(handle, 'write', self.slave_target)
+        master_read = self.coldata_class.get_handle_property(
+            handle, 'read', self.master_target)
+        slave_read = self.coldata_class.get_handle_property(
+            handle, 'read', self.slave_target)
+        # master_write = self.coldata_class.get_handle_property(
+        #     handle, 'write', self.master_target)
+        # slave_write = self.coldata_class.get_handle_property(
+        #     handle, 'write', self.slave_target)
 
         if bool(master_read) ^ bool(slave_read):
             if not slave_read and update_params['m_value']:
@@ -780,8 +791,10 @@ class SyncUpdate(Registrar):
                 update_params['m_handle_time'], update_params['s_handle_time']
             )
 
-        if self.merge_mode == 'merge' \
-        and not (update_params['m_value'] and update_params['s_value']):
+        if (
+            self.merge_mode == 'merge'
+            and not (update_params['m_value'] and update_params['s_value'])
+        ):
             if winner == self.slave_name and not update_params['s_value']:
                 winner = self.master_name
                 update_params['reason'] = 'merging'
@@ -834,7 +847,7 @@ class SyncUpdate(Registrar):
         )
 
     def update(self, sync_handles=None):
-        # TODO: get rid of reference to "data", and just read off coldata instead.
+        # TODO: get rid of reference to "data", just read off coldata instead.
         if sync_handles is None:
             sync_handles = self.get_sync_handles()
         for handle, _ in sync_handles.items():
@@ -843,19 +856,23 @@ class SyncUpdate(Registrar):
     def get_info_components(self, info_fmt="%s"):
         return [
             (info_fmt % ("static", "yes" if self.static else "no")),
-            (info_fmt % ("important_static", "yes" if self.important_static else "no"))
+            (info_fmt % (
+                "important_static", "yes" if self.important_static else "no"))
         ]
 
     def containerize_master(self, master_data):
-        master_data_gen = self.coldata_class.translate_data_to(deepcopy(master_data), self.object_target)
+        master_data_gen = self.coldata_class.translate_data_to(
+            deepcopy(master_data), self.object_target)
         if 'rowcount' not in master_data_gen:
             master_data_gen['rowcount'] = 0
         if 'ID' not in master_data_gen:
             master_data_gen['ID'] = ''
-        return self.master_container(master_data_gen, parent=self.master_parent)
+        return self.master_container(
+            master_data_gen, parent=self.master_parent)
 
     def containerize_slave(self, slave_data):
-        slave_data_gen = self.coldata_class.translate_data_to(deepcopy(slave_data), self.object_target)
+        slave_data_gen = self.coldata_class.translate_data_to(
+            deepcopy(slave_data), self.object_target)
         return self.slave_container(slave_data_gen, parent=self.slave_parent)
 
     @property
@@ -964,7 +981,7 @@ class SyncUpdate(Registrar):
                 #     new_val = self.get_new_subject_value(handle, winner)
                 #     updates_core[handle] = new_val
         if self.DEBUG_UPDATE:
-            self.register_message(u"returned %s" % unicode(updates_core))
+            self.register_message(u"returned %s" % text_type(updates_core))
         return updates_core
 
     def get_slave_updates(self):
@@ -975,16 +992,14 @@ class SyncUpdate(Registrar):
 
     def get_slave_updates_native(self):
         updates_core = self.get_slave_updates()
-        updates_native = self.coldata_class.translate_data_to(updates_core, self.slave_target)
-        # if self.DEBUG_UPDATE:
-        #     self.register_message(u"returned %s" % unicode(updates_native))
+        updates_native = self.coldata_class.translate_data_to(
+            updates_core, self.slave_target)
         return updates_native
 
     def get_master_updates_native(self):
         updates_core = self.get_master_updates()
-        updates_native = self.coldata_class.translate_data_to(updates_core, self.master_target)
-        # if self.DEBUG_UPDATE:
-        #     self.register_message(u"returned %s" % unicode(updates_native))
+        updates_native = self.coldata_class.translate_data_to(
+            updates_core, self.master_target)
         return updates_native
 
     def display_slave_changes(self, tablefmt=None):
@@ -1014,8 +1029,11 @@ class SyncUpdate(Registrar):
                 additional_updates['ID'] = pkey
 
             if updates:
-                updates_table = OrderedDict(
-                    [(key, [value]) for key, value in additional_updates.items() + updates.items()])
+                updates_table = OrderedDict([
+                    (key, [value])
+                    for key, value
+                    in additional_updates.items() + updates.items()
+                ])
                 print_elements.append(
                     info_delimeter.join([
                         # subtitle_fmt % "all updates" ,
@@ -1027,7 +1045,8 @@ class SyncUpdate(Registrar):
                 # return (pkey, all_updates_json_base64)
             else:
                 print_elements.append(
-                    "NO %s CHANGES: no user_updates or meta_updates" % self.slave_name)
+                    "NO %s CHANGES: no user_updates or meta_updates"
+                    % self.slave_name)
 
             return info_delimeter.join(print_elements)
         return ""
@@ -1059,8 +1078,11 @@ class SyncUpdate(Registrar):
                 additional_updates['ID'] = pkey
 
             if updates:
-                updates_table = OrderedDict(
-                    [(key, [value]) for key, value in additional_updates.items() + updates.items()])
+                updates_table = OrderedDict([
+                    (key, [value])
+                    for key, value
+                    in additional_updates.items() + updates.items()
+                ])
                 print_elements.append(
                     info_delimeter.join([
                         # subtitle_fmt % "changes" ,
@@ -1072,7 +1094,8 @@ class SyncUpdate(Registrar):
                 # return (pkey, all_updates_json_base64)
             else:
                 print_elements.append(
-                    "NO %s CHANGES: no user_updates or meta_updates" % self.master_name)
+                    "NO %s CHANGES: no user_updates or meta_updates"
+                    % self.master_name)
 
             return info_delimeter.join(print_elements)
         return ""
@@ -1101,8 +1124,6 @@ class SyncUpdate(Registrar):
 
     def __cmp__(self, other):
         return -cmp(self.b_time, other.b_time)
-        # return -cmp((self.important_updates, self.updates, - self.l_time),
-        # (other.important_updates, other.updates, - other.l_time))
 
     def __str__(self):
         return "update < %7s | %7s >" % (self.master_id, self.slave_id)
@@ -1110,289 +1131,6 @@ class SyncUpdate(Registrar):
     def __nonzero__(self):
         return self.e_updated
 
-
-# class SyncUpdateUsr(SyncUpdate):
-#     coldata_class = ColDataUser
-#     slave_target = 'wp'
-#     master_target = 'act'
-#
-#     def __init__(self, *args, **kwargs):
-#         super(SyncUpdateUsr, self).__init__(*args, **kwargs)
-#
-#         self.m_time = self.old_m_object_core.act_modtime
-#         self.s_time = self.old_s_object_core.wp_modtime
-#         self.b_time = self.old_m_object_core.last_sale
-#         self.winner = self.get_winner_name(self.m_time, self.s_time)
-#
-#         # extra heuristics for merge mode:
-#         if self.merge_mode == 'merge' and not self.s_mod:
-#             might_be_s_edited = False
-#             if not self.old_s_object_core.addresses_act_like():
-#                 might_be_s_edited = True
-#             elif self.old_s_object_core.get('Home Country') == 'AU':
-#                 might_be_s_edited = True
-#             elif self.old_s_object_core.username_act_like():
-#                 might_be_s_edited = True
-#             if might_be_s_edited:
-#                 # print repr(self.old_s_object_core), "might be edited"
-#                 self.s_time = self.t_time
-#                 if self.m_mod:
-#                     self.static = False
-#                     # self.important_static = False
-#
-#     @property
-#     def master_id(self):
-#         return self.get_new_subject_value('MYOB Card ID', self.master_name)
-#
-#     @property
-#     def slave_id(self):
-#         return self.get_new_subject_value("Wordpress ID", self.slave_name)
-#
-#     def values_similar(self, handle, m_value, s_value):
-#         response = super(SyncUpdateUsr, self).values_similar(
-#             handle, m_value, s_value)
-#         if not response:
-#             if handle.lower() in ['phone', 'mobile phone', 'home phone', 'fax']:
-#                 m_phone = SanitationUtils.similar_phone_comparison(m_value)
-#                 s_phone = SanitationUtils.similar_phone_comparison(s_value)
-#                 plen = min(len(m_phone), len(s_phone))
-#                 if plen > 7 and m_phone[-plen:] == s_phone[-plen:]:
-#                     response = True
-#             elif "role" == handle.lower():
-#                 m_role = SanitationUtils.similar_comparison(m_value)
-#                 s_role = SanitationUtils.similar_comparison(s_value)
-#                 if m_role == 'rn':
-#                     m_role = ''
-#                 if s_role == 'rn':
-#                     s_role = ''
-#                 if m_role == s_role:
-#                     response = True
-#             elif "address" in handle.lower() and isinstance(m_value, ContactAddress):
-#                 if m_value != s_value:
-#                     pass
-#                     # print "M: ", m_value.__str__(out_schema="flat"), "S: ",
-#                     # s_value.__str__(out_schema="flat")
-#                 response = m_value.similar(s_value)
-#             elif "web site" in handle.lower():
-#                 if SanitationUtils.similar_url_comparison(
-#                         m_value) == SanitationUtils.similar_url_comparison(s_value):
-#                     response = True
-#
-#         # if self.DEBUG_UPDATE:
-#         #     self.register_message(self.test_to_str(
-#         #         handle,
-#         #         SanitationUtils.coerce_unicode(m_value),
-#         #         SanitationUtils.coerce_unicode(s_value),
-#         #         response
-#         #     ))
-#         return response
-#
-#     def get_handle_mod_time(self, handle, subject):
-#         response = self.get_subject_mod_time(subject)
-#         if subject == self.master_name:
-#             tracked_handles_items = self.coldata_class.get_master_tracked_handles().items()
-#             future_tracked_handles_items = self.coldata_class.get_act_future_tracked_handles().items()
-#             old_object = self.old_m_object_core
-#         elif subject == self.slave_name:
-#             tracked_handles_items = self.coldata_class.get_wp_tracked_handles().items()
-#             future_tracked_handles_items = []
-#             old_object = self.old_s_object_core
-#
-#         if self.coldata_class.data.get(handle, {}).get('tracked'):
-#             col_tracking_name = self.coldata_class.mod_time_handle(handle)
-#         else:
-#             col_tracking_name = None
-#             for tracking_name, tracked_handles in tracked_handles_items:
-#                 if handle in tracked_handles:
-#                     col_tracking_name = tracking_name
-#
-#         if col_tracking_name:
-#             if old_object.get(col_tracking_name):
-#                 response = self.parse_subject_time(
-#                     old_object.get(col_tracking_name), subject
-#                 )
-#             elif col_tracking_name not in future_tracked_handles_items:
-#                 response = None
-#         return response
-#
-#     def get_info_components(self, info_fmt="%s"):
-#         info_components = super(
-#             SyncUpdateUsr, self).get_info_components(info_fmt)
-#         info_components += [
-#             (info_fmt % ("Last Sale", TimeUtils.wp_time_to_string(
-#                 self.b_time))) if self.b_time else "No Last Sale",
-#             (info_fmt % ("%s Mod Time" % self.master_name, TimeUtils.wp_time_to_string(
-#                 self.m_time))) if self.m_mod else "%s Not Modded" % self.master_name,
-#             (info_fmt % ("%s Mod Time" % self.slave_name, TimeUtils.wp_time_to_string(
-#                 self.s_time))) if self.s_mod else "%s Not Modded" % self.slave_name
-#         ]
-#         for tracking_name, cols in self.coldata_class.get_act_tracked_handles().items():
-#             handle = cols[0]
-#             m_handle_mod_time = self.get_handle_mod_time(handle, self.master_name)
-#             s_handle_mod_time = self.get_handle_mod_time(handle, self.slave_name)
-#             if m_handle_mod_time or s_handle_mod_time:
-#                 info_components.append(info_fmt % (tracking_name, '%s: %s; %s: %s' % (
-#                     self.master_name,
-#                     TimeUtils.wp_time_to_string(m_handle_mod_time),
-#                     self.slave_name,
-#                     TimeUtils.wp_time_to_string(s_handle_mod_time),
-#                 )))
-#         return info_components
-#
-#     def get_slave_updates_native_rec(self, handle, updates=None):
-#         if updates is None:
-#             updates = OrderedDict()
-#         if self.DEBUG_UPDATE:
-#             SanitationUtils.safe_print(
-#                 "getting updates for handle %s, updates: %s" % (handle, str(updates)))
-#         if handle in self.coldata_class.data.keys():
-#             data = self.coldata_class.data[handle]
-#             if data.get(self.slave_target):
-#                 data_target = data.get(self.slave_target, {})
-#                 if not data_target.get('final') and data_target.get('key'):
-#                     updates[data_target.get(
-#                         'key')] = self.new_s_object_core.get(handle)
-#             if data.get('aliases'):
-#                 data_aliases = data.get('aliases')
-#                 for alias in data_aliases:
-#                     if self.s_handle_semi_static(alias):
-#                         continue
-#                     updates = self.get_slave_updates_native_rec(
-#                         alias, updates)
-#         return updates
-#
-#     def get_slave_updates_recursive(self, handle, updates=None):
-#         if updates is None:
-#             updates = OrderedDict()
-#         if self.DEBUG_UPDATE:
-#             self.register_message(u"checking %s" % unicode(handle))
-#         if handle in self.coldata_class.data:
-#             if self.DEBUG_UPDATE:
-#                 self.register_message(u"handle exists")
-#             data = self.coldata_class.data[handle]
-#             if data.get(self.slave_target):
-#                 if self.DEBUG_UPDATE:
-#                     self.register_message(u"target exists")
-#                 data_target = data.get(self.slave_target, {})
-#                 if not data_target.get('final') and data_target.get('key'):
-#                     new_val = self.new_s_object_core.get(handle)
-#                     updates[handle] = new_val
-#                     if self.DEBUG_UPDATE:
-#                         self.register_message(u"newval: %s" % repr(new_val))
-#             if data.get('aliases'):
-#                 if self.DEBUG_UPDATE:
-#                     self.register_message(u"has aliases")
-#                 data_aliases = data['aliases']
-#                 for alias in data_aliases:
-#                     if self.s_handle_semi_static(alias):
-#                         if self.DEBUG_UPDATE:
-#                             self.register_message(u"Alias semistatic")
-#                         continue
-#                     else:
-#                         updates = self.get_slave_updates_recursive(
-#                             alias, updates)
-#         else:
-#             if self.DEBUG_UPDATE:
-#                 self.register_message(u"handle doesn't exist")
-#         return updates
-#
-#     def get_master_updates_recursive(self, handle, updates=None):
-#         if updates is None:
-#             updates = OrderedDict()
-#         if self.DEBUG_UPDATE:
-#             self.register_message(u"checking %s" % unicode(handle))
-#         if handle in self.coldata_class.data:
-#             if self.DEBUG_UPDATE:
-#                 self.register_message(u"handle exists")
-#             data = self.coldata_class.data[handle]
-#             if self.DEBUG_UPDATE:
-#                 self.register_message(u"data: %s, target: %s" % (
-#                     data, self.master_target
-#                 ))
-#             if data.get(self.master_target):
-#                 if self.DEBUG_UPDATE:
-#                     self.register_message(u"target exists")
-#                 new_val = self.new_m_object_core.get(handle)
-#                 updates[handle] = new_val
-#                 if self.DEBUG_UPDATE:
-#                     self.register_message(u"newval: %s" % repr(new_val))
-#             if data.get('aliases'):
-#                 if self.DEBUG_UPDATE:
-#                     self.register_message(u"has aliases")
-#                 data_aliases = data['aliases']
-#                 for alias in data_aliases:
-#                     if self.m_handle_semi_static(alias):
-#                         if self.DEBUG_UPDATE:
-#                             self.register_message(u"Alias semistatic")
-#                         continue
-#                     else:
-#                         updates = self.get_master_updates_recursive(
-#                             alias, updates)
-#         else:
-#             if self.DEBUG_UPDATE:
-#                 self.register_message(u"handle doesn't exist")
-#         return updates
-#
-#
-# class SyncUpdateUsrApi(SyncUpdateUsr):
-#     slave_target = 'wp-api'
-#
-#     def s_validate_handle(self, handle, value):
-#         # TODO: Probably need more validation here
-#         if handle.lower() in ['e-mail']:
-#             if not value:
-#                 raise UserWarning("email does not look right")
-#         return value
-#
-#     def get_slave_updates_native_rec(self, handle, updates=None):
-#         if updates is None:
-#             updates = OrderedDict()
-#         if self.DEBUG_UPDATE:
-#             self.register_message(u"checking %s : %s" %
-#                                   (unicode(handle), self.coldata_class.data.get(handle)))
-#         if handle in self.coldata_class.data:
-#             if self.DEBUG_UPDATE:
-#                 self.register_message(u"handle exists")
-#             data = self.coldata_class.data[handle]
-#             if data.get(self.slave_target):
-#                 if self.DEBUG_UPDATE:
-#                     self.register_message(u"wp-api exists")
-#                 data_target = data.get(self.slave_target, {})
-#                 if not data_target.get('final') and data_target.get('key'):
-#                     new_val = self.new_s_object_core.get(handle)
-#                     try:
-#                         new_val = self.s_validate_handle(handle, new_val)
-#                     except UserWarning:
-#                         return updates
-#                     new_key = handle
-#                     if 'key' in data_target:
-#                         new_key = data_target.get('key')
-#                     if data_target.get('meta'):
-#                         if 'meta' not in updates:
-#                             updates['meta'] = OrderedDict()
-#                         updates['meta'][new_key] = new_val
-#                     else:
-#                         updates[new_key] = new_val
-#                     if self.DEBUG_UPDATE:
-#                         self.register_message(u"newval: %s" % repr(new_val))
-#                     if self.DEBUG_UPDATE:
-#                         self.register_message(u"newkey: %s" % repr(new_key))
-#             if data.get('aliases'):
-#                 if self.DEBUG_UPDATE:
-#                     self.register_message(u"has aliases")
-#                 data_aliases = data['aliases']
-#                 for alias in data_aliases:
-#                     if self.s_handle_semi_static(alias):
-#                         if self.DEBUG_UPDATE:
-#                             self.register_message(u"Alias semistatic")
-#                         continue
-#                     else:
-#                         updates = self.get_slave_updates_native_rec(
-#                             alias, updates)
-#         else:
-#             if self.DEBUG_UPDATE:
-#                 self.register_message(u"handle doesn't exist")
-#         return updates
 
 class SyncUpdateGen(SyncUpdate):
     """
@@ -1404,6 +1142,7 @@ class SyncUpdateGen(SyncUpdate):
     @property
     def master_id(self):
         return self.get_new_subject_value('rowcount', self.master_name)
+
 
 class SyncUpdateProd(SyncUpdateGen):
     """
@@ -1418,6 +1157,7 @@ class SyncUpdateProd(SyncUpdateGen):
     def slave_id(self):
         return self.get_new_subject_value('id', self.slave_name)
 
+
 class SyncUpdateWooMixin(object):
     slave_target = 'wc-wp-api-v2-edit'
 
@@ -1425,6 +1165,7 @@ class SyncUpdateWooMixin(object):
 class SyncUpdateProdWoo(SyncUpdateProd, SyncUpdateWooMixin):
     coldata_class = SyncUpdateProd.coldata_class
     slave_target = SyncUpdateWooMixin.slave_target
+
 
 class SyncUpdateProdXero(SyncUpdateProd):
     coldata_class = SyncUpdateProd.coldata_class
@@ -1445,6 +1186,7 @@ class SyncUpdateVarWoo(SyncUpdateProdWoo):
         old_m_object_gen = self.old_m_object_gen
         return old_m_object_gen.variation_indexer(old_m_object_gen)
 
+
 class SyncUpdateImgWoo(SyncUpdateGen, SyncUpdateWooMixin):
     coldata_class = ColDataAttachment
     slave_target = SyncUpdateWooMixin.slave_target
@@ -1460,6 +1202,7 @@ class SyncUpdateImgWoo(SyncUpdateGen, SyncUpdateWooMixin):
     def slave_id(self):
         return self.get_new_subject_value('id', self.slave_name)
 
+
 class SyncUpdateCatWoo(SyncUpdateGen, SyncUpdateWooMixin):
     coldata_class = ColDataWcProdCategory
     slave_target = SyncUpdateWooMixin.slave_target
@@ -1469,6 +1212,7 @@ class SyncUpdateCatWoo(SyncUpdateGen, SyncUpdateWooMixin):
     @property
     def slave_id(self):
         return self.get_new_subject_value('term_id', self.slave_name)
+
 
 class UpdateList(list, Registrar):
     """
@@ -1490,9 +1234,8 @@ class UpdateList(list, Registrar):
 
     def append(self, sync_update):
         assert issubclass(sync_update.__class__, self.supported_type), \
-        "object must be subclass of %s not %s" % (
-            str(self.supported_type.__name__), str(sync_update.__class__)
-        )
+            "object must be subclass of %s not %s" % (
+            str(self.supported_type.__name__), str(sync_update.__class__))
         index = self.indexer(sync_update)
         if index not in self.indices:
             self.indices.append(index)
@@ -1535,7 +1278,6 @@ class UpdateList(list, Registrar):
             prefix = '<div class="updateList">'
             suffix = '</div>'
         return prefix + delimeter.join([
-            SanitationUtils.coerce_bytes(
-                update.tabulate(tablefmt=tablefmt
-            )) for update in self if update
+            SanitationUtils.coerce_bytes(update.tabulate(tablefmt=tablefmt))
+            for update in self if update
         ]) + suffix
