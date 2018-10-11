@@ -1330,7 +1330,11 @@ def do_merge_prod(matches, parsers, updates, settings):
         sync_update = get_update_prod(settings, m_object, s_object)
 
         # Assumes that GDrive is read only, doesn't care about master
-        # updates
+        #   updates
+
+        if Registrar.DEBUG_VARS:
+            Registrar.register_message("prod update %d:\n%s" % (
+                count, sync_update.tabulate()))
 
         if sync_update.m_updated:
             updates.master.append(sync_update)
@@ -1378,15 +1382,27 @@ def do_merge_prod(matches, parsers, updates, settings):
         updates.masterless.append(sync_update)
 
 
-def do_merge_var(matches, parsers, updates, settings):
+def get_update_var(settings, m_object, s_object):
+    sync_update = settings.syncupdate_class_var(m_object, s_object)
+    sync_update.update(settings.sync_handles_var)
 
+    if settings.do_images:
+        sync_update.simplify_sync_warning_value_singular(
+            'image', ['id', 'title', 'source_url'])
+
+    if settings.do_attributes:
+        sync_update.simplify_sync_warning_value_listed(
+            'attributes', ['term_id'])
+
+    return sync_update
+
+
+def do_merge_var(matches, parsers, updates, settings):
     if not (settings.do_variations and settings.do_sync):
         return
 
     if not hasattr(updates, 'variation'):
         updates.variation = UpdateNamespace()
-
-    sync_handles = settings.sync_handles_var
 
     if matches.variation.duplicate:
         exc = UserWarning(
@@ -1406,17 +1422,10 @@ def do_merge_var(matches, parsers, updates, settings):
             matches.variation.masterless.append(match)
             continue
 
-        sync_update = settings.syncupdate_class_var(m_object, s_object)
+        sync_update = get_update_var(settings, m_object, s_object)
 
-        sync_update.update(sync_handles)
-
-        if settings.do_images:
-            sync_update.simplify_sync_warning_value_singular(
-                'image', ['id', 'title', 'source_url'])
-
-        if settings.do_attributes:
-            sync_update.simplify_sync_warning_value_listed(
-                'attributes', ['term_id'])
+        # Assumes that GDrive is read only, doesn't care about master
+        #   updates
 
         if Registrar.DEBUG_VARS:
             Registrar.register_message("var update %d:\n%s" % (
@@ -1441,9 +1450,7 @@ def do_merge_var(matches, parsers, updates, settings):
         if m_object.get('post_status') == 'trash':
             continue
 
-        sync_update = settings.syncupdate_class_var(m_object, None)
-
-        sync_update.update(sync_handles)
+        sync_update = get_update_var(settings, m_object, None)
 
         Registrar.register_message("Will create variation %d:\n%s" % (
             count, m_object.identifier))
@@ -1454,9 +1461,10 @@ def do_merge_var(matches, parsers, updates, settings):
     for count, match in enumerate(matches.variation.masterless):
         s_object = match.s_object
 
-        sync_update = settings.syncupdate_class_var(None, s_object)
         Registrar.register_message("will delete variation: %d:\n%s" % (
             count, s_object.identifier))
+
+        sync_update = get_update_var(settings, None, s_object)
 
         updates.variation.masterless.append(sync_update)
         # TODO: figure out which attribute terms to delete from parent?
@@ -2415,7 +2423,7 @@ def do_updates_var_slave(updates, parsers, settings, results):
         endpoint_plural = sync_client_class.endpoint_plural
         assert isinstance(endpoint_plural, string_types)
     except (AssertionError, AttributeError):
-        endpoint_plural = "%s" % endpoint_singular
+        endpoint_plural = "%ss" % endpoint_singular
 
     change_updates = updates.variation.slave
     if settings.do_problematic:
