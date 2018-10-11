@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import base64
 import cgi
 import functools
+import pdb
 import inspect
 import itertools
 import json
@@ -78,7 +79,8 @@ class Registrar(object):
         if new:
             pass
         self.register_error(
-            "Object [index: %s] already exists in register %s" % (index, register_name))
+            "Object [index: %s] already exists in register %s" %
+            (index, register_name))
 
     @classmethod
     def get_object_rowcount(cls, object_data):
@@ -104,7 +106,8 @@ class Registrar(object):
             return object_data.identifier
         else:
             raise UserWarning(
-                '%s object is not identifiable: does not have attr "identifier"' % (
+                '%s object is not identifiable: '
+                'does not have attr "identifier"' % (
                     type(object_data)
                 )
             )
@@ -115,15 +118,16 @@ class Registrar(object):
 
     @classmethod
     def exception_resolver(cls, new, _, index, register_name=''):
-        raise Exception("could not register %s in %s. \nDuplicate index: %s" % (
-            str(new), register_name, index))
+        raise Exception(
+            "could not register %s in %s. \nDuplicate index: %s" %
+            (str(new), register_name, index))
 
     @classmethod
     def duplicate_obj_exc_resolver(cls, new, old, index, register_name=''):
-        assert hasattr(
-            new, 'rowcount'), 'new object type: %s should have a .rowcount attr' % type(new)
-        assert hasattr(
-            old, 'rowcount'), 'old object type: %s should have a .rowcount attr' % type(old)
+        assert hasattr(new, 'rowcount'), \
+            'new object type: %s should have a .rowcount attr' % type(new)
+        assert hasattr(old, 'rowcount'), \
+            'old object type: %s should have a .rowcount attr' % type(old)
         raise Exception(
             ("could not register %s in %s. \n"
              "Duplicate index: %s appears in rowcounts %s and %s"
@@ -152,11 +156,13 @@ class Registrar(object):
 
     @classmethod
     def print_anything(cls, index, thing, delimeter):
-        print cls.string_anything(index, thing, delimeter)
+        print(cls.string_anything(index, thing, delimeter))
 
     @classmethod
-    def register_anything(cls, thing, register, indexer=None, resolver=None,
-                          singular=True, unique=True, register_name='', container=None):
+    def register_anything(
+        cls, thing, register, indexer=None, resolver=None, singular=True,
+        unique=True, register_name='', container=None
+    ):
         if resolver is None:
             resolver = cls.conflict_resolver
         if indexer is None:
@@ -167,11 +173,11 @@ class Registrar(object):
         try:
             if callable(indexer):
                 if cls.DEBUG_UTILS:
-                    print "INDEXER IS CALLABLE"
+                    print("INDEXER IS CALLABLE")
                 index = indexer(thing)
             else:
                 if cls.DEBUG_UTILS:
-                    print "INDEXER IS NOT CALLABLE"
+                    print("INDEXER IS NOT CALLABLE")
                 index = indexer
             assert hasattr(index, '__hash__'), "Index must be hashable"
             assert index == index, "index must support eq"
@@ -254,7 +260,7 @@ class Registrar(object):
     @classmethod
     def register_progress(cls, message):
         if cls.DEBUG_PROGRESS:
-            print DebugUtils.hashify(message)
+            print(DebugUtils.hashify(message))
 
     @classmethod
     def get_message_items(cls, verbosity=0):
@@ -279,16 +285,17 @@ class Registrar(object):
         _, _, traceback_ = sys.exc_info()
         traceback.print_exception(type(exc), exc, traceback_)
         if cls.DEBUG_TRACE:
-            import pdb; pdb.post_mortem(traceback_)
+            pdb.post_mortem(traceback_)
         else:
             raise exc
 
     @classmethod
     def increment_stack_count(cls, name=''):
-        if not name in cls.stack_counts:
+        if name not in cls.stack_counts:
             cls.stack_counts[name] = Counter()
         stack = ' -> '.join([
-            line.strip().split('\n')[0] for line in list(reversed(traceback.format_stack()))[3:7]
+            line.strip().split('\n')[0]
+            for line in list(reversed(traceback.format_stack()))[3:7]
         ])
         cls.stack_counts[name].update({stack: 1})
 
