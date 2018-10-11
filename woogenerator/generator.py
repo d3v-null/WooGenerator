@@ -1305,9 +1305,6 @@ def get_update_prod(settings, m_object, s_object):
 def do_merge_prod(matches, parsers, updates, settings):
     """Return a description of updates required to merge `matches`."""
 
-    if settings.do_variations:
-        updates.variation = UpdateNamespace()
-
     if not settings.do_sync:
         return
 
@@ -2369,6 +2366,7 @@ def upload_variation_changes_slave(
             pkey = sync_update.slave_id
             parent_pkey = sync_update.new_s_object['parent_id']
             changes = sync_update.get_slave_updates_native()
+            response_raw = client.upload_changes(
                 pkey, changes, parent_pkey=parent_pkey)
             response_api_data = response_raw.json()
         except Exception as exc:
