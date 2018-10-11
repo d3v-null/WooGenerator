@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import re
 from collections import OrderedDict
 from copy import deepcopy
+from past.builtins import cmp
 
 from six import integer_types
 

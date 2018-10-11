@@ -335,6 +335,9 @@ class ImportShopProductMixin(object):
 
     def to_dict(self):
         response = {}
+        # TODO: when a product belongs to a "virtual" category, don't include
+        #     it in this list. e.g. Mosaic Minerals Accessories.
+
         if hasattr(self, 'categories'):
             response['category_objects'] = self.categories.values()
         if hasattr(self, 'attachments'):

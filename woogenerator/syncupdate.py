@@ -200,6 +200,8 @@ class SyncUpdate(Registrar):
                                 new_value.update({
                                     sub_handle: value.get(sub_handle)
                                 })
+                        if not new_value:
+                            continue
                         new_values.append(new_value)
                     sync_warning[key] = new_values
 

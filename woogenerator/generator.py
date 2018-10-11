@@ -131,9 +131,6 @@ python -m woogenerator.generator \
 """
 
 
-
-
-
 def timediff(settings):
     """Return time elapsed since start."""
     return time.time() - settings.start_time
@@ -1283,6 +1280,28 @@ def do_merge_attributes(matches, parsers, updates, settings):
         raise NotImplementedError("Do Merge Attributes not implemented")
 
 
+def get_update_prod(settings, m_object, s_object):
+    """Return a description of updates required to merge these products."""
+
+    sync_update = settings.syncupdate_class_prod(m_object, s_object)
+    sync_update.update(settings.sync_handles_prod)
+
+    if settings.do_categories:
+        sync_update.simplify_sync_warning_value_listed(
+            'product_categories', ['term_id'])
+
+    if settings.do_images:
+        sync_update.simplify_sync_warning_value_listed(
+            'attachment_objects', ['id', 'title', 'source_url', 'position']
+        )
+
+    if settings.do_attributes:
+        sync_update.simplify_sync_warning_value_listed(
+            'attributes', ['term_id'])
+
+    return sync_update
+
+
 def do_merge_prod(matches, parsers, updates, settings):
     """Return a description of updates required to merge `matches`."""
 
@@ -1291,11 +1310,6 @@ def do_merge_prod(matches, parsers, updates, settings):
 
     if not settings.do_sync:
         return
-
-    sync_handles = settings.sync_handles_prod
-
-    if Registrar.DEBUG_UPDATE:
-        Registrar.register_message("sync_handles: %s" % repr(sync_handles))
 
     for count, match in enumerate(matches.globals):
         if Registrar.DEBUG_UPDATE:
@@ -1313,22 +1327,7 @@ def do_merge_prod(matches, parsers, updates, settings):
             matches.masterless.append(match)
             continue
 
-        sync_update = settings.syncupdate_class_prod(m_object, s_object)
-
-        sync_update.update(sync_handles)
-
-        if settings.do_categories:
-            sync_update.simplify_sync_warning_value_listed(
-                'product_categories', ['term_id'])
-
-        if settings.do_images:
-            sync_update.simplify_sync_warning_value_listed(
-                'attachment_objects', ['id', 'title', 'source_url', 'position']
-            )
-
-        if settings.do_attributes:
-            sync_update.simplify_sync_warning_value_listed(
-                'attributes', ['term_id'])
+        sync_update = get_update_prod(settings, m_object, s_object)
 
         # Assumes that GDrive is read only, doesn't care about master
         # updates
@@ -1365,17 +1364,16 @@ def do_merge_prod(matches, parsers, updates, settings):
                 count, m_object.identifier
             )
         )
-        sync_update = settings.syncupdate_class_prod(m_object)
-        sync_update.update(sync_handles)
+        sync_update = get_update_prod(settings, m_object, None)
         updates.slaveless.append(sync_update)
 
     for count, match in enumerate(matches.masterless):
         s_object = match.s_object
 
-        sync_update = settings.syncupdate_class_prod(None, s_object)
-
         Registrar.register_message("will delete product: %d:\n%s" % (
             count, s_object.identifier))
+
+        sync_update = get_update_prod(settings, None, s_object)
 
         updates.masterless.append(sync_update)
 
@@ -1670,9 +1668,11 @@ def upload_new_images_slave(parsers, results, settings, client, new_updates):
 
         results.successes.append(sync_update)
 
-# TODO: collapse upload_changes functions
-def upload_image_changes_slave(parsers, results, settings, client, change_updates):
 
+# TODO: collapse upload_changes functions
+def upload_image_changes_slave(
+    parsers, results, settings, client, change_updates
+):
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
             len(change_updates),
@@ -1914,7 +1914,9 @@ def upload_new_categories_slave(
         results.successes.append(sync_update)
 
 
-def upload_category_changes_slave(parsers, results, settings, client, change_updates):
+def upload_category_changes_slave(
+    parsers, results, settings, client, change_updates
+):
     """
     Upload a list of category changes
     """
@@ -2101,8 +2103,6 @@ def upload_new_products(parsers, results, settings, client, new_updates):
     if not (new_updates and settings.update_slave):
         return
 
-    sync_handles = settings.sync_handles_prod
-
     update_count = 0
 
     while new_updates:
@@ -2118,28 +2118,17 @@ def upload_new_products(parsers, results, settings, client, new_updates):
                 )
             )
 
-        # have to refresh sync_update to get parent wpid
-        # since parente wpid is populated in do_updates_categories_master
-        sync_update = settings.syncupdate_class_prod(
-            sync_update.old_m_object,
-            sync_update.old_s_object
-        )
-        sync_update.update(sync_handles)
+        if settings.do_categories or settings.do_images:
+            # have to refresh sync_update to get parent wpid
+            # since parente wpid is populated in do_updates_categories_master
 
-        core_data = sync_update.get_slave_updates()
-
-        if settings.do_categories:
-            sync_update.simplify_sync_warning_value_listed(
-                'product_categories', ['term_id'])
-
-        if settings.do_images:
-            sync_update.simplify_sync_warning_value_listed(
-                'attachment_objects', ['id', 'title', 'source_url', 'position']
+            sync_update = get_update_prod(
+                settings,
+                sync_update.old_m_object,
+                sync_update.old_s_object
             )
 
-        if settings.do_attributes:
-            sync_update.simplify_sync_warning_value_listed(
-                'attributes', ['term_id'])
+        core_data = sync_update.get_slave_updates()
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
