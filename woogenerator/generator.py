@@ -1763,13 +1763,13 @@ def do_updates_images_slave(updates, parsers, results, settings):
     try:
         endpoint_singular = sync_client_class.endpoint_singular
         assert isinstance(endpoint_singular, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_singular = "image"
 
     try:
         endpoint_plural = sync_client_class.endpoint_plural
         assert isinstance(endpoint_plural, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_plural = "%s" % endpoint_singular
 
     # updates in which an item is modified
@@ -2015,13 +2015,13 @@ def do_updates_categories_slave(updates, parsers, results, settings):
     try:
         endpoint_singular = sync_client_class.endpoint_singular
         assert isinstance(endpoint_singular, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_singular = "product"
 
     try:
         endpoint_plural = sync_client_class.endpoint_plural
         assert isinstance(endpoint_plural, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_plural = "%s" % endpoint_singular
 
     change_updates = updates.category.slave
@@ -2243,13 +2243,13 @@ def do_updates_prod(updates, parsers, settings, results):
     try:
         endpoint_singular = sync_client_class.endpoint_singular
         assert isinstance(endpoint_singular, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_singular = "product"
 
     try:
         endpoint_plural = sync_client_class.endpoint_plural
         assert isinstance(endpoint_plural, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_plural = "%s" % endpoint_singular
 
     change_updates = updates.slave
@@ -2346,10 +2346,22 @@ def upload_variation_changes_slave(
 
     # TODO: this based off upload_category_changes_slave
 
+    try:
+        endpoint_singular = client.endpoint_singular
+        assert isinstance(endpoint_singular, string_types)
+    except (AssertionError, AttributeError, UserWarning):
+        endpoint_singular = "variation"
+
+    try:
+        endpoint_plural = client.endpoint_plural
+        assert isinstance(endpoint_plural, string_types)
+    except (AssertionError, AttributeError, UserWarning):
+        endpoint_plural = "%ss" % endpoint_singular
+
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
             len(change_updates),
-            items_plural='%s updates' % client.endpoint_singular
+            items_plural='%s updates' % endpoint_singular
         )
 
     if not settings.update_slave:
@@ -2385,7 +2397,7 @@ def upload_variation_changes_slave(
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "%s being updated with parser data: %s" % (
-                    client.endpoint_singular,
+                    endpoint_singular,
                     pformat(response_gen_data)
                 )
             )
@@ -2413,13 +2425,13 @@ def do_updates_var_slave(updates, parsers, results, settings):
     try:
         endpoint_singular = sync_client_class.endpoint_singular
         assert isinstance(endpoint_singular, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_singular = "variation"
 
     try:
         endpoint_plural = sync_client_class.endpoint_plural
         assert isinstance(endpoint_plural, string_types)
-    except (AssertionError, AttributeError):
+    except (AssertionError, AttributeError, UserWarning):
         endpoint_plural = "%ss" % endpoint_singular
 
     change_updates = updates.variation.slave
