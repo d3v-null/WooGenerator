@@ -139,7 +139,6 @@ class SanitationUtils(object):
     def compose(cls, *functions):
         """
         Compose a list of functions into a single function.
-
         Stolen from: https://mathieularose.com/function-composition-in-python/
         """
         def compose2(func_f, func_g):
@@ -208,23 +207,23 @@ class SanitationUtils(object):
         assert isinstance(ascii_str, binary_type),\
             "parameter should be str not %s" % type(ascii_str)
         # literal_eval("b'{}'".format(ascii_str)).decode('utf-8')
-        # text_type_return = converters.to_unicode(ascii_str, "ascii")
-        text_type_return = ascii_str.decode('text_type-escape')
-        assert isinstance(text_type_return, text_type),\
+        # unicode_return = converters.to_unicode(ascii_str, "ascii")
+        unicode_return = ascii_str.decode('text_type-escape')
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return text_type not %s" % type(
-                text_type_return)
-        return text_type_return
+                unicode_return)
+        return unicode_return
 
     @classmethod
     def coerce_unicode(cls, thing):
         if thing is None:
-            text_type_return = u""
+            unicode_return = u""
         else:
-            text_type_return = converters.to_unicode(thing, encoding="utf8")
-        assert isinstance(text_type_return, text_type),\
+            unicode_return = converters.to_unicode(thing, encoding="utf8")
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return text_type not %s" % type(
-                text_type_return)
-        return text_type_return
+                unicode_return)
+        return unicode_return
 
     @classmethod
     def coerce_bytes(cls, thing):
@@ -262,11 +261,11 @@ class SanitationUtils(object):
 
     @classmethod
     def coerce_float(cls, thing):
-        text_type_thing = cls.compose(
+        unicode_thing = cls.compose(
             cls.coerce_unicode
         )(thing)
         try:
-            float_return = float(text_type_thing)
+            float_return = float(unicode_thing)
         except ValueError:
             float_return = 0.0
         assert isinstance(float_return, float),\
@@ -276,11 +275,11 @@ class SanitationUtils(object):
 
     @classmethod
     def coerce_int(cls, thing):
-        text_type_thing = cls.compose(
+        unicode_thing = cls.compose(
             cls.coerce_unicode
         )(thing)
         try:
-            int_return = int(text_type_thing)
+            int_return = int(unicode_thing)
         except ValueError:
             int_return = 0
         assert isinstance(int_return, int),\
@@ -358,32 +357,32 @@ class SanitationUtils(object):
     @classmethod
     def sanitize_for_table(cls, thing, tablefmt=None):
         if hasattr(thing, '_supports_tablefmt'):
-            thing = thing.__text_type__(tablefmt)
+            thing = thing.__unicode__(tablefmt)
         if isinstance(thing, (str, text_type)) and tablefmt == 'simple':
             thing = thing[:64] + '...'
-        text_type_return = cls.compose(
+        unicode_return = cls.compose(
             cls.coerce_unicode,
             cls.limit_string(50),
             cls.escape_newlines,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(text_type_return, text_type),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return text_type not %s" % type(
-                text_type_return)
-        return text_type_return
+                unicode_return)
+        return unicode_return
 
     @classmethod
     def sanitize_for_xml(cls, thing):
-        text_type_return = cls.compose(
+        unicode_return = cls.compose(
             cls.coerce_unicode,
             cls.sanitize_newlines,
             cls.unicode_to_xml,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(text_type_return, text_type),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return text_type not %s" % type(
-                text_type_return)
-        return text_type_return
+                unicode_return)
+        return unicode_return
 
     @classmethod
     def safe_print(cls, *args):
@@ -391,7 +390,7 @@ class SanitationUtils(object):
 
     @classmethod
     def normalize_val(cls, thing):
-        text_type_return = cls.compose(
+        unicode_return = cls.compose(
             cls.coerce_unicode,
             cls.to_upper,
             cls.strip_leading_whitespace,
@@ -399,10 +398,10 @@ class SanitationUtils(object):
             cls.strip_extra_whitespace,
             cls.coerce_unicode
         )(thing)
-        assert isinstance(text_type_return, text_type),\
+        assert isinstance(unicode_return, text_type),\
             "something went wrong, should return text_type not %s" % type(
-                text_type_return)
-        return text_type_return
+                unicode_return)
+        return unicode_return
 
     @classmethod
     def remove_leading_dollar_wspace(cls, string):
@@ -792,6 +791,11 @@ class SanitationUtils(object):
 
     @classmethod
     def shorten(cls, reg, subs, str_in):
+        # if(DEBUG_GEN):
+        #     print "calling shorten"
+        #     print " | reg:", reg
+        #     print " | subs:", subs
+            # print " | str_i: ",str_in
         if not all([reg, subs, str_in]):
             str_out = str_in
         else:
@@ -799,12 +803,14 @@ class SanitationUtils(object):
                 lambda mo: subs[mo.string[mo.start():mo.end()]],
                 str_in
             )
+        # if DEBUG_GEN:
+        #     print " | str_o: ",str_out
         return str_out
 
     @classmethod
     def round_currency(cls, price):
         return ("%." + str(cls.currency_precision) + "f") % \
-            round(price, cls.currency_precision)
+        round(price, cls.currency_precision)
 
     @classmethod
     def html_unescape(cls, string):
