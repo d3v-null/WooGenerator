@@ -165,6 +165,10 @@ class ImportWooApiProductVariable(
     is_variable = ImportShopProductVariableMixin.is_variable
     product_type = ImportShopProductVariableMixin.product_type
     variation_indexer = ImportApiObjectMixin.get_index
+    hidden_keys = SeqUtils.combine_lists(
+        ImportWooApiProduct.hidden_keys,
+        ImportShopProductVariableMixin.hidden_keys
+    )
 
     def __init__(self, *args, **kwargs):
         call_bases(

@@ -11,6 +11,7 @@ from pprint import pformat, pprint
 import mock
 import pytest
 import pytz
+from six import text_type
 from context import TESTS_DATA_DIR, woogenerator
 from tabulate import tabulate
 from test_sync_manager import AbstractSyncManagerTestCase
@@ -302,7 +303,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 'WNT': timezone.localize(datetime(3000, 9, 1, 0, 0)),
             })
         for key, value in test_dict.items():
-            self.assertEqual(unicode(first_prod[key]), unicode(value))
+            self.assertEqual(text_type(first_prod[key]), text_type(value))
 
         if self.debug:
             print("pformat@to_dict@first_prod:\n%s" % pformat(first_prod.to_dict()))
@@ -502,7 +503,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 'WNS': u'10.36',
             })
         for key, value in test_dict.items():
-            self.assertEqual(unicode(first_prod[key]), unicode(value))
+            self.assertEqual(text_type(first_prod[key]), text_type(value))
 
         # Remember the test data is deliberately modified to remove one of the categories
 
@@ -822,7 +823,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 u'', u'', u'', u'{"fragrance":"Lavender & Rosemary"}', u'', u'',
                 u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
                 u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
-                u'', u'', u'', unicode('The VuTan Exfoliating Gel is specially '
+                u'', u'', u'', text_type('The VuTan Exfoliating Gel is specially '
                 'designed to gently polish away dead skin cells whilst '
                 'nourishing the skin. The formula is completely sodium lauryl '
                 'sulphate free and contains Aloe Vera, Lavender, Rosemary, Tea '
@@ -1140,7 +1141,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 master_desc
             )
             self.assertEqual(
-                SanitationUtils.normalize_unicode(sync_update.old_s_object_core['post_excerpt']),
+                SanitationUtils.normalize_text_type(sync_update.old_s_object_core['post_excerpt']),
                 slave_desc
             )
             self.assertEqual(
@@ -2367,14 +2368,14 @@ python -m woogenerator.generator \
                     expected_value = set(expected_value.items())
                 elif isinstance(actual_value, list):
                     actual_value = set([
-                        unicode(item) for item in actual_value
+                        text_type(item) for item in actual_value
                     ])
                     expected_value = set([
-                        unicode(item) for item in expected_value
+                        text_type(item) for item in expected_value
                     ])
                 else:
-                    actual_value = unicode(actual_value)
-                    expected_value = unicode(expected_value)
+                    actual_value = text_type(actual_value)
+                    expected_value = text_type(expected_value)
 
                 self.assertEquals(
                     actual_value,
@@ -2659,8 +2660,18 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             'CA': u'V',
         }
 
+        first_prod_dict = first_prod.to_dict()
+
         for key, value in test_dict.items():
-            self.assertEqual(unicode(first_prod[key]), unicode(value))
+            self.assertEqual(text_type(first_prod_dict[key]), text_type(value))
+
+        # Keys not allowed in variable products
+        disallowed_keys = [
+            'stock_status'
+        ]
+
+        for key in disallowed_keys:
+            self.assertNotIn(key, first_prod_dict.keys())
 
         self.assertEqual(
             set([variation.codesum for variation in first_prod.variations.values()]),
@@ -2686,6 +2697,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             'length': u'100',
             'width': u'250',
             'weight': u'0.10',
+            'stock_status': 'instock',
             'attribute:pa_material': 'Cotton',
             'attribute:quantity': '5',
             'attribute:size': 'Small',
@@ -2693,8 +2705,11 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             'CA': u'I',
         }
 
+        first_variation_dict = first_variation.to_dict()
+
         for key, value in test_dict.items():
-            self.assertEqual(unicode(first_variation[key]), unicode(value))
+            self.assertEqual(
+                text_type(first_variation_dict[key]), text_type(value))
 
         trashed_variation = first_prod.variations.get('AGL-CP5XL')
 
@@ -2703,7 +2718,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         }
 
         for key, value in test_dict.items():
-            self.assertEqual(unicode(trashed_variation[key]), unicode(value))
+            self.assertEqual(text_type(trashed_variation[key]), text_type(value))
 
     def test_super_dummy_populate_slave_parsers(self):
 
@@ -2722,9 +2737,35 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         prod_list = prod_container(self.parsers.slave.products.values())
         first_prod = prod_list[0]
         if self.debug:
-            print("first_prod.dict %s" % pformat(dict(first_prod)))
+            print("first_prod.dict %s" % pformat(first_prod.to_dict()))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
             print("first_prod.to_dict().get('attachment_objects'): %s" % pformat(first_prod.to_dict().get('attachment_objects')))
+
+        test_dict = {
+            'codesum': u'AGL-CP5',
+            'title': u'Cotton Glove Pack x5 Pairs',
+            'post_status': u'publish',
+            'descsum': (
+                'The materials used to manufacture these products has been '
+                'developed to optimise exfoliation and massage without being '
+                'too harsh to the skin.'
+            ),
+            'slug': u'cotton-glove-pack-x5-pairs',
+            # TODO: test attributes somewhere
+        }
+
+        first_prod_dict = first_prod.to_dict()
+
+        for key, value in test_dict.items():
+            self.assertEqual(text_type(first_prod_dict[key]), text_type(value))
+
+        # Keys not allowed in variable products
+        disallowed_keys = [
+            'stock_status'
+        ]
+
+        for key in disallowed_keys:
+            self.assertNotIn(key, first_prod_dict.keys())
 
         #TODO: test only variation_id first, then test codesum
         var_ids = [var.api_id for var in first_prod.variations.values()]
@@ -2763,7 +2804,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         }
 
         for key, value in test_dict.items():
-            self.assertEqual(unicode(first_variation[key]), unicode(value))
+            self.assertEqual(text_type(first_variation[key]), text_type(value))
 
     def test_super_dummy_to_target_type(self):
         """
@@ -2802,7 +2843,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         }
 
         for key, value in test_dict.items():
-            self.assertEqual(unicode(first_prod_csv[key]), unicode(value))
+            self.assertEqual(text_type(first_prod_csv[key]), text_type(value))
 
         extra_variation_col_names = self.settings.coldata_class_var.get_attribute_meta_colnames_native(
             self.parsers.master.vattributes
@@ -2829,7 +2870,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         }
 
         for key, value in test_dict.items():
-            self.assertEqual(unicode(first_variation_csv[key]), unicode(value))
+            self.assertEqual(text_type(first_variation_csv[key]), text_type(value))
 
     def test_super_dummy_match_var_only(self):
         self.settings.do_images = False

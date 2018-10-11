@@ -9,6 +9,13 @@ ObjList instances for easy analyis.
 Here be dragons.
 Some of the design decisions are pretty bizarre, so please have a full read
 through before changing anything. Sorry about that.
+
+
+TODO:
+    - define a meta class which complains when
+        - a property is defined in multiple bases but not the class itself
+        - any kind of diamond inheritence is present
+
 """
 from __future__ import absolute_import
 
@@ -17,8 +24,10 @@ from collections import OrderedDict
 from copy import copy, deepcopy
 from pprint import pformat
 
-import unicodecsv
+from past.builtins import cmp
 from tabulate import tabulate
+
+import unicodecsv
 
 from ..coldata import ColDataAbstract
 from ..utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
@@ -37,6 +46,7 @@ class ImportObject(OrderedDict, Registrar):
     rowcount_key = 'rowcount'
     row_key = '_row'
     coldata_gen_target = 'gen-csv'
+    hidden_keys = []
 
     def __init__(self, data, *args, **kwargs):
         try:
@@ -70,7 +80,11 @@ class ImportObject(OrderedDict, Registrar):
         return hash(self.index)
 
     def to_dict(self):
-        return OrderedDict(self)
+        result = OrderedDict(self)
+        for key in self.hidden_keys:
+            if key in result:
+                del result[key]
+        return result
 
     def to_target_type(self, **kwargs):
         """

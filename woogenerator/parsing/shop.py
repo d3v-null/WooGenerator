@@ -382,6 +382,9 @@ class ImportShopProductVariableMixin(object):
     product_type = 'variable'
     is_variable = True
     variation_indexer = ImportShopMixin.get_sku
+    hidden_keys = [
+        'stock_status'
+    ]
 
     def __init__(self, *args, **kwargs):
         self.variations = OrderedDict()
@@ -400,6 +403,11 @@ class ImportShopProductVariableMixin(object):
         response = {}
         if self.variations:
             response['variation_objects'] = self.variations.values()
+
+        # TODO: Somehow delete these fields from variable products to_dict()
+        #   since they are not writable in the API
+        # - 'stock_status'
+        # - pricing
         return response
 
 

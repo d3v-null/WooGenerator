@@ -929,7 +929,7 @@ class TestColDataWcProd(TestColData):
         self.assertTrue(self.coldata_class.get_handle_property('in_stock', 'read', 'wc-wp-api'))
         self.assertTrue(self.coldata_class.get_handle_property('in_stock', 'write', 'wc-wp-api'))
 
-@pytest.skip("There is no separate coldata class for Variable products")
+@pytest.mark.skip("There is no separate coldata class for Variable products")
 class TestColDataProdVariable(TestColData):
     coldata_class = ColDataProductMeridian
     def test_in_stock(self):

@@ -263,6 +263,10 @@ class ImportWooProductVariable(
     is_variable = ImportShopProductVariableMixin.is_variable
     product_type = ImportShopProductVariableMixin.product_type
     variation_indexer = ImportWooObject.get_sku
+    hidden_keys = SeqUtils.combine_lists(
+        ImportWooProduct.hidden_keys,
+        ImportShopProductVariableMixin.hidden_keys
+    )
 
     def __init__(self, *args, **kwargs):
         call_bases(
