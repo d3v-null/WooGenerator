@@ -136,6 +136,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return 'wc-wp-api-v2-edit'
 
     @property
+    def coldata_var_target(self):
+        return 'wc-wp-api-v2'
+
+    @property
+    def coldata_var_target_write(self):
+        return 'wc-wp-api-v2-edit'
+
+    @property
     def coldata_gen_target(self):
         return 'gen-csv'
 

@@ -925,20 +925,13 @@ class TestColDataWcProd(TestColData):
         self.assertEqual(len(core_data.keys()), 1) # post_categories AND product_categories
         self.assertFalse(core_data['product_categories'][0]['title'].startswith('OrderedDict'))
 
-    def test_in_stock(self):
+    def test_handle_properties(self):
         self.assertTrue(self.coldata_class.get_handle_property('in_stock', 'read', 'wc-wp-api'))
         self.assertTrue(self.coldata_class.get_handle_property('in_stock', 'write', 'wc-wp-api'))
 
-@pytest.mark.skip("There is no separate coldata class for Variable products")
-class TestColDataProdVariable(TestColData):
-    coldata_class = ColDataProductMeridian
-    def test_in_stock(self):
-        self.assertTrue(self.coldata_class.get_handle_property('in_stock', 'read', 'wc-wp-api'))
-        self.assertFalse(self.coldata_class.get_handle_property('in_stock', 'write', 'wc-wp-api'))
-
 class TestColDataProdVariation(TestColData):
     coldata_class = ColDataProductVariation
-    def test_in_stock(self):
+    def test_handle_properties(self):
         self.assertTrue(self.coldata_class.get_handle_property('in_stock', 'read', 'wc-wp-api'))
         self.assertTrue(self.coldata_class.get_handle_property('in_stock', 'write', 'wc-wp-api'))
 

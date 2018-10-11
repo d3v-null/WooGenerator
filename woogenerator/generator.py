@@ -2311,7 +2311,7 @@ def do_updates_prod(updates, parsers, settings, results):
             )
 
 
-def do_updates_var_master(updates, parsers, settings, results):
+def do_updates_var_master(updates, parsers, results, settings):
     for update in updates.variation.master:
         old_master_id = update.master_id
         if Registrar.DEBUG_UPDATE:
@@ -2367,10 +2367,9 @@ def upload_variation_changes_slave(
 
         try:
             pkey = sync_update.slave_id
-            pudb.set_trace()
-            parent_pkey = sync_update.get('')
+            parent_pkey = sync_update.new_s_object['parent_id']
             changes = sync_update.get_slave_updates_native()
-            response_raw = client.upload_changes(pkey, changes)
+                pkey, changes, parent_pkey=parent_pkey)
             response_api_data = response_raw.json()
         except Exception as exc:
             handle_failed_update(
@@ -2406,7 +2405,7 @@ def delete_variations_slave(
     raise NotImplementedError()
 
 
-def do_updates_var_slave(updates, parsers, settings, results):
+def do_updates_var_slave(updates, parsers, results, settings):
     results.variation = ResultsNamespace()
     results.variation.new = ResultsNamespace()
 
@@ -2626,7 +2625,7 @@ def main(override_args=None, settings=None):
     if settings.do_variations:
         if not settings.report_and_quit:
             try:
-                do_updates_var_slave(updates, parsers, settings, results)
+                do_updates_var_slave(updates, parsers, results, settings)
             except (SystemExit, KeyboardInterrupt) as exc:
                 Registrar.register_error(exc)
                 return reporters, results

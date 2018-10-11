@@ -29,6 +29,7 @@ from six import binary_type, integer_types, string_types, text_type
 
 from .sanitation import SanitationUtils
 from .debug import DebugUtils
+from .core import SeqUtils
 
 
 class Registrar(object):

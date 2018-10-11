@@ -11,12 +11,14 @@ from pprint import pformat, pprint
 import mock
 import pytest
 import pytz
-from six import text_type
-from context import TESTS_DATA_DIR, woogenerator
 from tabulate import tabulate
+
+from context import TESTS_DATA_DIR, woogenerator
+from six import text_type
 from test_sync_manager import AbstractSyncManagerTestCase
 from utils import MockUtils
 from woogenerator.coldata import (ColDataAttachment, ColDataProductMeridian,
+                                  ColDataProductVariationMeridian,
                                   ColDataWcProdCategory)
 from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_match_prod, do_match_var,
@@ -27,9 +29,10 @@ from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_updates_categories_slave,
                                     do_updates_images_master,
                                     do_updates_images_slave,
-                                    export_master_parser,
+                                    do_updates_var_master,
+                                    do_updates_var_slave, export_master_parser,
                                     populate_master_parsers,
-                                    populate_slave_parsers, do_updates_var_master, do_updates_var_slave)
+                                    populate_slave_parsers)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
@@ -2932,7 +2935,70 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    def test_super_dummy_updates_var_only(self):
+    def do_updates_var_slave_mocked(self):
+        with mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.__class__,
+                'slave_var_sync_client_class'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.null_client_class
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_class'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=ColDataProductVariationMeridian
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_target'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.coldata_var_target
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'coldata_target_write'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value=self.settings.coldata_var_target_write
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'endpoint_plural'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='variations'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'endpoint_singular'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='variation'
+        ), \
+        mock.patch(
+            MockUtils.get_mock_name(
+                self.settings.null_client_class,
+                'primary_key_handle'
+            ),
+            new_callable=mock.PropertyMock,
+            return_value='id'
+        ):
+            self.settings.update_slave = True
+            do_updates_var_slave(
+                self.updates, self.parsers, self.results, self.settings
+            )
+            self.settings.update_slave = False
+
+    def test_super_dummy_updates_var_master_only(self):
         self.settings.do_images = False
         self.settings.do_categories = False
         self.settings.do_attributes = False
@@ -2943,13 +3009,47 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         do_match_var(self.parsers, self.matches, self.settings)
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
 
-        do_updates_var_master(self.updates, self.parsers, self.settings, self.results)
+        do_updates_var_master(
+            self.updates, self.parsers, self.results, self.settings
+        )
 
         self.assertEqual(
             self.parsers.master.variations['AGL-CP5S']['ID'], 27065
         )
 
-        do_updates_var_slave(self.updates, self.parsers, self.settings, self.results)
+    def test_super_dummy_updates_create_var_slave_only(self):
+        self.settings.do_images = False
+        self.settings.do_categories = False
+        self.settings.do_attributes = False
+        self.settings.ask_before_update = False
+        self.settings.auto_create_new = True
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        do_match_var(self.parsers, self.matches, self.settings)
+        do_merge_var(self.matches, self.parsers, self.updates, self.settings)
+
+        with self.assertRaises(NotImplementedError):
+            self.do_updates_var_slave_mocked()
+
+
+    def test_super_dummy_updates_changes_var_slave_only(self):
+        self.settings.do_images = False
+        self.settings.do_categories = False
+        self.settings.do_attributes = False
+        self.settings.ask_before_update = False
+        self.settings.auto_create_new = False
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        do_match_var(self.parsers, self.matches, self.settings)
+        do_merge_var(self.matches, self.parsers, self.updates, self.settings)
+
+        do_updates_var_master(
+            self.updates, self.parsers, self.results, self.settings
+        )
+
+        self.do_updates_var_slave_mocked()
 
 
     # def test_super_dummy_attributes(self):
