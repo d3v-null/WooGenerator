@@ -29,7 +29,7 @@
     "button_text": "",
     "manage_stock": false,
     "stock_quantity": null,
-    "in_stock": true,
+    "in_stock": false,
     "date_created": "2018-08-18T17:39:42",
     "date_on_sale_from": null,
     "categories": [{

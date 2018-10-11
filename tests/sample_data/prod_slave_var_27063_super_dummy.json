@@ -1,1 +1,1050 @@
-[{"weight": "0.10", "regular_price": 3.85, "date_on_sale_to": null, "image": {"src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png", "name": "Placeholder", "date_modified_gmt": "2018-08-21T02:37:42", "date_modified": "2018-08-21T22:37:42", "date_created_gmt": "2018-08-21T02:37:42", "date_created": "2018-08-21T22:37:42", "position": 0, "alt": "Placeholder", "id": 0}, "shipping_class": "", "visible": true, "menu_order": 7, "attributes": [], "id": 27065, "sku": "AGL-CP5S", "date_modified_gmt": "2018-08-21T02:37:18", "purchasable": true, "download_limit": -1, "on_sale": false, "virtual": false, "_links": {"self": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27065"}], "up": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"}], "collection": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"}]}, "stock_quantity": null, "shipping_class_id": 0, "downloads": [], "date_on_sale_to_gmt": null, "backorders": "no", "description": "", "price": 3.85, "date_modified": "2018-08-21T12:37:18", "manage_stock": false, "in_stock": true, "meta_data": [{"key": "_upsell_skus", "id": 110528, "value": []}, {"key": "_crosssell_skus", "id": 110529, "value": []}, {"key": "_file_path", "id": 110539, "value": ""}, {"key": "_button_text", "id": 110544, "value": ""}, {"key": "_product_url", "id": 110799, "value": ""}, {"key": "_max_variation_sale_price", "id": 110801, "value": ""}, {"key": "_min_variation_sale_price", "id": 110802, "value": ""}, {"key": "_max_variation_regular_price", "id": 110803, "value": ""}, {"key": "_min_variation_regular_price", "id": 110804, "value": ""}, {"key": "_max_variation_price", "id": 110805, "value": ""}, {"key": "_min_variation_price", "id": 110806, "value": ""}, {"key": "commissionable_value", "id": 110807, "value": "0.75"}, {"key": "wootan_danger", "id": 110808, "value": ""}, {"key": "lc_rn_regular_price", "id": 110809, "value": ""}, {"key": "lc_rn_sale_price", "id": 110810, "value": ""}, {"key": "lc_rn_sale_price_dates_from", "id": 110811, "value": ""}, {"key": "lc_rn_sale_price_dates_to", "id": 110812, "value": ""}, {"key": "lc_rp_regular_price", "id": 110813, "value": ""}, {"key": "lc_rp_sale_price", "id": 110814, "value": ""}, {"key": "lc_rp_sale_price_dates_from", "id": 110815, "value": ""}, {"key": "lc_rp_sale_price_dates_to", "id": 110816, "value": ""}, {"key": "lc_wn_regular_price", "id": 110817, "value": "5.50"}, {"key": "lc_wn_sale_price", "id": 110818, "value": ""}, {"key": "lc_wn_sale_price_dates_from", "id": 110819, "value": ""}, {"key": "lc_wn_sale_price_dates_to", "id": 110820, "value": ""}, {"key": "lc_wp_regular_price", "id": 110821, "value": "4.95"}, {"key": "lc_wp_sale_price", "id": 110822, "value": ""}, {"key": "lc_wp_sale_price_dates_from", "id": 110823, "value": ""}, {"key": "lc_wp_sale_price_dates_to", "id": 110824, "value": ""}, {"key": "lc_dn_regular_price", "id": 110825, "value": "3.85"}, {"key": "lc_dn_sale_price", "id": 110826, "value": ""}, {"key": "lc_dn_sale_price_dates_from", "id": 110827, "value": ""}, {"key": "lc_dn_sale_price_dates_to", "id": 110828, "value": ""}, {"key": "lc_dp_regular_price", "id": 110829, "value": "3.85"}, {"key": "lc_dp_sale_price", "id": 110830, "value": ""}, {"key": "lc_dp_sale_price_dates_from", "id": 110831, "value": ""}, {"key": "lc_dp_sale_price_dates_to", "id": 110832, "value": ""}], "sale_price": "", "date_on_sale_from": null, "dimensions": {"width": "250", "length": "100", "height": "25"}, "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/", "date_on_sale_from_gmt": null, "backordered": false, "downloadable": false, "tax_class": "", "date_created_gmt": "2018-08-18T07:40:52", "download_expiry": -1, "backorders_allowed": false, "tax_status": "taxable", "date_created": "2018-08-18T17:40:52"}, {"weight": "0.10", "regular_price": 3.85, "date_on_sale_to": null, "image": {"src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png", "name": "Placeholder", "date_modified_gmt": "2018-08-21T02:37:42", "date_modified": "2018-08-21T22:37:42", "date_created_gmt": "2018-08-21T02:37:42", "date_created": "2018-08-21T22:37:42", "position": 0, "alt": "Placeholder", "id": 0}, "shipping_class": "", "visible": true, "menu_order": 8, "attributes": [], "id": 27066, "sku": "AGL-CP5M", "date_modified_gmt": "2018-08-21T02:37:18", "purchasable": true, "download_limit": -1, "on_sale": false, "virtual": false, "_links": {"self": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27066"}], "up": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"}], "collection": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"}]}, "stock_quantity": null, "shipping_class_id": 0, "downloads": [], "date_on_sale_to_gmt": null, "backorders": "no", "description": "", "price": 3.85, "date_modified": "2018-08-21T12:37:18", "manage_stock": false, "in_stock": true, "meta_data": [{"key": "_upsell_skus", "id": 110593, "value": []}, {"key": "_crosssell_skus", "id": 110594, "value": []}, {"key": "_file_path", "id": 110604, "value": ""}, {"key": "_button_text", "id": 110609, "value": ""}, {"key": "_product_url", "id": 110852, "value": ""}, {"key": "_max_variation_sale_price", "id": 110854, "value": ""}, {"key": "_min_variation_sale_price", "id": 110855, "value": ""}, {"key": "_max_variation_regular_price", "id": 110856, "value": ""}, {"key": "_min_variation_regular_price", "id": 110857, "value": ""}, {"key": "_max_variation_price", "id": 110858, "value": ""}, {"key": "_min_variation_price", "id": 110859, "value": ""}, {"key": "commissionable_value", "id": 110860, "value": "0.75"}, {"key": "wootan_danger", "id": 110861, "value": ""}, {"key": "lc_rn_regular_price", "id": 110862, "value": ""}, {"key": "lc_rn_sale_price", "id": 110863, "value": ""}, {"key": "lc_rn_sale_price_dates_from", "id": 110864, "value": ""}, {"key": "lc_rn_sale_price_dates_to", "id": 110865, "value": ""}, {"key": "lc_rp_regular_price", "id": 110866, "value": ""}, {"key": "lc_rp_sale_price", "id": 110867, "value": ""}, {"key": "lc_rp_sale_price_dates_from", "id": 110868, "value": ""}, {"key": "lc_rp_sale_price_dates_to", "id": 110869, "value": ""}, {"key": "lc_wn_regular_price", "id": 110870, "value": "5.50"}, {"key": "lc_wn_sale_price", "id": 110871, "value": ""}, {"key": "lc_wn_sale_price_dates_from", "id": 110872, "value": ""}, {"key": "lc_wn_sale_price_dates_to", "id": 110873, "value": ""}, {"key": "lc_wp_regular_price", "id": 110874, "value": "4.95"}, {"key": "lc_wp_sale_price", "id": 110875, "value": ""}, {"key": "lc_wp_sale_price_dates_from", "id": 110876, "value": ""}, {"key": "lc_wp_sale_price_dates_to", "id": 110877, "value": ""}, {"key": "lc_dn_regular_price", "id": 110878, "value": "3.85"}, {"key": "lc_dn_sale_price", "id": 110879, "value": ""}, {"key": "lc_dn_sale_price_dates_from", "id": 110880, "value": ""}, {"key": "lc_dn_sale_price_dates_to", "id": 110881, "value": ""}, {"key": "lc_dp_regular_price", "id": 110882, "value": "3.85"}, {"key": "lc_dp_sale_price", "id": 110883, "value": ""}, {"key": "lc_dp_sale_price_dates_from", "id": 110884, "value": ""}, {"key": "lc_dp_sale_price_dates_to", "id": 110885, "value": ""}], "sale_price": "", "date_on_sale_from": null, "dimensions": {"width": "250", "length": "100", "height": "25"}, "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/", "date_on_sale_from_gmt": null, "backordered": false, "downloadable": false, "tax_class": "", "date_created_gmt": "2018-08-18T07:40:52", "download_expiry": -1, "backorders_allowed": false, "tax_status": "taxable", "date_created": "2018-08-18T17:40:52"}, {"weight": "0.10", "regular_price": 3.85, "date_on_sale_to": null, "image": {"src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png", "name": "Placeholder", "date_modified_gmt": "2018-08-21T02:37:42", "date_modified": "2018-08-21T22:37:42", "date_created_gmt": "2018-08-21T02:37:42", "date_created": "2018-08-21T22:37:42", "position": 0, "alt": "Placeholder", "id": 0}, "shipping_class": "", "visible": true, "menu_order": 9, "attributes": [], "id": 27067, "sku": "AGL-CP5L", "date_modified_gmt": "2018-08-21T02:37:18", "purchasable": true, "download_limit": -1, "on_sale": false, "virtual": false, "_links": {"self": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27067"}], "up": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"}], "collection": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"}]}, "stock_quantity": null, "shipping_class_id": 0, "downloads": [], "date_on_sale_to_gmt": null, "backorders": "no", "description": "", "price": 3.85, "date_modified": "2018-08-21T12:37:18", "manage_stock": false, "in_stock": true, "meta_data": [{"key": "_upsell_skus", "id": 110658, "value": []}, {"key": "_crosssell_skus", "id": 110659, "value": []}, {"key": "_file_path", "id": 110669, "value": ""}, {"key": "_button_text", "id": 110674, "value": ""}, {"key": "_product_url", "id": 110905, "value": ""}, {"key": "_max_variation_sale_price", "id": 110907, "value": ""}, {"key": "_min_variation_sale_price", "id": 110908, "value": ""}, {"key": "_max_variation_regular_price", "id": 110909, "value": ""}, {"key": "_min_variation_regular_price", "id": 110910, "value": ""}, {"key": "_max_variation_price", "id": 110911, "value": ""}, {"key": "_min_variation_price", "id": 110912, "value": ""}, {"key": "commissionable_value", "id": 110913, "value": "0.75"}, {"key": "wootan_danger", "id": 110914, "value": ""}, {"key": "lc_rn_regular_price", "id": 110915, "value": ""}, {"key": "lc_rn_sale_price", "id": 110916, "value": ""}, {"key": "lc_rn_sale_price_dates_from", "id": 110917, "value": ""}, {"key": "lc_rn_sale_price_dates_to", "id": 110918, "value": ""}, {"key": "lc_rp_regular_price", "id": 110919, "value": ""}, {"key": "lc_rp_sale_price", "id": 110920, "value": ""}, {"key": "lc_rp_sale_price_dates_from", "id": 110921, "value": ""}, {"key": "lc_rp_sale_price_dates_to", "id": 110922, "value": ""}, {"key": "lc_wn_regular_price", "id": 110923, "value": "5.50"}, {"key": "lc_wn_sale_price", "id": 110924, "value": ""}, {"key": "lc_wn_sale_price_dates_from", "id": 110925, "value": ""}, {"key": "lc_wn_sale_price_dates_to", "id": 110926, "value": ""}, {"key": "lc_wp_regular_price", "id": 110927, "value": "4.95"}, {"key": "lc_wp_sale_price", "id": 110928, "value": ""}, {"key": "lc_wp_sale_price_dates_from", "id": 110929, "value": ""}, {"key": "lc_wp_sale_price_dates_to", "id": 110930, "value": ""}, {"key": "lc_dn_regular_price", "id": 110931, "value": "3.85"}, {"key": "lc_dn_sale_price", "id": 110932, "value": ""}, {"key": "lc_dn_sale_price_dates_from", "id": 110933, "value": ""}, {"key": "lc_dn_sale_price_dates_to", "id": 110934, "value": ""}, {"key": "lc_dp_regular_price", "id": 110935, "value": "3.85"}, {"key": "lc_dp_sale_price", "id": 110936, "value": ""}, {"key": "lc_dp_sale_price_dates_from", "id": 110937, "value": ""}, {"key": "lc_dp_sale_price_dates_to", "id": 110938, "value": ""}], "sale_price": "", "date_on_sale_from": null, "dimensions": {"width": "250", "length": "100", "height": "25"}, "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/", "date_on_sale_from_gmt": null, "backordered": false, "downloadable": false, "tax_class": "", "date_created_gmt": "2018-08-18T07:40:52", "download_expiry": -1, "backorders_allowed": false, "tax_status": "taxable", "date_created": "2018-08-18T17:40:52"}, {"weight": "0.10", "regular_price": 3.85, "date_on_sale_to": null, "image": {"src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png", "name": "Placeholder", "date_modified_gmt": "2018-08-21T02:37:42", "date_modified": "2018-08-21T22:37:42", "date_created_gmt": "2018-08-21T02:37:42", "date_created": "2018-08-21T22:37:42", "position": 0, "alt": "Placeholder", "id": 0}, "shipping_class": "", "visible": true, "menu_order": 10, "attributes": [], "id": 27068, "sku": "AGL-CP5XL", "date_modified_gmt": "2018-08-21T02:37:18", "purchasable": true, "download_limit": -1, "on_sale": false, "virtual": false, "_links": {"self": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27068"}], "up": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"}], "collection": [{"href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"}]}, "stock_quantity": null, "shipping_class_id": 0, "downloads": [], "date_on_sale_to_gmt": null, "backorders": "no", "description": "", "price": 3.85, "date_modified": "2018-08-21T12:37:18", "manage_stock": false, "in_stock": true, "meta_data": [{"key": "_upsell_skus", "id": 110723, "value": []}, {"key": "_crosssell_skus", "id": 110724, "value": []}, {"key": "_file_path", "id": 110734, "value": ""}, {"key": "_button_text", "id": 110739, "value": ""}, {"key": "_product_url", "id": 110958, "value": ""}, {"key": "_max_variation_sale_price", "id": 110960, "value": ""}, {"key": "_min_variation_sale_price", "id": 110961, "value": ""}, {"key": "_max_variation_regular_price", "id": 110962, "value": ""}, {"key": "_min_variation_regular_price", "id": 110963, "value": ""}, {"key": "_max_variation_price", "id": 110964, "value": ""}, {"key": "_min_variation_price", "id": 110965, "value": ""}, {"key": "commissionable_value", "id": 110966, "value": "0.75"}, {"key": "wootan_danger", "id": 110967, "value": ""}, {"key": "lc_rn_regular_price", "id": 110968, "value": ""}, {"key": "lc_rn_sale_price", "id": 110969, "value": ""}, {"key": "lc_rn_sale_price_dates_from", "id": 110970, "value": ""}, {"key": "lc_rn_sale_price_dates_to", "id": 110971, "value": ""}, {"key": "lc_rp_regular_price", "id": 110972, "value": ""}, {"key": "lc_rp_sale_price", "id": 110973, "value": ""}, {"key": "lc_rp_sale_price_dates_from", "id": 110974, "value": ""}, {"key": "lc_rp_sale_price_dates_to", "id": 110975, "value": ""}, {"key": "lc_wn_regular_price", "id": 110976, "value": "5.50"}, {"key": "lc_wn_sale_price", "id": 110977, "value": ""}, {"key": "lc_wn_sale_price_dates_from", "id": 110978, "value": ""}, {"key": "lc_wn_sale_price_dates_to", "id": 110979, "value": ""}, {"key": "lc_wp_regular_price", "id": 110980, "value": "4.95"}, {"key": "lc_wp_sale_price", "id": 110981, "value": ""}, {"key": "lc_wp_sale_price_dates_from", "id": 110982, "value": ""}, {"key": "lc_wp_sale_price_dates_to", "id": 110983, "value": ""}, {"key": "lc_dn_regular_price", "id": 110984, "value": "3.85"}, {"key": "lc_dn_sale_price", "id": 110985, "value": ""}, {"key": "lc_dn_sale_price_dates_from", "id": 110986, "value": ""}, {"key": "lc_dn_sale_price_dates_to", "id": 110987, "value": ""}, {"key": "lc_dp_regular_price", "id": 110988, "value": "3.85"}, {"key": "lc_dp_sale_price", "id": 110989, "value": ""}, {"key": "lc_dp_sale_price_dates_from", "id": 110990, "value": ""}, {"key": "lc_dp_sale_price_dates_to", "id": 110991, "value": ""}], "sale_price": "", "date_on_sale_from": null, "dimensions": {"width": "250", "length": "100", "height": "25"}, "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/", "date_on_sale_from_gmt": null, "backordered": false, "downloadable": false, "tax_class": "", "date_created_gmt": "2018-08-18T07:40:52", "download_expiry": -1, "backorders_allowed": false, "tax_status": "taxable", "date_created": "2018-08-18T17:40:52"}]
+[
+    {
+        "_links": {
+            "collection": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"
+                }
+            ],
+            "self": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27065"
+                }
+            ],
+            "up": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"
+                }
+            ]
+        },
+        "attributes": [
+        ],
+        "backordered": false,
+        "backorders": "no",
+        "backorders_allowed": false,
+        "date_created": "2018-08-18T17:40:52",
+        "date_created_gmt": "2018-08-18T07:40:52",
+        "date_modified": "2018-08-21T12:37:18",
+        "date_modified_gmt": "2018-08-21T02:37:18",
+        "date_on_sale_from": null,
+        "date_on_sale_from_gmt": null,
+        "date_on_sale_to": null,
+        "date_on_sale_to_gmt": null,
+        "description": "",
+        "dimensions": {
+            "height": "25",
+            "length": "100",
+            "width": "250"
+        },
+        "download_expiry": -1,
+        "download_limit": -1,
+        "downloadable": false,
+        "downloads": [
+        ],
+        "id": 27065,
+        "image": {
+            "alt": "Placeholder",
+            "date_created": "2018-08-21T22:37:42",
+            "date_created_gmt": "2018-08-21T02:37:42",
+            "date_modified": "2018-08-21T22:37:42",
+            "date_modified_gmt": "2018-08-21T02:37:42",
+            "id": 0,
+            "name": "Placeholder",
+            "position": 0,
+            "src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png"
+        },
+        "in_stock": false,
+        "manage_stock": false,
+        "menu_order": 7,
+        "meta_data": [
+            {
+                "id": 110528,
+                "key": "_upsell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110529,
+                "key": "_crosssell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110539,
+                "key": "_file_path",
+                "value": ""
+            },
+            {
+                "id": 110544,
+                "key": "_button_text",
+                "value": ""
+            },
+            {
+                "id": 110799,
+                "key": "_product_url",
+                "value": ""
+            },
+            {
+                "id": 110801,
+                "key": "_max_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110802,
+                "key": "_min_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110803,
+                "key": "_max_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110804,
+                "key": "_min_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110805,
+                "key": "_max_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110806,
+                "key": "_min_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110807,
+                "key": "commissionable_value",
+                "value": "0.75"
+            },
+            {
+                "id": 110808,
+                "key": "wootan_danger",
+                "value": ""
+            },
+            {
+                "id": 110809,
+                "key": "lc_rn_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110810,
+                "key": "lc_rn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110811,
+                "key": "lc_rn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110812,
+                "key": "lc_rn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110813,
+                "key": "lc_rp_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110814,
+                "key": "lc_rp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110815,
+                "key": "lc_rp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110816,
+                "key": "lc_rp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110817,
+                "key": "lc_wn_regular_price",
+                "value": "5.50"
+            },
+            {
+                "id": 110818,
+                "key": "lc_wn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110819,
+                "key": "lc_wn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110820,
+                "key": "lc_wn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110821,
+                "key": "lc_wp_regular_price",
+                "value": "4.95"
+            },
+            {
+                "id": 110822,
+                "key": "lc_wp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110823,
+                "key": "lc_wp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110824,
+                "key": "lc_wp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110825,
+                "key": "lc_dn_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110826,
+                "key": "lc_dn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110827,
+                "key": "lc_dn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110828,
+                "key": "lc_dn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110829,
+                "key": "lc_dp_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110830,
+                "key": "lc_dp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110831,
+                "key": "lc_dp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110832,
+                "key": "lc_dp_sale_price_dates_to",
+                "value": ""
+            }
+        ],
+        "on_sale": false,
+        "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/",
+        "price": 3.85,
+        "purchasable": true,
+        "regular_price": 3.85,
+        "sale_price": "",
+        "shipping_class": "",
+        "shipping_class_id": 0,
+        "sku": "AGL-CP5S",
+        "stock_quantity": null,
+        "tax_class": "",
+        "tax_status": "taxable",
+        "virtual": false,
+        "visible": true,
+        "weight": "0.10"
+    },
+    {
+        "_links": {
+            "collection": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"
+                }
+            ],
+            "self": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27066"
+                }
+            ],
+            "up": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"
+                }
+            ]
+        },
+        "attributes": [
+        ],
+        "backordered": false,
+        "backorders": "no",
+        "backorders_allowed": false,
+        "date_created": "2018-08-18T17:40:52",
+        "date_created_gmt": "2018-08-18T07:40:52",
+        "date_modified": "2018-08-21T12:37:18",
+        "date_modified_gmt": "2018-08-21T02:37:18",
+        "date_on_sale_from": null,
+        "date_on_sale_from_gmt": null,
+        "date_on_sale_to": null,
+        "date_on_sale_to_gmt": null,
+        "description": "",
+        "dimensions": {
+            "height": "25",
+            "length": "100",
+            "width": "250"
+        },
+        "download_expiry": -1,
+        "download_limit": -1,
+        "downloadable": false,
+        "downloads": [
+        ],
+        "id": 27066,
+        "image": {
+            "alt": "Placeholder",
+            "date_created": "2018-08-21T22:37:42",
+            "date_created_gmt": "2018-08-21T02:37:42",
+            "date_modified": "2018-08-21T22:37:42",
+            "date_modified_gmt": "2018-08-21T02:37:42",
+            "id": 0,
+            "name": "Placeholder",
+            "position": 0,
+            "src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png"
+        },
+        "in_stock": true,
+        "manage_stock": false,
+        "menu_order": 8,
+        "meta_data": [
+            {
+                "id": 110593,
+                "key": "_upsell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110594,
+                "key": "_crosssell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110604,
+                "key": "_file_path",
+                "value": ""
+            },
+            {
+                "id": 110609,
+                "key": "_button_text",
+                "value": ""
+            },
+            {
+                "id": 110852,
+                "key": "_product_url",
+                "value": ""
+            },
+            {
+                "id": 110854,
+                "key": "_max_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110855,
+                "key": "_min_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110856,
+                "key": "_max_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110857,
+                "key": "_min_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110858,
+                "key": "_max_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110859,
+                "key": "_min_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110860,
+                "key": "commissionable_value",
+                "value": "0.75"
+            },
+            {
+                "id": 110861,
+                "key": "wootan_danger",
+                "value": ""
+            },
+            {
+                "id": 110862,
+                "key": "lc_rn_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110863,
+                "key": "lc_rn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110864,
+                "key": "lc_rn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110865,
+                "key": "lc_rn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110866,
+                "key": "lc_rp_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110867,
+                "key": "lc_rp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110868,
+                "key": "lc_rp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110869,
+                "key": "lc_rp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110870,
+                "key": "lc_wn_regular_price",
+                "value": "5.50"
+            },
+            {
+                "id": 110871,
+                "key": "lc_wn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110872,
+                "key": "lc_wn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110873,
+                "key": "lc_wn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110874,
+                "key": "lc_wp_regular_price",
+                "value": "4.95"
+            },
+            {
+                "id": 110875,
+                "key": "lc_wp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110876,
+                "key": "lc_wp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110877,
+                "key": "lc_wp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110878,
+                "key": "lc_dn_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110879,
+                "key": "lc_dn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110880,
+                "key": "lc_dn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110881,
+                "key": "lc_dn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110882,
+                "key": "lc_dp_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110883,
+                "key": "lc_dp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110884,
+                "key": "lc_dp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110885,
+                "key": "lc_dp_sale_price_dates_to",
+                "value": ""
+            }
+        ],
+        "on_sale": false,
+        "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/",
+        "price": 3.85,
+        "purchasable": true,
+        "regular_price": 3.85,
+        "sale_price": "",
+        "shipping_class": "",
+        "shipping_class_id": 0,
+        "sku": "AGL-CP5M",
+        "stock_quantity": null,
+        "tax_class": "",
+        "tax_status": "taxable",
+        "virtual": false,
+        "visible": true,
+        "weight": "0.10"
+    },
+    {
+        "_links": {
+            "collection": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"
+                }
+            ],
+            "self": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27067"
+                }
+            ],
+            "up": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"
+                }
+            ]
+        },
+        "attributes": [
+        ],
+        "backordered": false,
+        "backorders": "no",
+        "backorders_allowed": false,
+        "date_created": "2018-08-18T17:40:52",
+        "date_created_gmt": "2018-08-18T07:40:52",
+        "date_modified": "2018-08-21T12:37:18",
+        "date_modified_gmt": "2018-08-21T02:37:18",
+        "date_on_sale_from": null,
+        "date_on_sale_from_gmt": null,
+        "date_on_sale_to": null,
+        "date_on_sale_to_gmt": null,
+        "description": "",
+        "dimensions": {
+            "height": "25",
+            "length": "100",
+            "width": "250"
+        },
+        "download_expiry": -1,
+        "download_limit": -1,
+        "downloadable": false,
+        "downloads": [
+        ],
+        "id": 27067,
+        "image": {
+            "alt": "Placeholder",
+            "date_created": "2018-08-21T22:37:42",
+            "date_created_gmt": "2018-08-21T02:37:42",
+            "date_modified": "2018-08-21T22:37:42",
+            "date_modified_gmt": "2018-08-21T02:37:42",
+            "id": 0,
+            "name": "Placeholder",
+            "position": 0,
+            "src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png"
+        },
+        "in_stock": true,
+        "manage_stock": false,
+        "menu_order": 9,
+        "meta_data": [
+            {
+                "id": 110658,
+                "key": "_upsell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110659,
+                "key": "_crosssell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110669,
+                "key": "_file_path",
+                "value": ""
+            },
+            {
+                "id": 110674,
+                "key": "_button_text",
+                "value": ""
+            },
+            {
+                "id": 110905,
+                "key": "_product_url",
+                "value": ""
+            },
+            {
+                "id": 110907,
+                "key": "_max_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110908,
+                "key": "_min_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110909,
+                "key": "_max_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110910,
+                "key": "_min_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110911,
+                "key": "_max_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110912,
+                "key": "_min_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110913,
+                "key": "commissionable_value",
+                "value": "0.75"
+            },
+            {
+                "id": 110914,
+                "key": "wootan_danger",
+                "value": ""
+            },
+            {
+                "id": 110915,
+                "key": "lc_rn_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110916,
+                "key": "lc_rn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110917,
+                "key": "lc_rn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110918,
+                "key": "lc_rn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110919,
+                "key": "lc_rp_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110920,
+                "key": "lc_rp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110921,
+                "key": "lc_rp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110922,
+                "key": "lc_rp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110923,
+                "key": "lc_wn_regular_price",
+                "value": "5.50"
+            },
+            {
+                "id": 110924,
+                "key": "lc_wn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110925,
+                "key": "lc_wn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110926,
+                "key": "lc_wn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110927,
+                "key": "lc_wp_regular_price",
+                "value": "4.95"
+            },
+            {
+                "id": 110928,
+                "key": "lc_wp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110929,
+                "key": "lc_wp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110930,
+                "key": "lc_wp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110931,
+                "key": "lc_dn_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110932,
+                "key": "lc_dn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110933,
+                "key": "lc_dn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110934,
+                "key": "lc_dn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110935,
+                "key": "lc_dp_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110936,
+                "key": "lc_dp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110937,
+                "key": "lc_dp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110938,
+                "key": "lc_dp_sale_price_dates_to",
+                "value": ""
+            }
+        ],
+        "on_sale": false,
+        "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/",
+        "price": 3.85,
+        "purchasable": true,
+        "regular_price": 3.85,
+        "sale_price": "",
+        "shipping_class": "",
+        "shipping_class_id": 0,
+        "sku": "AGL-CP5L",
+        "stock_quantity": null,
+        "tax_class": "",
+        "tax_status": "taxable",
+        "virtual": false,
+        "visible": true,
+        "weight": "0.10"
+    },
+    {
+        "_links": {
+            "collection": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations"
+                }
+            ],
+            "self": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063/variations/27068"
+                }
+            ],
+            "up": [
+                {
+                    "href": "http://derwent-mac.ddns.me:18080/wptest/wp-json/wc/v2/products/27063"
+                }
+            ]
+        },
+        "attributes": [
+        ],
+        "backordered": false,
+        "backorders": "no",
+        "backorders_allowed": false,
+        "date_created": "2018-08-18T17:40:52",
+        "date_created_gmt": "2018-08-18T07:40:52",
+        "date_modified": "2018-08-21T12:37:18",
+        "date_modified_gmt": "2018-08-21T02:37:18",
+        "date_on_sale_from": null,
+        "date_on_sale_from_gmt": null,
+        "date_on_sale_to": null,
+        "date_on_sale_to_gmt": null,
+        "description": "",
+        "dimensions": {
+            "height": "25",
+            "length": "100",
+            "width": "250"
+        },
+        "download_expiry": -1,
+        "download_limit": -1,
+        "downloadable": false,
+        "downloads": [
+        ],
+        "id": 27068,
+        "image": {
+            "alt": "Placeholder",
+            "date_created": "2018-08-21T22:37:42",
+            "date_created_gmt": "2018-08-21T02:37:42",
+            "date_modified": "2018-08-21T22:37:42",
+            "date_modified_gmt": "2018-08-21T02:37:42",
+            "id": 0,
+            "name": "Placeholder",
+            "position": 0,
+            "src": "http://derwent-mac.ddns.me:18080/wptest/wp-content/plugins/woocommerce/assets/images/placeholder.png"
+        },
+        "in_stock": true,
+        "manage_stock": false,
+        "menu_order": 10,
+        "meta_data": [
+            {
+                "id": 110723,
+                "key": "_upsell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110724,
+                "key": "_crosssell_skus",
+                "value": [
+                ]
+            },
+            {
+                "id": 110734,
+                "key": "_file_path",
+                "value": ""
+            },
+            {
+                "id": 110739,
+                "key": "_button_text",
+                "value": ""
+            },
+            {
+                "id": 110958,
+                "key": "_product_url",
+                "value": ""
+            },
+            {
+                "id": 110960,
+                "key": "_max_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110961,
+                "key": "_min_variation_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110962,
+                "key": "_max_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110963,
+                "key": "_min_variation_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110964,
+                "key": "_max_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110965,
+                "key": "_min_variation_price",
+                "value": ""
+            },
+            {
+                "id": 110966,
+                "key": "commissionable_value",
+                "value": "0.75"
+            },
+            {
+                "id": 110967,
+                "key": "wootan_danger",
+                "value": ""
+            },
+            {
+                "id": 110968,
+                "key": "lc_rn_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110969,
+                "key": "lc_rn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110970,
+                "key": "lc_rn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110971,
+                "key": "lc_rn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110972,
+                "key": "lc_rp_regular_price",
+                "value": ""
+            },
+            {
+                "id": 110973,
+                "key": "lc_rp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110974,
+                "key": "lc_rp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110975,
+                "key": "lc_rp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110976,
+                "key": "lc_wn_regular_price",
+                "value": "5.50"
+            },
+            {
+                "id": 110977,
+                "key": "lc_wn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110978,
+                "key": "lc_wn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110979,
+                "key": "lc_wn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110980,
+                "key": "lc_wp_regular_price",
+                "value": "4.95"
+            },
+            {
+                "id": 110981,
+                "key": "lc_wp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110982,
+                "key": "lc_wp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110983,
+                "key": "lc_wp_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110984,
+                "key": "lc_dn_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110985,
+                "key": "lc_dn_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110986,
+                "key": "lc_dn_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110987,
+                "key": "lc_dn_sale_price_dates_to",
+                "value": ""
+            },
+            {
+                "id": 110988,
+                "key": "lc_dp_regular_price",
+                "value": "3.85"
+            },
+            {
+                "id": 110989,
+                "key": "lc_dp_sale_price",
+                "value": ""
+            },
+            {
+                "id": 110990,
+                "key": "lc_dp_sale_price_dates_from",
+                "value": ""
+            },
+            {
+                "id": 110991,
+                "key": "lc_dp_sale_price_dates_to",
+                "value": ""
+            }
+        ],
+        "on_sale": false,
+        "permalink": "http://derwent-mac.ddns.me:18080/wptest/product/cotton-glove-pack-x5-pairs/",
+        "price": 3.85,
+        "purchasable": true,
+        "regular_price": 3.85,
+        "sale_price": "",
+        "shipping_class": "",
+        "shipping_class_id": 0,
+        "sku": "AGL-CP5XL",
+        "stock_quantity": null,
+        "tax_class": "",
+        "tax_status": "taxable",
+        "virtual": false,
+        "visible": true,
+        "weight": "0.10"
+    }
+]
