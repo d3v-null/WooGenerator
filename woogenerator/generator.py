@@ -1441,8 +1441,15 @@ def upload_new_items_slave(
         if Registrar.DEBUG_PROGRESS:
             update_progress_counter.maybe_print_update(update_count)
 
+        create_item_kwargs = {}
+        process_item_kwargs = {}
+        if _type == 'variation':
+            parent_id = sync_update.old_m_object.parent['ID']
+            create_item_kwargs['parent_id'] = parent_id
+            process_item_kwargs['parent_id'] = parent_id
+
         try:
-            response = client.create_item_core(core_data)
+            response = client.create_item_core(core_data, **create_item_kwargs)
             response_api_data = response.json()
         except BaseException as exc:
             handle_failed_update(
@@ -1455,7 +1462,7 @@ def upload_new_items_slave(
         response_gen_object = getattr(
             parsers.slave, type_analyse_api_obj_fns[_type]
         )(
-            response_api_data
+            response_api_data, **process_item_kwargs
         )
 
         sync_update.set_new_s_object_gen(response_gen_object)
@@ -1881,7 +1888,7 @@ def delete_products_slave(parsers, results, settings, client, delete_updates):
     raise NotImplementedError()
 
 
-def do_updates_prod(updates, parsers, settings, results):
+def do_updates_prod_slave(updates, parsers, results, settings):
     """
     Update products in slave.
     """
@@ -1957,6 +1964,25 @@ def do_updates_prod(updates, parsers, settings, results):
             delete_products_slave(
                 parsers, results, settings, client, delete_updates
             )
+
+
+def do_updates_prod_master(updates, parsers, settings, results):
+    for update in updates.master:
+        old_master_id = update.master_id
+        if Registrar.DEBUG_UPDATE:
+            Registrar.register_message(
+                "performing update < %5s | %5s > = \n%100s, %100s " %
+                (update.master_id, update.slave_id,
+                 str(update.old_m_object), str(update.old_s_object)))
+        if old_master_id not in parsers.master.items:
+            exc = UserWarning(
+                "couldn't fine pkey %s in parsers.master.items" %
+                update.master_id)
+            Registrar.register_error(exc)
+            continue
+        parsers.master.items[old_master_id].update(
+            update.get_master_updates_native()
+        )
 
 
 def do_updates_var_master(updates, parsers, results, settings):
@@ -2274,7 +2300,8 @@ def main(override_args=None, settings=None):
     )
 
     try:
-        do_updates_prod(updates, parsers, settings, results)
+        do_updates_prod_slave(updates, parsers, results, settings)
+        do_updates_prod_master(updates, parsers, results, settings)
     except (SystemExit, KeyboardInterrupt) as exc:
         Registrar.register_error(exc)
         return reporters, results

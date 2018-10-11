@@ -707,6 +707,11 @@ class ApiParseWoo(
     def process_api_variation_raw(self, var_api_data, **kwargs):
         coldata_class = kwargs.get('codata_class', self.coldata_var_class)
         coldata_target = kwargs.get('coldata_target', self.coldata_target)
+        parent_id = kwargs.get('parent_id')
+        # TODO: obtain parent
+        parent = self.find_product({
+            self.object_container.wpid_key: parent_id
+        })
 
         var_core_data = coldata_class.translate_data_from(
             var_api_data, coldata_target
@@ -716,7 +721,7 @@ class ApiParseWoo(
         )
         if self.save_api_data:
             var_gen_data['api_data'] = var_api_data
-        return self.analyse_api_sub_var_gen(None, var_gen_data)
+        return self.analyse_api_sub_var_gen(parent, var_gen_data)
 
     def get_parser_data(self, **kwargs):
         """

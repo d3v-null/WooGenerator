@@ -451,6 +451,14 @@ class CsvParseWooMixin(object):
             self.attachment_container.source_url_key
         ]
 
+    @property
+    def prod_search_keys(self):
+        return [
+            self.object_container.wpid_key,
+            self.object_container.slug_key,
+            self.object_container.title_key
+        ]
+
     def find_category(self, search_data):
         registry = self.taxos
         return self.find_object(search_data, registry, self.cat_search_keys)
@@ -458,6 +466,10 @@ class CsvParseWooMixin(object):
     def find_image(self, search_data):
         registry = self.attachments
         return self.find_object(search_data, registry, self.img_search_keys)
+
+    def find_product(self, search_data):
+        registry = self.products
+        return self.find_object(search_data, registry, self.prod_search_keys)
 
     @classmethod
     def get_title(cls, object_data):

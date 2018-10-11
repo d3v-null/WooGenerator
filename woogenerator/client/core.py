@@ -346,7 +346,9 @@ class SyncClientLocal(SyncClientAbstract):
 
             if isinstance(decoded, list):
                 for decoded_item in decoded:
-                    parser.process_api_variation_raw(decoded_item)
+                    parser.process_api_variation_raw(
+                        decoded_item, parent_id=parent_pkey
+                    )
 
 
 class SyncClientLocalStream(SyncClientLocal):

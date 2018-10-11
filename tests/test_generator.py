@@ -29,6 +29,8 @@ from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_updates_categories_slave,
                                     do_updates_images_master,
                                     do_updates_images_slave,
+                                    do_updates_prod_master,
+                                    do_updates_prod_slave,
                                     do_updates_var_master,
                                     do_updates_var_slave, export_master_parser,
                                     populate_master_parsers,
@@ -2535,6 +2537,45 @@ python -m woogenerator.generator \
 
         self.assertNotIn('meta', sync_update.get_master_updates().keys())
 
+    def test_dummy_do_updates_prod_master_only(self):
+        self.settings.do_variations = False
+        self.settings.do_categories = False
+        self.settings.do_attributes = False
+        self.settings.do_images = False
+        self.settings.do_specials = False
+
+        self.populate_master_parsers()
+        self.populate_slave_parsers()
+
+        do_match_prod(self.parsers, self.matches, self.settings)
+        do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
+
+        do_updates_prod_master(
+            self.updates, self.parsers, self.results, self.settings
+        )
+
+        self.assertEqual(
+            self.parsers.master.products['ACARA-CAL']['ID'],
+            24771
+        )
+
+    # TODO:
+    # def test_dummy_do_updates_prod_slave_only(self):
+    #     self.settings.do_variations = False
+    #     self.settings.do_categories = False
+    #     self.settings.do_attributes = False
+    #     self.settings.do_images = False
+    #     self.settings.do_specials = False
+    #
+    #     self.populate_master_parsers()
+    #     self.populate_slave_parsers()
+    #
+    #     do_match_prod(self.parsers, self.matches, self.settings)
+    #     do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
+    #
+    #     do_updates_prod_slave()
+
+
 
 class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
     """
@@ -3008,7 +3049,6 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_match_var(self.parsers, self.matches, self.settings)
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
-
         do_updates_var_master(
             self.updates, self.parsers, self.results, self.settings
         )
@@ -3028,9 +3068,15 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
         do_match_var(self.parsers, self.matches, self.settings)
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
-
-        with self.assertRaises(NotImplementedError):
-            self.do_updates_var_slave_mocked()
+        do_match_prod(self.parsers, self.matches, self.settings)
+        do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
+        do_updates_var_master(
+            self.updates, self.parsers, self.results, self.settings
+        )
+        do_updates_prod_master(
+            self.updates, self.parsers, self.results, self.settings
+        )
+        self.do_updates_var_slave_mocked()
 
 
     def test_super_dummy_updates_changes_var_slave_only(self):

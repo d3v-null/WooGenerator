@@ -89,7 +89,9 @@ class VarSyncClientMixin(object):
         parent_pkey = kwargs.pop('parent_pkey', None)
         for page in self.get_variations(parent_pkey):
             for page_item in page:
-                parser.process_api_variation_raw(page_item)
+                parser.process_api_variation_raw(
+                    page_item, parent_id=parent_pkey
+                )
 
 
 class VarSyncClientWC(SyncClientWC, VarSyncClientMixin):
