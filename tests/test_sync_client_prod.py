@@ -290,6 +290,11 @@ class TestProdSyncClientSimple(TestProdSyncClient):
             self.check_update_target_path(client, pkey, delta_path, value)
 
     def test_upload_changes_meta(self):
+        """
+        Test data has been compromised, Fails with
+
+        IndexError: No key lc_wn_regular_price in data [OrderedDict([('meta_value', []), ('meta_id', 110485), ('meta_key', u'_upsell_skus')]), OrderedDict([('meta_value', []), ('meta_id', 110486), ('meta_key', u'_crosssell_skus')]), OrderedDict([('meta_value', u''), ('meta_id', 110489), ('meta_key', u'_min_variation_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110490), ('meta_key', u'_max_variation_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110491), ('meta_key', u'_min_variation_regular_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110492), ('meta_key', u'_max_variation_regular_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110493), ('meta_key', u'_min_variation_sale_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110494), ('meta_key', u'_max_variation_sale_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110496), ('meta_key', u'_file_path')]), OrderedDict([('meta_value', u''), ('meta_id', 110500), ('meta_key', u'_product_url')]), OrderedDict([('meta_value', u''), ('meta_id', 110501), ('meta_key', u'_button_text')]), OrderedDict([('meta_value', u'Cotton Glove Pack x5 Pairs'), ('meta_id', 110503), ('meta_key', u'title_1')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110769), ('meta_key', u'_min_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110770), ('meta_key', u'_min_regular_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110771), ('meta_key', u'_min_sale_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110772), ('meta_key', u'_max_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110773), ('meta_key', u'_max_regular_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110774), ('meta_key', u'_max_sale_price_variation_id')])]
+        """
         delta_path = 'meta.lc_wn_regular_price'
         product_client_class = self.settings.slave_download_client_class
         product_client_args = self.settings.slave_download_client_args
@@ -437,6 +442,8 @@ class TestProdSyncClientSimpleWC(TestProdSyncClientSimple):
                     client.primary_key_handle, sub_handle, 'attributes'
                 ]
             ))
+
+            # TODO: Fails here with AssertionError: [] is not true
             self.assertTrue(entity_subs)
             self.assertTrue(entity_attributes)
             self.assertTrue(entity_attributes[0]['options'])
@@ -622,6 +629,17 @@ class TestVarSyncClientWC(TestProdSyncClient):
             )
 
     def test_upload_changes_var_meta(self):
+        """
+        TODO: test data has been compromised.
+
+        First variable product contains no variations.
+
+        self = <woogenerator.client.prod.VarSyncClientWC object at 0x107236310>, parent_id = 1237
+
+            def get_first_variation(self, parent_id):
+        >       return self.get_variations(parent_id).next()[0]
+        E       IndexError: list index out of range
+        """
         delta_path = 'meta.lc_wn_regular_price'
 
         product_client_class = self.settings.slave_download_client_class
@@ -635,6 +653,8 @@ class TestVarSyncClientWC(TestProdSyncClient):
         var_client_class = self.settings.slave_var_sync_client_class
         var_client_args = self.settings.slave_var_sync_client_args
         with var_client_class(**var_client_args) as client:
+
+            # TODO: fails here, see docstring
             first_var_raw = client.get_first_variation(parent_pkey)
             value, var_pkey = tuple(self.raw_get_core_paths(
                 client, first_var_raw, [delta_path, client.primary_key_handle]

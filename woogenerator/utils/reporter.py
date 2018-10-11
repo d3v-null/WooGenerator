@@ -14,7 +14,8 @@ import unicodecsv
 from ..duplicates import Duplicates
 
 from .clock import TimeUtils
-from .core import Registrar, SanitationUtils
+from .core import SanitationUtils
+from .registrar import Registrar
 from ..namespace.user import SettingsNamespaceUser
 from ..namespace.prod import SettingsNamespaceProd
 

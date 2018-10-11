@@ -1141,7 +1141,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 master_desc
             )
             self.assertEqual(
-                SanitationUtils.normalize_text_type(sync_update.old_s_object_core['post_excerpt']),
+                SanitationUtils.normalize_unicode(sync_update.old_s_object_core['post_excerpt']),
                 slave_desc
             )
             self.assertEqual(

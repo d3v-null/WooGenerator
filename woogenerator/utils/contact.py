@@ -4,7 +4,8 @@ from __future__ import absolute_import
 import re
 from collections import OrderedDict
 
-from .core import Registrar, SanitationUtils
+from .core import SanitationUtils
+from .registrar import Registrar
 
 
 class NameUtils(object):
