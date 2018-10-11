@@ -537,261 +537,7 @@ def do_match_images(parsers, matches, settings):
         index_fn=ImageMatcher.image_index_fn
     )
 
-    # TODO: fix not syncing to VuTan
-    """
-source/generator.py:1696.main>source/generator.py:475.do_match_images ~ analysing duplicate match:
-objects            modified_gmt               modified_local       title                                               ID      width    height  file_path
------------------  -------------------------  -------------------  --------------------------------------------------  ----  -------  --------  --------------------------------------------------
-307|CVEXG-250.png  2017-12-11 20:52:52+00:00  2017-12-12 06:32:52  Exfoliating Facial Gel - Lavender & Rosemary - 250           1181      1181  /Users/Derwent/Documents/TechnoTan/compressed/imag
-source/generator.py:1696.main>source/generator.py:484.do_match_images ~ sub match CVEXG-250 is slaveless:
-objects            modified_gmt               modified_local       title                                               ID      width    height  file_path
------------------  -------------------------  -------------------  --------------------------------------------------  ----  -------  --------  --------------------------------------------------
-307|CVEXG-250.png  2017-12-11 20:52:52+00:00  2017-12-12 06:32:52  Exfoliating Facial Gel - Lavender & Rosemary - 250           1181      1181  /Users/Derwent/Documents/TechnoTan/compressed/imag
-source/generator.py:1696.main>source/generator.py:475.do_match_images ~ analysing duplicate match:
-objects        modified_gmt               modified_local       title                                               ID      width    height  file_path
--------------  -------------------------  -------------------  --------------------------------------------------  ----  -------  --------  --------------------------------------------------
-309|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Exfoliating Facial Gel - Lavender & Rosemary - 10m           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-314|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Exfoliating Body Cream - Peach & Vanilla - 10ml sa           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-320|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Tan Remover - Melon & Cucumber - 10ml sample (jar)           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-395|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Tan Saver Body Wash - Peach & Vanilla - 10ml sampl           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-400|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Tan Saver Body Wash - Coconut & Lime - 10ml sample           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-411|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Deluxe Body Butter - Tamarillo - 10ml sample (sach           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-416|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Deluxe Body Butter - Peach & Vanilla - 10ml sample           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-421|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Deluxe Body Butter - Toffee - 10ml sample (sachet)           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-426|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Body Butter with Shimmer - Peach & Vanilla - 10ml            1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-487|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Tan Extender - Coconut Cream - 10ml sample (sachet           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-492|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Bronzing Cream - Tamarillo & Papaya - 10ml sample            1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-497|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Shimmering Bronzer - Tamarillo & Papaya - 10ml sam           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-545|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Coconut & Lime Shampoo - 10ml Sample Sachet                  1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-550|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Coconut & Lime Conditioner - 10ml Sample Sachet              1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-source/generator.py:1696.main>source/generator.py:484.do_match_images ~ sub match CVBBS-S is slaveless:
-objects        modified_gmt               modified_local       title                                              ID      width    height  file_path
--------------  -------------------------  -------------------  -------------------------------------------------  ----  -------  --------  --------------------------------------------------
-426|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Body Butter with Shimmer - Peach & Vanilla - 10ml           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-source/generator.py:1696.main>source/generator.py:484.do_match_images ~ sub match CVCO-S is slaveless:
-objects        modified_gmt               modified_local       title                                            ID      width    height  file_path
--------------  -------------------------  -------------------  -----------------------------------------------  ----  -------  --------  --------------------------------------------------
-550|VTS-S.png  2017-12-11 20:52:55+00:00  2017-12-12 06:32:55  Coconut & Lime Conditioner - 10ml Sample Sachet           1920      1920  /Users/Derwent/Documents/TechnoTan/compressed/imag
-source/generator.py:1882.<module>>source/generator.py:1842.catch_main ! Traceback (most recent call last):
-  File "/Users/derwent/Documents/GitHub/WooGenerator/woogenerator/generator.py", line 1826, in catch_main
-    main(settings=settings, override_args=override_args)
-  File "/Users/derwent/Documents/GitHub/WooGenerator/woogenerator/generator.py", line 1696, in main
-    do_match_images(parsers, matches, settings)
-  File "/Users/derwent/Documents/GitHub/WooGenerator/woogenerator/generator.py", line 500, in do_match_images
-    matches.image.slaveless.add_matches([match])
-  File "woogenerator/matching.py", line 364, in add_matches
-    self.add_match(match)
-  File "woogenerator/matching.py", line 348, in add_match
-    match), str('\n'.join(map(str, self)))
-AssertionError: can't add match m_object 550|VTS-S.png <ImportWooImg> : m_index VTS-S.png already in m_indices: [u'SVV2.png', u'SVV2-CAL.png', u'SVV2-CAH.png', u'SVV2-CAS.png', u'SVV2-CCL.png', u'SVV2-CCH.png', u'SVV2-CCS.png', u'SVV2-CFL.png', u'SVV2-CFH.png', u'SVV2-CFS.png', u'SVV2-CML.png', u'SVV2-CMH.png', u'SVV2-CMS.png', u'SVV2-EBL.png', u'SVV2-EBH.png', u'SVV2-EBS.png', u'SVFTB.png', u'SVFTB-ML.png', u'SVFTB-MH.png', u'SVFTB-MS.png', u'SVFTB-DL.png', u'SVFTB-DH.png', u'SVFTB-DS.png', u'SVFTB-XDL.png', u'SVFTB-XDH.png', u'SVFTB-XDS.png', u'SVBTP.png', u'SVBTP-LL.png', u'SVBTP-LH.png', u'SVBTP-LS.png', u'SVBTP-CL.png', u'SVBTP-CH.png', u'SVBTP-CS.png', u'SVBTP-ML.png', u'SVBTP-MH.png', u'SVBTP-MS.png', u'SVBTP-EL.png', u'SVBTP-EH.png', u'SVBTP-ES.png', u'SVO.png', u'SVO-ALOL.png', u'SVO-ALOH.png', u'SVO-ALOS.png', u'SVO-CHL.png', u'SVO-CHH.png', u'SVO-CHS.png', u'SVO-CBL.png', u'SVO-CBH.png', u'SVO-CBS.png', u'SVO-CRL.png', u'SVO-CRH.png', u'SVO-CRS.png', u'SVEM.png', u'SVEM-UDL.png', u'SVEM-UDH.png', u'SVEM-UDS.png', u'CV-PT.jpg', u'CV-PT250.png', u'CV-PT100.png', u'CV-PT10.png', u'CVEXG-100.png', u'CVEXC-100.png', u'CVTR-250.png', u'CVTR-100.png', u'CVMITT-REM.png', u'CVMITT-APP.png', u'CV-AC.jpg', u'CV-ACL.png', u'CV-AC500.png', u'CV-AC300.png', u'CV-AC250.png', u'CV-AC200.png', u'CV-AC100.png', u'CV-AC50.png', u'CV-AC10.png', u'CVBW-PV1000.png', u'CVBW-PV500.png', u'CVBW-PV300.png', u'CVBW-CL1000.png', u'CVBW-CL500.png', u'CVBW-CL300.png', u'CVDBB-TAM100.png', u'CVDBB-TAM50.png', u'CVDBB-PV200.png', u'CVDBB-PV100.png', u'CVDBB-PV50.png', u'CVDBB-TOF200.png', u'CVDBB-TOF100.png', u'CVDBB-TOF50.png', u'CVBBS-100.png', u'CVBM-CL300.png', u'CV-TE.jpg', u'CV-TE250.png', u'CV-TE200.png', u'CV-TE100.png', u'CV-TE10.png', u'CVTEX-100.png', u'CVBC-100.png', u'CVSB-100.png', u'CVCTM-M200.png', u'CVCTM-M100.png', u'CVCTM-D200.png', u'CVCTM-D100.png', u'CVCTM-RM200.png', u'CVCTM-RM100.png', u'CVBTM-D200.png', u'CVBTM-D100.png', u'CV-HC.jpg', u'CV-HC375.png', u'CV-HC100.png', u'CV-HC10.png', u'CVSH-100.png', u'CVCO-100.png', u'ACS.png', u'AVUMB-L.jpg', u'AVCB-MINBLK.png', u'AVCB-LRGBLK.png', u'AVBB-L.png', u'AVBCS.png', u'AVBCS-500.png', u'AVBCS-250.png', u'AVBCS-125.png', u'AVTOW-BLKXL.png', u'AVTOW-BLKL.png', u'AVTOW-GRYS.png', u'AVBC.png', u'AVBC-300.png', u'AVBAG-PLA50.png', u'AVBAG-GIF10.png', u'EAG-MINH.png', u'EAG-ADVH.png', u'EAG-ULT.png', u'EAG-ULTH.png', u'EAG-PREH.png', u'EAG-PROH.png', u'EAP-POTDS.jpg', u'Spare-Pot_Deluxe-Gun_Black.png', u'EAP-POTPMS.png', u'EAP-POTPMG.png', u'EAP-FECPRE.png', u'EAP-FECMIN.png', u'EAP-FECPMS.png', u'EAP-DSPPRE.jpg', u'EAP-DSPMIN.png', u'EAP-DSPPMS.png', u'EAP-DIPPRE.jpg', u'EAP-DIPPRO.png', u'EAP-HOSECLCLA.png', u'EAP-HOSECLADV.png', u'EAP-HOSECLDEL.png', u'EAP-HOSECLPRE.png', u'EAP-HOSECLPRO.png', u'EAP-HOSE700PRE.png', u'EAP-FITG30ADV.png', u'EAP-FITG30DEL.png', u'EAP-FITG30PRE.png', u'EAP-FITG30PRO.png', u'EBP-LSLV.jpg', u'EBP-LSLED.jpg', u'EBP-FANC.jpg', u'EBV-PUBLK.png', u'EBV-INFT200.png', u'EBV-SPPNK.png', u'EBVP-INFAB.png', u'EBVP-INFAB200.png', u'EBVP-INFCB.jpg', u'EBVBOX-FLEDCH.png', u'EBVBOX-FLEDR.png', u'EBVBOX-FLEDHP.png', u'EBVBOX-PAC.png', u'EBVBOX-PACL.png', u'EBVBOX-PAR.png', u'EBVBOX-PAH.png', u'EBVBOX-PAHP.png', u'EBVBOX-FRC.png', u'EBVBOX-FRCL.png', u'EBVBOX-FRR.png', u'EBVBOX-FRH.png', u'EBVBOX-FRHP.png', u'EBVBOX-FA3.jpg', u'APVP-F.jpg', u'APVP-M.png', u'APVV-1F.jpg', u'APVT-F.jpg', u'APVS-1F.jpg', u'APVS-2F.jpg', u'CAN-BR.jpg', u'CAN-BT.jpg', u'CAN-CL.jpg', u'CAN-CM.jpg', u'CAN-CT.jpg', u'CAN-ES.jpg', u'CAN-FV.jpg', u'CAN-SB.jpg', u'MM.png', u'MMBRO-WAS1.png', u'PV-CS.png', u'PV-BS.png', u'PV-SS.png', u'PV-EC.png', u'PV-DE.png', u'PV-PR.png', u'MAFP-AS.png', u'MRUP-KEY.png', u'CVEXG-250.png', u'VTS-S.png']
-(1) [                                    550|VTS-S.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
- all matches: (1) [                                     -1|SVV2.png <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                  105|SVV2-CAL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  106|SVV2-CAH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  107|SVV2-CAS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  109|SVV2-CCL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  110|SVV2-CCH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  111|SVV2-CCS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  113|SVV2-CFL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  114|SVV2-CFH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  115|SVV2-CFS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  117|SVV2-CML.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  118|SVV2-CMH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  119|SVV2-CMS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  121|SVV2-EBL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  122|SVV2-EBH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  123|SVV2-EBS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                    -1|SVFTB.png <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                  126|SVFTB-ML.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  127|SVFTB-MH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  128|SVFTB-MS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  130|SVFTB-DL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  131|SVFTB-DH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  132|SVFTB-DS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  134|SVFTB-XDL.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  135|SVFTB-XDH.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  136|SVFTB-XDS.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                    -1|SVBTP.png <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                  139|SVBTP-LL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  140|SVBTP-LH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  141|SVBTP-LS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  143|SVBTP-CL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  144|SVBTP-CH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  145|SVBTP-CS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  147|SVBTP-ML.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  148|SVBTP-MH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  149|SVBTP-MS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  151|SVBTP-EL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  152|SVBTP-EH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  153|SVBTP-ES.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                     -1|SVO.png <ImportWooImg>                                      ] | (0) [                                                                                                    ]
-(1) [                                  156|SVO-ALOL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  157|SVO-ALOH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  158|SVO-ALOS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   160|SVO-CHL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   161|SVO-CHH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   162|SVO-CHS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   164|SVO-CBL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   165|SVO-CBH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   166|SVO-CBS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   168|SVO-CRL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   169|SVO-CRH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   170|SVO-CRS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                     -1|SVEM.png <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                  173|SVEM-UDL.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  174|SVEM-UDH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  175|SVEM-UDS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                    -1|CV-PT.jpg <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-PT250.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-PT100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-PT10.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                  308|CVEXG-100.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  313|CVEXC-100.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  318|CVTR-250.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  319|CVTR-100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                 322|CVMITT-REM.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 323|CVMITT-APP.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                    -1|CV-AC.jpg <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                    -1|CV-ACL.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-AC500.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-AC300.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-AC250.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-AC200.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-AC100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-AC50.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-AC10.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                 392|CVBW-PV1000.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 393|CVBW-PV500.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 394|CVBW-PV300.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 397|CVBW-CL1000.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 398|CVBW-CL500.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 399|CVBW-CL300.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                409|CVDBB-TAM100.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 410|CVDBB-TAM50.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 413|CVDBB-PV200.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 414|CVDBB-PV100.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 415|CVDBB-PV50.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                418|CVDBB-TOF200.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                419|CVDBB-TOF100.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 420|CVDBB-TOF50.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                  425|CVBBS-100.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 429|CVBM-CL300.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                    -1|CV-TE.jpg <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-TE250.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-TE200.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-TE100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-TE10.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                  486|CVTEX-100.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  491|CVBC-100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  496|CVSB-100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                 500|CVCTM-M200.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 501|CVCTM-M100.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 503|CVCTM-D200.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 504|CVCTM-D100.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 506|CVCTM-RM200.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 507|CVCTM-RM100.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 513|CVBTM-D200.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 514|CVBTM-D100.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                    -1|CV-HC.jpg <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-HC375.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-HC100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   -1|CV-HC10.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                  544|CVSH-100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  549|CVCO-100.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                     -1|ACS.png <ImportWooImg>                                      ] | (0) [                                                                                                    ]
-(1) [                                   651|AVUMB-L.jpg <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                 654|AVCB-MINBLK.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 656|AVCB-LRGBLK.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                   660|AVBB-L.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    662|AVBCS.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                  663|AVBCS-500.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  664|AVBCS-250.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  665|AVBCS-125.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 668|AVTOW-BLKXL.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 669|AVTOW-BLKL.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 671|AVTOW-GRYS.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                    673|AVBC.png <ImportWooImg>                                     ] | (0) [                                                                                                    ]
-(1) [                                  674|AVBC-300.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                 678|AVBAG-PLA50.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 680|AVBAG-GIF10.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                  797|EAG-MINH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  800|EAG-ADVH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   807|EAG-ULT.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  808|EAG-ULTH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  811|EAG-PREH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  820|EAG-PROH.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  837|EAP-POTDS.jpg <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                         838|Spare-Pot_Deluxe-Gun_Black.png <ImportWooImg>                          ] | (0) [                                                                                                    ]
-(1) [                                 841|EAP-POTPMS.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 842|EAP-POTPMG.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 850|EAP-FECPRE.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 851|EAP-FECMIN.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 852|EAP-FECPMS.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 857|EAP-DSPPRE.jpg <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 858|EAP-DSPMIN.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 859|EAP-DSPPMS.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 870|EAP-DIPPRE.jpg <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 871|EAP-DIPPRO.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                879|EAP-HOSECLCLA.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                880|EAP-HOSECLADV.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                881|EAP-HOSECLDEL.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                882|EAP-HOSECLPRE.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                883|EAP-HOSECLPRO.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                               887|EAP-HOSE700PRE.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                892|EAP-FITG30ADV.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                893|EAP-FITG30DEL.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                894|EAP-FITG30PRE.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                895|EAP-FITG30PRO.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                  999|EBP-LSLV.jpg <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                 1000|EBP-LSLED.jpg <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  1015|EBP-FANC.jpg <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 1108|EBV-PUBLK.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                1114|EBV-INFT200.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 1121|EBV-SPPNK.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                 1123|EBVP-INFAB.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                               1124|EBVP-INFAB200.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                 1125|EBVP-INFCB.jpg <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                               1134|EBVBOX-FLEDCH.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                1135|EBVBOX-FLEDR.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                               1136|EBVBOX-FLEDHP.png <ImportWooImg>                                ] | (0) [                                                                                                    ]
-(1) [                                 1142|EBVBOX-PAC.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                1143|EBVBOX-PACL.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 1144|EBVBOX-PAR.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 1145|EBVBOX-PAH.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                1146|EBVBOX-PAHP.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 1148|EBVBOX-FRC.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                1149|EBVBOX-FRCL.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 1150|EBVBOX-FRR.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 1151|EBVBOX-FRH.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                1152|EBVBOX-FRHP.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                 1153|EBVBOX-FA3.jpg <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                   1223|APVP-F.jpg <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   1230|APVP-M.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  1238|APVV-1F.jpg <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                   1253|APVT-F.jpg <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  1261|APVS-1F.jpg <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  1268|APVS-2F.jpg <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-BR.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-BT.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-CL.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-CM.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-CT.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-ES.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-FV.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                    -1|CAN-SB.jpg <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                      -1|MM.png <ImportWooImg>                                      ] | (0) [                                                                                                    ]
-(1) [                                 1420|MMBRO-WAS1.png <ImportWooImg>                                 ] | (0) [                                                                                                    ]
-(1) [                                   1527|PV-CS.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                   1528|PV-BS.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                   1529|PV-SS.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                   1530|PV-EC.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                   1531|PV-DE.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                   1532|PV-PR.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-(1) [                                  1984|MAFP-AS.png <ImportWooImg>                                   ] | (0) [                                                                                                    ]
-(1) [                                  1992|MRUP-KEY.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                  307|CVEXG-250.png <ImportWooImg>                                  ] | (0) [                                                                                                    ]
-(1) [                                    426|VTS-S.png <ImportWooImg>                                    ] | (0) [                                                                                                    ]
-    """
+    # TODO: fix not syncing to VuTan (see generator.todo)
 
     image_matcher = ImageMatcher()
     image_matcher.clear()
@@ -1215,6 +961,17 @@ def do_merge_images(matches, parsers, updates, settings):
     return updates
 
 
+def get_update_cat(settings, m_object, s_object):
+    sync_update = settings.syncupdate_class_cat(m_object, s_object)
+    sync_update.update(settings.sync_handles_cat)
+
+    if settings.do_images:
+        sync_update.simplify_sync_warning_value_singular(
+            'image', ['id', 'title', 'source_url'])
+
+    return sync_update
+
+
 def do_merge_categories(matches, parsers, updates, settings):
     if not hasattr(updates, 'category'):
         updates.category = UpdateNamespace()
@@ -1227,6 +984,8 @@ def do_merge_categories(matches, parsers, updates, settings):
     for match in matches.category.valid:
         s_object = match.s_object
         for m_object in match.m_objects:
+
+            sync_update = get_update_cat(settings, m_object, s_object)
             sync_update = settings.syncupdate_class_cat(m_object, s_object)
 
             sync_update.update(sync_handles)
@@ -1614,31 +1373,66 @@ def usr_prompt_continue(settings):
         raise SystemExit
 
 
-# TODO: collapse upload_new functions
-def upload_new_images_slave(parsers, results, settings, client, new_updates):
+def upload_new_items_slave(
+    parsers, results, settings, client, new_updates, _type='product'
+):
+
+    if Registrar.DEBUG_PROGRESS:
+        update_progress_counter = ProgressCounter(
+            len(new_updates), items_plural='new %s(s)' % _type
+        )
 
     if not (new_updates and settings.update_slave):
         return
 
-    if Registrar.DEBUG_PROGRESS:
-        update_progress_counter = ProgressCounter(
-            len(new_updates), items_plural='new %s' % client.endpoint_plural
-        )
-
-    # sync_handles = settings.sync_handles_img
-
     update_count = 0
+
+    type_get_update_fns = {
+        'category': get_update_cat,
+        'product': get_update_prod,
+        'variation': get_update_var
+    }
+
+    type_analyse_api_obj_fns = {
+        'image': 'analyse_api_image_raw',
+        'category': 'process_api_category_raw',
+        'product': 'analyse_api_obj',
+        # TODO: fill in this
+        'variation': 'process_api_variation_raw'
+    }
 
     while new_updates:
 
         sync_update = new_updates.pop(0)
+
+        if _type == "category":
+            # make sure parent updates are done before children
+            new_object_gen = sync_update.old_m_object_gen
+
+            if new_object_gen.parent:
+                remaining_m_objects = set([
+                    sync_update.old_m_object_gen for update_ in new_updates
+                ])
+                parent = new_object_gen.parent
+                if not parent.is_root and parent in remaining_m_objects:
+                    new_updates.append(sync_update)
+                    continue
+
+        if _type in type_get_update_fns:
+            # have to refresh sync_update to get parent wpid since parente
+            # wpid is populated in do_updates_categories_master
+            sync_update = type_get_update_fns.get(_type)(
+                settings,
+                sync_update.old_m_object,
+                sync_update.old_s_object
+            )
 
         core_data = sync_update.get_slave_updates()
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "new %s (core format) %s" % (
-                    client.endpoint_singular,
+                    _type,
                     core_data
                 )
             )
@@ -1658,20 +1452,25 @@ def upload_new_images_slave(parsers, results, settings, client, new_updates):
         if client.page_nesting:
             response_api_data = response_api_data[client.endpoint_singular]
 
-        response_gen_object = parsers.slave.analyse_api_image_raw(
-            response_api_data)
-
-        # TODO: fix constantly re-uploading images
-
-        if Registrar.DEBUG_IMG:
-            Registrar.register_message(
-                "image being updated with parser data: %s"
-                % pformat(response_gen_object))
+        response_gen_object = getattr(
+            parsers.slave, type_analyse_api_obj_fns[_type]
+        )(
+            response_api_data
+        )
 
         sync_update.set_new_s_object_gen(response_gen_object)
         sync_update.old_m_object_gen.update(response_gen_object)
-
         results.successes.append(sync_update)
+
+
+# TODO: collapse upload_new functions
+def upload_new_images_slave(parsers, results, settings, client, new_updates):
+
+    # TODO: fix constantly re-uploading images
+
+    upload_new_items_slave(
+        parsers, results, settings, client, new_updates, _type="image"
+    )
 
 
 # TODO: collapse upload_changes functions
@@ -1836,87 +1635,9 @@ def upload_new_categories_slave(
     """
     Create new categories in client in an order which creates parents first.
     """
-    if Registrar.DEBUG_PROGRESS:
-        update_progress_counter = ProgressCounter(
-            len(new_updates), items_plural='new %s' % client.endpoint_plural
-        )
-
-    if not (new_updates and settings.update_slave):
-        return
-
-    sync_handles = settings.sync_handles_cat
-
-    update_count = 0
-
-    while new_updates:
-
-        sync_update = new_updates.pop(0)
-        new_object_gen = sync_update.old_m_object_gen
-
-        if Registrar.DEBUG_API:
-            Registrar.register_message(
-                "new %s %s" % (
-                    client.endpoint_singular,
-                    new_object_gen
-                )
-            )
-
-        # make sure parent updates are done before children
-
-        if new_object_gen.parent:
-            remaining_m_objects = set([
-                sync_update.old_m_object_gen for update_ in new_updates
-            ])
-            parent = new_object_gen.parent
-            if not parent.is_root and parent in remaining_m_objects:
-                new_updates.append(sync_update)
-                continue
-
-        # have to refresh sync_update to get parent wpid since parente wpid is
-        # populated in do_updates_categories_master
-        sync_update = settings.syncupdate_class_cat(
-            sync_update.old_m_object,
-            sync_update.old_s_object
-        )
-        sync_update.update(sync_handles)
-
-        core_data = sync_update.get_slave_updates()
-
-        if Registrar.DEBUG_UPDATE:
-            Registrar.register_message(
-                "uploading new category (api format): %s" % pformat(core_data))
-
-        update_count += 1
-        if Registrar.DEBUG_PROGRESS:
-            update_progress_counter.maybe_print_update(update_count)
-
-        try:
-            response = client.create_item_core(core_data)
-            response_api_data = response.json()
-        except BaseException as exc:
-            handle_failed_update(
-                sync_update, results, exc, settings, settings.slave_name
-            )
-            continue
-        if client.page_nesting:
-            response_api_data = response_api_data[client.endpoint_singular]
-
-        response_gen_object = parsers.slave.process_api_category_raw(
-            response_api_data)
-
-        sync_update.set_new_s_object_gen(response_gen_object)
-
-        if Registrar.DEBUG_API:
-            Registrar.register_message(
-                "%s being updated with parser data: %s" % (
-                    client.endpoint_singular,
-                    pformat(response_gen_object)
-                )
-            )
-
-        sync_update.old_m_object_gen.update(response_gen_object)
-
-        results.successes.append(sync_update)
+    upload_new_items_slave(
+        parsers, results, settings, client, new_updates, _type="category"
+    )
 
 
 def upload_category_changes_slave(
@@ -2100,79 +1821,9 @@ def upload_new_products(parsers, results, settings, client, new_updates):
     Create new products in client in an order which creates parents first.
     """
 
-    if Registrar.DEBUG_PROGRESS:
-        update_progress_counter = ProgressCounter(
-            len(new_updates), items_plural='new %s' % client.endpoint_plural
-        )
-
-    if not (new_updates and settings.update_slave):
-        return
-
-    update_count = 0
-
-    while new_updates:
-
-        sync_update = new_updates.pop(0)
-        new_object_gen = sync_update.old_m_object_gen
-
-        if Registrar.DEBUG_API:
-            Registrar.register_message(
-                "new %s %s" % (
-                    client.endpoint_singular,
-                    new_object_gen
-                )
-            )
-
-        if settings.do_categories or settings.do_images:
-            # have to refresh sync_update to get parent wpid
-            # since parente wpid is populated in do_updates_categories_master
-
-            sync_update = get_update_prod(
-                settings,
-                sync_update.old_m_object,
-                sync_update.old_s_object
-            )
-
-        core_data = sync_update.get_slave_updates()
-
-        if Registrar.DEBUG_API:
-            Registrar.register_message(
-                "new %s (core format) %s" % (
-                    client.endpoint_singular,
-                    core_data
-                )
-            )
-
-        update_count += 1
-        if Registrar.DEBUG_PROGRESS:
-            update_progress_counter.maybe_print_update(update_count)
-
-        try:
-            response = client.create_item_core(core_data)
-            response_api_data = response.json()
-        except BaseException as exc:
-            handle_failed_update(
-                sync_update, results, exc, settings, settings.slave_name
-            )
-            continue
-        if client.page_nesting:
-            response_api_data = response_api_data[client.endpoint_singular]
-
-        response_gen_object = parsers.slave.analyse_api_obj(response_api_data)
-
-        sync_update.set_new_s_object_gen(response_gen_object)
-
-        if Registrar.DEBUG_API:
-            Registrar.register_message(
-                "%s being updated with parser data: %s" % (
-                    client.endpoint_singular,
-                    pformat(response_gen_object)
-                )
-            )
-
-        sync_update.old_m_object_gen.update(response_gen_object)
-
-        results.successes.append(sync_update)
+    upload_new_items_slave(
+        parsers, results, settings, client, new_updates, _type="product"
+    )
 
 
 def upload_product_changes(parsers, results, settings, client, change_updates):
@@ -2330,11 +1981,9 @@ def do_updates_var_master(updates, parsers, results, settings):
 def upload_new_variations_slave(
     parsers, results, settings, client, new_updates
 ):
-    # TODO: this based off upload_new_categories_slave
-    if not (new_updates and settings.update_slave):
-        return
-
-    raise NotImplementedError()
+    upload_new_items_slave(
+        parsers, results, settings, client, new_updates, _type="variation"
+    )
 
 
 def upload_variation_changes_slave(
@@ -2343,8 +1992,6 @@ def upload_variation_changes_slave(
     """
     Upload a list of variation changes
     """
-
-    # TODO: this based off upload_category_changes_slave
 
     try:
         endpoint_singular = client.endpoint_singular
