@@ -1445,7 +1445,7 @@ def upload_new_items_slave(
         process_item_kwargs = {}
         if _type == 'variation':
             parent_id = sync_update.old_m_object.parent['ID']
-            create_item_kwargs['parent_id'] = parent_id
+            create_item_kwargs['parent_pkey'] = parent_id
             process_item_kwargs['parent_id'] = parent_id
 
         try:
