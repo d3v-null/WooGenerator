@@ -208,7 +208,7 @@ class SanitationUtils(object):
             "parameter should be str not %s" % type(ascii_str)
         # literal_eval("b'{}'".format(ascii_str)).decode('utf-8')
         # unicode_return = converters.to_unicode(ascii_str, "ascii")
-        unicode_return = ascii_str.decode('text_type-escape')
+        unicode_return = ascii_str.decode('unicode-escape')
         assert isinstance(unicode_return, text_type),\
             "something went wrong, should return text_type not %s" % type(
                 unicode_return)
