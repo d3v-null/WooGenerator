@@ -1482,7 +1482,7 @@ class CreatedModifiedGmtMixin(object):
             'wc-wp-api-v1': {
                 'path': None,
             },
-            'wp-sql':{
+            'wp-sql': {
                 'type': 'wp_datetime',
                 'path': 'post_date_gmt'
             },
@@ -3000,6 +3000,9 @@ class ColDataProduct(ColDataWpEntity):
             'gen-csv': {
                 'path': 'prod_type',
                 'read': False,
+            },
+            'gen-api': {
+                'read': True
             },
             'wp-sql': {
                 'path': None,

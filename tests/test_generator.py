@@ -252,6 +252,12 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         self.assertEqual(len(self.parsers.master.objects.values()), 165)
         self.assertEqual(len(self.parsers.master.items.values()), 144)
 
+        self.assertIn('modified_gmt', self.parsers.master.defaults)
+        self.assertEqual(
+            type(self.parsers.master.defaults['modified_gmt']),
+            datetime
+        )
+
         prod_container = self.parsers.master.product_container.container
         prod_list = prod_container(self.parsers.master.products.values())
         if self.debug:
@@ -259,6 +265,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
         self.assertEqual(len(prod_list), 48)
         first_prod = prod_list[0]
+
         if self.debug:
             print("pformat@first_prod:\n%s" % pformat(first_prod.to_dict()))
             print("first_prod.categories: %s" % pformat(first_prod.categories))
@@ -309,6 +316,10 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             })
         for key, value in test_dict.items():
             self.assertEqual(text_type(first_prod[key]), text_type(value))
+
+        for key in ['modified_gmt', 'modified_local']:
+            self.assertIn(key, first_prod)
+            self.assertEqual(type(first_prod[key]), datetime)
 
         if self.debug:
             print("pformat@to_dict@first_prod:\n%s" % pformat(first_prod.to_dict()))

@@ -28,6 +28,7 @@ class TimeUtils(object):
     _act_srv_tz = pytz.utc
     _gdrive_tz = pytz.utc
     _xero_tz = pytz.utc
+    utc_tz = pytz.utc
     _local_tz = get_localzone()
 
     wp_date_format = "%Y-%m-%d"
@@ -36,6 +37,7 @@ class TimeUtils(object):
     iso8601_datetime_format_aware = "%Y-%m-%dT%H:%M:%SZ"
     wp_datetime_format = "%Y-%m-%d %H:%M:%S"
     gdrive_datetime_format = wp_datetime_format
+    gdrive_api_datetime_format = iso8601_datetime_format_naive
     ms_datetime_format = "%Y-%m-%d_%H-%M-%S"
     act_datetime_format = "%d/%m/%Y %I:%M:%S %p"
 
@@ -118,8 +120,10 @@ class TimeUtils(object):
         """
         Return the current time as an aware datetime object.
         """
-        response = datetime.datetime(*cls.current_loctstruct())
-        return cls.inform_datetime(response, cls._local_tz)
+        if cls._override_time:
+            response = datetime.datetime(*cls._override_time[:8])
+            return cls.inform_datetime(response, cls._local_tz)
+        return datetime.datetime.now(cls._local_tz)
 
     @classmethod
     def star_strp_datetime(cls, string, fmt=wp_datetime_format):
@@ -162,7 +166,7 @@ class TimeUtils(object):
         if not dt:
             return
         if dt.tzinfo:
-            dt = cls.localize_datetime(dt, pytz.utc)
+            dt = cls.localize_datetime(dt, cls.utc_tz)
         return cls.datetime2localtimestamp(dt)
 
 
@@ -184,7 +188,7 @@ class TimeUtils(object):
         if local_tz is None:
             local_tz = cls._local_tz
         response = cls.inform_datetime(dt, local_tz)
-        return cls.localize_datetime(response, pytz.utc)
+        return cls.localize_datetime(response, cls.utc_tz)
 
     @classmethod
     def star_strp_mktime(cls, string, fmt=wp_datetime_format):
@@ -212,7 +216,7 @@ class TimeUtils(object):
         if string is '' or string is None:
             return
         if tz is None:
-            tz = pytz.utc
+            tz = cls.utc_tz
         if fmt is None:
             fmt = TimeUtils.iso8601_datetime_format_naive
         response = cls.star_strp_datetime(string, fmt)
@@ -227,7 +231,7 @@ class TimeUtils(object):
         if dt is None:
             return
         if tz is None:
-            tz = pytz.utc
+            tz = cls.utc_tz
         if fmt is None:
             fmt = cls.iso8601_datetime_format_naive
         response = cls.localize_datetime(dt, tz)
@@ -253,6 +257,10 @@ class TimeUtils(object):
     @classmethod
     def normalize_iso8601_gdrive(cls, string):
         return cls.normalize_iso8601(string, cls._gdrive_tz, cls.gdrive_datetime_format)
+
+    @classmethod
+    def normalize_iso8601_gdrive_api(cls, string):
+        return cls.normalize_iso8601(string, cls._gdrive_tz, cls.gdrive_api_datetime_format)
 
     @classmethod
     def normalize_iso8601_xero(cls, string):
@@ -303,7 +311,7 @@ class TimeUtils(object):
         if timestamp is None or timestamp == '':
             return
         if tz is None:
-            tz = pytz.utc
+            tz = cls.utc_tz
         response = cls.timestamp2datetime(timestamp)
         response = cls.inform_datetime(response, tz)
         return response
@@ -316,18 +324,18 @@ class TimeUtils(object):
         if not dt:
             return
         if tz is None:
-            tz = pytz.utc
+            tz = cls.utc_tz
         response = cls.localize_datetime(dt, tz)
         response = cls.datetime2localtimestamp(response)
         return response
 
     @classmethod
     def normalize_timestamp_utc(cls, dt):
-        return cls.normalize_timestamp(dt, pytz.utc)
+        return cls.normalize_timestamp(dt, cls.utc_tz)
 
     @classmethod
     def denormalize_timestamp_utc(cls, dt):
-        return cls.denormalize_timestamp(dt, pytz.utc)
+        return cls.denormalize_timestamp(dt, cls.utc_tz)
 
     @classmethod
     def normalize_timestamp_wp(cls, dt):
@@ -342,7 +350,7 @@ class TimeUtils(object):
         """
         Timezone of source is wp_srv_tz but gives gmt timestamps anyway.
         """
-        dt = cls.normalize_timestamp(dt, pytz.utc)
+        dt = cls.normalize_timestamp(dt, cls.utc_tz)
         if dt is not None:
             return dt.astimezone(cls._wp_srv_tz)
 
@@ -351,7 +359,7 @@ class TimeUtils(object):
         """
         Timezone of source is wp_srv_tz but gives gmt timestamps anyway.
         """
-        return cls.denormalize_timestamp(dt, pytz.utc)
+        return cls.denormalize_timestamp(dt, cls.utc_tz)
 
     @classmethod
     def normalize_timestamp_act(cls, dt):

@@ -234,16 +234,28 @@ def populate_master_parsers(parsers, settings):
 
         master_parser_args = settings.master_parser_args
 
+        master_mod_dt = TimeUtils.current_datetime()
         if os.path.exists(settings.master_path):
             master_mod_ts = max(
                 os.path.getmtime(settings.master_path),
                 os.path.getctime(settings.master_path)
             )
-            master_mod_dt = TimeUtils.timestamp2datetime(master_mod_ts)
-            master_parser_args['defaults'].update({
-                'modified_local': master_mod_dt,
-                'modified_gmt': TimeUtils.datetime_local2gmt(master_mod_dt)
-            })
+            master_mod_dt = TimeUtils.inform_datetime(
+                TimeUtils.timestamp2datetime(master_mod_ts),
+                TimeUtils._local_tz
+            )
+        elif hasattr(client, 'get_gm_modtime'):
+            master_mod_dt = TimeUtils.localize_datetime(
+                client.get_gm_modtime(settings.gen_gid),
+                TimeUtils._local_tz
+            )
+
+        master_parser_args['defaults'].update({
+            'modified_local': master_mod_dt,
+            'modified_gmt': TimeUtils.localize_datetime(
+                master_mod_dt, TimeUtils.utc_tz
+            )
+        })
 
         parsers.master = settings.master_parser_class(
             **master_parser_args

@@ -35,6 +35,7 @@ from wordpress.helpers import UrlUtils
 
 from ..coldata import ColDataProductMeridian, ColDataWpEntity, ColDataWpPost
 from ..utils import FileUtils, ProgressCounter, Registrar, SanitationUtils
+from ..utils.clock import TimeUtils
 
 
 class AbstractServiceInterface(object):
@@ -450,8 +451,9 @@ class SyncClientGDrive(SyncClientAbstract):
     def get_gm_modtime(self, gid=None):
         """ Get modtime of a drive file (individual gid not supported yet) """
         # TODO: individual gid mod times
-        return time.strptime(self.drive_file['modifiedDate'],
-                             '%Y-%m-%dT%H:%M:%S.%fZ')
+        return TimeUtils.normalize_iso8601_gdrive_api(
+            self.drive_file['modifiedDate']
+        )
 
     def analyse_remote(self, parser, data_path=None, **kwargs):
         gid = kwargs.pop('gid', None)
