@@ -203,7 +203,7 @@ class SyncUpdate(Registrar):
                         if not new_value:
                             continue
                         new_values.append(new_value)
-                    sync_warning[key] = new_values
+                    sync_warning[key] = sorted(new_values)
 
     @property
     def sync_warnings(self):
