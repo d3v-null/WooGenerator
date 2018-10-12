@@ -121,7 +121,7 @@ class TimeUtils(object):
         Return the current time as an aware datetime object.
         """
         if cls._override_time:
-            response = datetime.datetime(*cls._override_time[:8])
+            response = datetime.datetime(*cls._override_time[:6])
             return cls.inform_datetime(response, cls._local_tz)
         return datetime.datetime.now(cls._local_tz)
 
