@@ -303,10 +303,16 @@ class ArgumentParserCommon(ArgumentParserProto):
             help="quit after exporting master parsers, don't process slave",
             action="store_true",
         )
-        processing_group.add_argument(
+        group = processing_group.add_mutually_exclusive_group()
+        group.add_argument(
+            '--do-export-master',
+            help="Export master parsers to file",
+            default=True,
+        )
+        group.add_argument(
             '--skip-export-master',
-            help="quit after exporting master parsers, don't process slave",
-            action="store_true",
+            help="don't export master parsers to file",
+            action="store_false", dest='do_export_master'
         )
         processing_group.add_argument(
             '--save-api-data',
