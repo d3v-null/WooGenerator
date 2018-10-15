@@ -139,6 +139,17 @@ class Match(object):
         if m_object not in self.m_objects:
             self.m_objects.append(m_object)
 
+    def consume(self, other):
+        """
+        Consume another match object
+        """
+        for m_object in other.m_objects:
+            self.add_m_object(m_object)
+
+        for s_object in other.s_objects:
+            self.add_s_object(s_object)
+
+
     def find_key_matches(self, key_fn):
         """
         Split this match into smaller matches based on the results of applying
@@ -713,6 +724,25 @@ class ImageMatcher(AbstractMatcher):
         return match.find_key_matches(
             lambda obj: SanitationUtils.normalize_val(obj.attachee_skus)
         )
+
+    @classmethod
+    def find_file_basename_matches(cls, match):
+        """
+        find within the match, matches based on an objects file basename
+        """
+        return match.find_key_matches(
+            lambda obj: SanitationUtils.normalize_val(obj.file_basename)
+        )
+
+    @classmethod
+    def find_norm_title_matches(cls, match):
+        """
+        find within the match, matches based on an objects normalized_title
+        """
+        return match.find_key_matches(
+            lambda obj: SanitationUtils.normalize_val(obj.norm_title)
+        )
+
 
 class AttachmentIDMatcher(AbstractMatcher):
     """

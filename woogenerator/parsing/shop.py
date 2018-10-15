@@ -124,14 +124,19 @@ class ImportShopAttachmentMixin(ShopMixin):
     def get_normalized_filename(cls, data):
         filename = cls.get_file_name(data)
         name, ext = os.path.splitext(filename)
-        attachee_skus = None
+        possible_titles = None
         if hasattr(data, 'attachee_skus'):
-            attachee_skus = data.attachee_skus
+            possible_titles = data.attachee_skus
+        if 'title' in data:
+            possible_titles = "|".join(filter(None, [
+                possible_titles,
+                data['title']
+            ]))
         before = ''
         after = name
-        if attachee_skus:
+        if possible_titles:
             code_re = r'^(?P<before>%s)(?P<after>.*)$' % (
-                re.escape(attachee_skus))
+                re.escape(possible_titles))
             code_match = re.match(code_re, name)
             if code_match:
                 code_match = code_match.groupdict()
@@ -144,6 +149,18 @@ class ImportShopAttachmentMixin(ShopMixin):
     @property
     def normalized_filename(self):
         return self.get_normalized_filename(self)
+
+    @property
+    def file_basename(self):
+        return self.get_file_name(self)
+
+    @classmethod
+    def get_normalized_title(cls, data):
+        return re.sub(r'\s+\d+$', '', cls.get_title(data))
+
+    @property
+    def norm_title(self):
+        return self.get_normalized_title(self)
 
     @classmethod
     def get_attachment_id(cls, data):
