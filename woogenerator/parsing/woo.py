@@ -1204,17 +1204,24 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             for attachment in object_data.attachments.values()
         ])
 
-        if (
-            self.do_images and object_data.is_product
-            and not object_data.is_variation
-        ):
-            try:
-                assert object_data['imgsum'], \
-                    "All Products should have attachments"
-            except AssertionError as exc:
-                self.register_warning(exc, object_data)
-                if self.strict:
-                    self.raise_exception(exc)
+        if self.do_images:
+            if (object_data.is_product and not object_data.is_variation):
+                try:
+                    assert object_data['imgsum'], \
+                        "All Products should have attachments"
+                except AssertionError as exc:
+                    self.register_warning(exc, object_data)
+                    if self.strict:
+                        self.raise_exception(exc)
+
+            if (object_data.is_category):
+                try:
+                    assert object_data['imgsum'], \
+                        "All Categories should have attachments"
+                except AssertionError as exc:
+                    self.register_warning(exc, object_data.fullnamesum)
+                    if self.strict:
+                        self.raise_exception(exc)
 
         if self.DEBUG_WOO:
             self.register_message(
