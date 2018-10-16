@@ -488,6 +488,25 @@ class ApiParseWoo(
         """
         coldata_class = kwargs.get('coldata_class', self.coldata_cat_class)
         coldata_target = kwargs.get('coldata_target', self.coldata_target)
+
+        # First sanitize attachment data
+        # TODO: notify WooCommerce API developers about this.
+        null_img = {
+            u'src': False,
+            u'date_modified_gmt': None,
+            u'date_modified': None,
+            u'title': u'',
+            u'date_created_gmt': None,
+            u'date_created': None,
+            u'alt': u'',
+        }
+
+        if category_raw_data['image'] and all([
+            category_raw_data['image'].get(key) == value
+            for key, value in null_img.items()
+        ]):
+            category_raw_data['image'] = None
+
         category_core_data = coldata_class.translate_data_from(
             category_raw_data, coldata_target
         )
