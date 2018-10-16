@@ -61,7 +61,7 @@ from .images import process_images
 from .matching import (AttacheeSkuMatcher, AttacheeTitleMatcher,
                        AttachmentIDMatcher, CategoryMatcher,
                        CategoryTitleMatcher, ImageMatcher, Match, MatchList,
-                       ProductMatcher, VariationMatcher)
+                       ProductMatcher, StrictImageMatcher, VariationMatcher)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
@@ -546,7 +546,7 @@ def do_match_images(parsers, matches, settings):
              len(parsers.slave.attachments)))
 
     matches.image = MatchNamespace(
-        index_fn=ImageMatcher.image_index_fn
+        index_fn=StrictImageMatcher.image_index_fn
     )
 
     image_matcher = ImageMatcher()
@@ -583,18 +583,21 @@ def do_match_images(parsers, matches, settings):
     extra_valid_indices_m = set()
     extra_valid_indices_s = set()
 
-    matches.image.duplicate['file_name'] = image_matcher.duplicate_matches
+    matches.image.duplicate['norm_file_name'] = \
+        image_matcher.duplicate_matches
+    matches.image.duplicate['file_basename'] = \
+        image_matcher.duplicate_matches.__class__()
 
     filename_duplicate_indices_m = set([
         attachment.index
         for match in image_matcher.duplicate_matches
         for attachment in match.m_objects
     ])
-    # filename_duplicate_indices_s = set([
-    #     attachment.index
-    #     for match in image_matcher.duplicate_matches
-    #     for attachment in match.s_objects
-    # ])
+    filename_duplicate_indices_s = set([
+        attachment.index
+        for match in image_matcher.duplicate_matches
+        for attachment in match.s_objects
+    ])
 
     for match in image_matcher.duplicate_matches:
         if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
@@ -634,6 +637,10 @@ def do_match_images(parsers, matches, settings):
                     matches.image.slaveless.add_matches([extra_match])
                 except AssertionError as exc:
                     Registrar.register_warning(exc)
+            else:
+                matches.image.duplicate['file_basename'].add_matches([
+                    extra_match
+                ])
 
         remaining_match = match.__class__()
         remaining_match.consume(match)
@@ -699,6 +706,12 @@ def do_match_images(parsers, matches, settings):
                     )
                     process_extra_match(split_match)
 
+            if remaining_match.s_len > 0:
+                split_match = match.__class__(
+                    s_objects=remaining_match.s_objects
+                )
+                process_extra_match(split_match)
+
 
     try:
         assert \
@@ -712,16 +725,16 @@ def do_match_images(parsers, matches, settings):
                 extra_valid_indices_m,
                 filename_duplicate_indices_m - extra_valid_indices_m
             )
-        # assert \
-        #     extra_valid_indices_s.issuperset(filename_duplicate_indices_s), \
-        #     (
-        #         "all slave indices from filename duplicates should be "
-        #         "contained in extra attachee match indices:\nfilename:\n"
-        #         "%s\nattachee_indices:\n%s"
-        #     ) % (
-        #         filename_duplicate_indices_s,
-        #         extra_valid_indices_s
-        #     )
+        assert \
+            extra_valid_indices_s.issuperset(filename_duplicate_indices_s), \
+            (
+                "all slave indices from filename duplicates should be "
+                "contained in extra attachee match indices:\nfilename:\n"
+                "%s\nattachee_indices:\n%s"
+            ) % (
+                filename_duplicate_indices_s,
+                extra_valid_indices_s
+            )
     except AssertionError as exc:
         warn = RuntimeWarning(
             "could not match all images.\n%s\n%s" % (

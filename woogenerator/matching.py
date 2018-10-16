@@ -744,6 +744,13 @@ class ImageMatcher(AbstractMatcher):
         )
 
 
+class StrictImageMatcher(ImageMatcher):
+    @staticmethod
+    def image_index_fn(img_object):
+        """ Return the identifier of the image file. """
+        return img_object.identifier
+
+
 class AttachmentIDMatcher(AbstractMatcher):
     """
     Matches attachments on wordpress ID
