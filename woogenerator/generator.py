@@ -590,11 +590,11 @@ def do_match_images(parsers, matches, settings):
         for match in image_matcher.duplicate_matches
         for attachment in match.m_objects
     ])
-    filename_duplicate_indices_s = set([
-        attachment.index
-        for match in image_matcher.duplicate_matches
-        for attachment in match.s_objects
-    ])
+    # filename_duplicate_indices_s = set([
+    #     attachment.index
+    #     for match in image_matcher.duplicate_matches
+    #     for attachment in match.s_objects
+    # ])
 
     for match in image_matcher.duplicate_matches:
         if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
@@ -691,138 +691,13 @@ def do_match_images(parsers, matches, settings):
                 )
             )
             Registrar.register_warning(exc)
-            # import pudb; pudb.set_trace()
-            # process_extra_match(remaining_match)
 
-        #
-        #
-        # basename_sub_matches = \
-        #     image_matcher.find_file_basename_matches(match)
-        #
-        # match = match.__class__()
-        # for key, sub_match in basename_sub_matches.items():
-        #     if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
-        #         Registrar.register_message(
-        #             "basename sub match %s is %s:\n%s" % (
-        #                 key,
-        #                 sub_match.type,
-        #                 sub_match.tabulate()
-        #             )
-        #         )
-        #     if (
-        #         sub_match.type in ['pure']
-        #     ):
-        #         extra_valid_indices_m.update([
-        #             attachment.index for attachment in sub_match.m_objects
-        #         ])
-        #         extra_valid_indices_s.update([
-        #             attachment.index for attachment in sub_match.s_objects
-        #         ])
-        #         matches.image.valid += [sub_match]
-        #     else:
-        #         match.consume(sub_match)
-        #
-        # if match.type == 'masterless':
-        #     try:
-        #         matches.image.masterless.add_matches([match])
-        #     except AssertionError as exc:
-        #         Registrar.register_warning(exc)
-        #     continue
-        # elif match.type == 'slaveless':
-        #     try:
-        #         matches.image.slaveless.add_matches([match])
-        #     except AssertionError as exc:
-        #         Registrar.register_warning(exc)
-        #     continue
-        #
-        # attachee_sku_sub_matches = \
-        #     image_matcher.find_attachee_sku_matches(match)
-        # match = match.__class__()
-        # for key, sub_match in attachee_sku_sub_matches.items():
-        #     if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
-        #         Registrar.register_message(
-        #             "attachee sku sub match %s is %s:\n%s" % (
-        #                 key,
-        #                 sub_match.type,
-        #                 sub_match.tabulate()
-        #             )
-        #         )
-        #     if (
-        #         sub_match.type in ['pure']
-        #         or (sub_match.type == 'duplicate' and sub_match.m_len == 1)
-        #     ):
-        #         extra_valid_indices_m.update([
-        #             attachment.index for attachment in sub_match.m_objects
-        #         ])
-        #         extra_valid_indices_s.update([
-        #             attachment.index for attachment in sub_match.s_objects
-        #         ])
-        #         matches.image.valid += [sub_match]
-        #     elif sub_match.type == 'duplicate' and key:
-        #         exc = UserWarning(
-        #             (
-        #                 "Could not match image, most likely because multiple "
-        #                 "images with the same name are attached to the same "
-        #                 "SKU.\n%s"
-        #             ) % (
-        #                 sub_match.tabulate()
-        #             )
-        #         )
-        #         Registrar.register_warning(exc)
-        #         import pudb; pudb.set_trace()
-        #     match.consume(sub_match)
-        #
-        # if match.type == 'masterless':
-        #     try:
-        #         matches.image.masterless.add_matches([match])
-        #     except AssertionError as exc:
-        #         Registrar.register_warning(exc)
-        #     continue
-        # elif match.type == 'slaveless':
-        #     try:
-        #         matches.image.slaveless.add_matches([match])
-        #     except AssertionError as exc:
-        #         Registrar.register_warning(exc)
-        #     continue
-        #
-        # norm_title_matches = \
-        #     image_matcher.find_norm_title_matches(match)
-        #
-        # match = match.__class__()
-        # for key, sub_match in norm_title_matches.items():
-        #     if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
-        #         Registrar.register_message(
-        #             "norm title sub match %s is %s:\n%s" % (
-        #                 key,
-        #                 sub_match.type,
-        #                 sub_match.tabulate()
-        #             )
-        #         )
-        #     if (
-        #         sub_match.type in ['pure']
-        #         or (sub_match.type == 'duplicate' and sub_match.m_len == 1)
-        #     ):
-        #         extra_valid_indices_m.update([
-        #             attachment.index for attachment in sub_match.m_objects
-        #         ])
-        #         extra_valid_indices_s.update([
-        #             attachment.index for attachment in sub_match.s_objects
-        #         ])
-        #         matches.image.valid += [sub_match]
-        #     match.consume(sub_match)
-        #
-        # if match.type == 'masterless':
-        #     try:
-        #         matches.image.masterless.add_matches([match])
-        #     except AssertionError as exc:
-        #         Registrar.register_warning(exc)
-        #     continue
-        # elif match.type == 'slaveless':
-        #     try:
-        #         matches.image.slaveless.add_matches([match])
-        #     except AssertionError as exc:
-        #         Registrar.register_warning(exc)
-        #     continue
+            if remaining_match.m_len > 0:
+                for m_object in remaining_match.m_objects:
+                    split_match = match.__class__(
+                        m_objects=[m_object]
+                    )
+                    process_extra_match(split_match)
 
 
     try:
@@ -831,10 +706,11 @@ def do_match_images(parsers, matches, settings):
             (
                 "all master indices from filename duplicates should be "
                 "contained in extra attachee match indices:\nfilename:\n"
-                "%s\nattachee_indices:\n%s"
+                "%s\nattachee_indices:\n%s\ndifference:\n%s"
             ) % (
                 filename_duplicate_indices_m,
-                extra_valid_indices_m
+                extra_valid_indices_m,
+                filename_duplicate_indices_m - extra_valid_indices_m
             )
         # assert \
         #     extra_valid_indices_s.issuperset(filename_duplicate_indices_s), \
