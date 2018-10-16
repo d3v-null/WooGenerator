@@ -933,11 +933,17 @@ class SyncClientRest(SyncClientAbstract):
             kwargs['timeout'] = 30
             response = self.service.post(endpoint, data, **kwargs)
         assert response.status_code not in [400, 401], "API ERROR"
+        try:
+            response.json()
+        except JSONDecodeError as exc:
+            raise UserWarning(
+                "Should be able to decode JSON: %s" %
+                (repr(response.text), exc))
         assert response.json(), "json should exist"
         assert not isinstance(
             response.json(),
             int), "could not convert response to json: %s %s" % (
-                str(response), str(response.json()))
+                str(response), str(response.text))
         assert 'errors' not in response.json(
         ), "response has errors: %s" % str(response.json()['errors'])
         return response
