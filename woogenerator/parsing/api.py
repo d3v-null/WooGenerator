@@ -501,10 +501,14 @@ class ApiParseWoo(
             u'alt': u'',
         }
 
-        if category_raw_data['image'] and all([
-            category_raw_data['image'].get(key) == value
-            for key, value in null_img.items()
-        ]):
+        if (
+            'image' in category_raw_data
+            and hasattr(category_raw_data['image'], 'get')
+            and all([
+                category_raw_data['image'].get(key) == value
+                for key, value in null_img.items()
+            ])
+        ):
             category_raw_data['image'] = None
 
         category_core_data = coldata_class.translate_data_from(
