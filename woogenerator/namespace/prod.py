@@ -784,11 +784,9 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def init_settings(self, override_args=None):
         super(SettingsNamespaceProd, self).init_settings(override_args)
 
-        if self['auto_create_new']:
-            exc = UserWarning("auto-create not fully implemented yet")
-            Registrar.register_warning(exc)
         if self.auto_delete_old:
-            raise UserWarning("auto-delete not implemented yet")
+            exc = UserWarning("auto-delete not fully implemented yet")
+            Registrar.register_warning(exc)
         if self.do_remeta_images:
             raise UserWarning("remeta deprecated")
         if self.do_attributes:
