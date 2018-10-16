@@ -303,6 +303,16 @@ class ArgumentParserCommon(ArgumentParserProto):
             help="quit after exporting master parsers, don't process slave",
             action="store_true",
         )
+        processing_group.add_argument(
+            '--images-and-quit',
+            help="quit after syncing images, don't process anything else",
+            action="store_true",
+        )
+        processing_group.add_argument(
+            '--categories-and-quit',
+            help="quit after syncing categories, don't process anything else",
+            action="store_true",
+        )
         group = processing_group.add_mutually_exclusive_group()
         group.add_argument(
             '--do-export-master',

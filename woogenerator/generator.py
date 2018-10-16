@@ -2288,6 +2288,9 @@ def main(override_args=None, settings=None):
                 Registrar.register_error(exc)
                 return reporters, results
 
+    if settings.images_and_quit:
+        sys.exit(ExitStatus.success)
+
     if settings.do_categories:
 
         do_match_categories(parsers, matches, settings)
@@ -2314,6 +2317,9 @@ def main(override_args=None, settings=None):
             except (SystemExit, KeyboardInterrupt) as exc:
                 Registrar.register_error(exc)
                 return reporters, results
+
+    if settings.categories_and_quit:
+        sys.exit(ExitStatus.success)
 
     if settings.do_attributes:
         Registrar.register_error(NotImplementedError(
