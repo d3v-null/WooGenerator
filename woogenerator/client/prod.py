@@ -75,8 +75,9 @@ class VarSyncClientMixin(object):
         """
         kwargs.pop('singular', None) # no concept of singular
         assert 'parent_pkey' in kwargs, "must specify parent pkey"
+        parent_pkey = kwargs.pop('parent_pkey')
         try:
-            parent_pkey = int(kwargs.pop('parent_pkey'))
+            parent_pkey = int(parent_pkey)
         except ValueError:
             raise UserWarning("Can't convert parent_pkey %s to int" % parent_pkey)
 
