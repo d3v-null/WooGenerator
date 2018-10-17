@@ -661,8 +661,20 @@ def do_match_images(parsers, matches, settings):
             extra_valid_indices_m.issuperset(filename_duplicate_indices_m), \
             (
                 "all master indices from filename duplicates should be "
-                "contained in extra attachee match indices:\nfilename:\n"
-                "%s\nattachee_indices:\n%s\ndifference:\n%s"
+                "contained in extra attachee match indices:\n"
+                "filename:\n"
+                "%s\n"
+                "attachee_indices:\n"
+                "%s\n"
+                "difference:\n"
+                "%s\n"
+                "What this means (in English):\n"
+                "When one image filename is associated with multiple "
+                "products, it can be difficult to determine how to match "
+                "these images on the server. Try making a copy of each of "
+                "the 'difference' files for each product they are assigned to "
+                "and updating the information in the spreadsheet and then "
+                "re-run the sync."
             ) % (
                 filename_duplicate_indices_m,
                 extra_valid_indices_m,
@@ -681,16 +693,14 @@ def do_match_images(parsers, matches, settings):
     except AssertionError as exc:
         warn = RuntimeWarning((
                 "could not match all images, "
-                "but that's ok because image matching is a mess.\n%s\n%s"
+                "Some images may not sync until you have resolved this.\n"
+                "%s\n"
+                "%s"
             ) % ("\n".join([
                 "%s:\n%s" % (key, dup_matches.tabulate())
                 for key, dup_matches in matches.image.duplicate.items()
             ]), str(exc)))
         Registrar.register_warning(warn)
-
-    if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
-        Registrar.register_message(
-            "all matches:\n%s" % matches.image.tabulate())
 
     return matches
 
@@ -1973,7 +1983,6 @@ def upload_variation_changes_slave(parsers, results, settings, client,
     """
     Upload a list of variation changes
     """
-
     try:
         endpoint_singular = client.endpoint_singular
         assert isinstance(endpoint_singular, string_types)
