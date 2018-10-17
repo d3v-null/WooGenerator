@@ -207,7 +207,7 @@ class TimeUtils(object):
         Given `string` in iso8601 format, return the datetime object
         in timezone `tz` which it represents.
         """
-        if string is '' or string is None:
+        if string == '' or string is None:
             return None
         if tz is None:
             tz = cls.utc_tz

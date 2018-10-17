@@ -285,7 +285,7 @@ class ImportUser(ImportObject):
                 self[alias][key] = val
                 return
         super(ImportUser, self).__setitem__(key, val)
-        # if key is 'Name':
+        # if key == 'Name':
 
     # print self.__getitem__(key)
 

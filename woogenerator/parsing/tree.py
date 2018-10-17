@@ -483,7 +483,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
 
         # TODO: replace the following with this:
         # depth = kwargs.pop('depth')
-        # if depth is None or depth is '':
+        # if depth is None or depth == '':
         #     depth = self.depth(kwargs['row'])
         #     kwargs['depth'] = depth
         try:
