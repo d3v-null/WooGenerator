@@ -1179,8 +1179,10 @@ def do_img_sync_group(reporter, matches, updates, parsers, settings):
     target_update_list_meta = [
         (updates.image.slave, settings.slave_name + "_img_updates",
          settings.slave_name + " images will be updated"),
-        (updates.image.new_slaves, settings.slave_name + "_new_imgs",
+        (updates.image.slaveless, settings.slave_name + "_new_imgs",
          settings.slave_name + " images will be created"),
+        (updates.image.masterless, settings.slave_name + "_del_imgs",
+         settings.slave_name + " images will be deleted"),
         (updates.image.problematic, "problematic_img_updates",
          "imgs can't be merged because they are too dissimilar"),
     ]
@@ -1209,8 +1211,10 @@ def do_cat_sync_gruop(reporter, matches, updates, parsers, settings):
     target_update_list_meta = [
         (updates.category.slave, settings.slave_name + "_cat_updates",
          settings.slave_name + " categoties will be updated"),
-        (updates.category.new_slaves, settings.slave_name + "_new_cats",
+        (updates.category.slaveless, settings.slave_name + "_new_cats",
          settings.slave_name + " categoties will be created"),
+        (updates.category.masterless, settings.slave_name + "_del_cats",
+         settings.slave_name + " categoties will be deleted"),
         (updates.category.problematic, "problematic_cat_updates",
          "cats can't be merged because they are too dissimilar"),
     ]
