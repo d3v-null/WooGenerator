@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" Util modules used by woogenerator."""
+"""Util modules used by woogenerator."""
 
 from __future__ import absolute_import
 

@@ -1,8 +1,8 @@
-""" Utils for dealing with inheritence in python """
+"""Utils for dealing with inheritence in python."""
 
 
 class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
-    """ Groups inheritence utils together """
+    """Groups inheritence utils together."""
     @classmethod
     def gcs(cls, *instances):
         """
@@ -10,7 +10,7 @@ class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
         http://stackoverflow.com/questions/25786566/greatest-common-superclass
         """
         if len(instances) == 0:
-            return
+            return None
         if len(instances) == 1:
             return type(instances[0])
         class_sets = [set([type(instance)]) for instance in instances]
@@ -28,9 +28,9 @@ class InheritenceUtils(object):  # pylint: disable=too-few-public-methods
 
 
 def overrides(interface_class):
-    """ decorator for specifying where attribute overrides a superclass """
+    """decorator for specifying where attribute overrides a superclass."""
     def overrider(method):
-        """ function returned by decorator """
+        """function returned by decorator."""
         assert method.__name__ in dir(interface_class)
         return method
     return overrider

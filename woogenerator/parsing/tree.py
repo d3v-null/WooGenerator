@@ -1,12 +1,14 @@
 """
-Classes that add the concept of heirarchy to the CSVParse classes
-and corresponding helper classes
+Add the concept of heirarchy to the CSVParse module.
+
+Includes corresponding helper classes.
 """
 from __future__ import absolute_import
 
 from collections import OrderedDict
 
 import pudb
+from six import text_type
 
 from ..utils import Registrar
 from ..utils.inheritence import call_bases
@@ -18,7 +20,8 @@ class ImportTreeRootableMixin(object):
 
 
 class ImportTreeObject(ImportObject):
-    """ Implements the tree interface for tree objects """
+    """Implements the tree interface for tree objects."""
+
     is_root = None
     is_item = None
     is_taxo = None
@@ -43,7 +46,7 @@ class ImportTreeObject(ImportObject):
             if not self.is_root:
                 assert depth is not None
                 assert depth >= 0
-        except (AssertionError):
+        except AssertionError:
             depth = self.parent.depth + 1
         finally:
             self.depth = depth
@@ -82,7 +85,7 @@ class ImportTreeObject(ImportObject):
 
     @property
     def ancestors(self):
-        "gets all ancestors not including self or root"
+        """Get all ancestors not including self or root."""
         this = self.parent
         ancestors = []
         while this and not this.is_root:
@@ -110,8 +113,7 @@ class ImportTreeObject(ImportObject):
         parent = self.parent
         if parent:
             return parent.children
-        else:
-            return []
+        return []
 
     def get_copy_args(self):
         args = super(ImportTreeObject, self).get_copy_args()
@@ -144,7 +146,7 @@ class ImportTreeObject(ImportObject):
 
     @depth.setter
     def depth(self, depth):
-        assert(isinstance(depth, int))
+        assert isinstance(depth, int)
         self._depth = depth
 
     @property
@@ -170,6 +172,7 @@ class ImportTreeObject(ImportObject):
             value for value in ancestor_values if value]
         if filtered_ancestor_values[0]:
             return filtered_ancestor_values[0]
+        return None
 
 
 class ImportTreeRoot(ImportTreeObject):
@@ -239,8 +242,7 @@ class ImportStack(list):
     def get_top_parent(self):
         if self.top_has_parent():
             return self[-2]
-        else:
-            return None
+        return None
 
     def is_empty(self):
         return len(self) is 0
@@ -283,9 +285,8 @@ class ImportStack(list):
 
 
 class CsvParseTreeMixin(object):
-    """
-    Provide mixin for parsing tree-like data structures
-    """
+    """Provide mixin for parsing tree-like data structures."""
+
     root_container = ImportTreeRoot
     object_container = ImportTreeObject
     item_container = ImportTreeItem
@@ -339,10 +340,10 @@ class CsvParseTreeMixin(object):
         item_data.registerParent(parent_data)
 
     def is_taxo_depth(self, depth):
-        return depth < self.taxo_depth and depth >= 0
+        return 0 <= depth < self.taxo_depth
 
     def is_item_depth(self, depth):
-        return depth >= self.taxo_depth and depth < self.max_depth
+        return self.taxo_depth <= depth < self.max_depth
 
     def get_empty_instance(self, **kwargs):
         for key in kwargs['container'].verify_meta_keys:
@@ -453,7 +454,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
                 # stack = kwargs['stack']
                 # del kwargs['stack']
                 assert stack is not None
-            except (AssertionError):
+            except AssertionError:
                 self.refresh_stack(kwargs['rowcount'], kwargs[
                     'row'], kwargs['depth'])
                 stack = self.stack
@@ -478,7 +479,7 @@ class CsvParseTree(CsvParseBase, CsvParseTreeMixin):
         if self.DEBUG_TREE:
             self.register_message(
                 u"new tree object! rowcount: %d, row: %s, kwargs: %s" % (
-                    rowcount, unicode(kwargs['row']), unicode(kwargs)))
+                    rowcount, text_type(kwargs['row']), text_type(kwargs)))
 
         # TODO: replace the following with this:
         # depth = kwargs.pop('depth')

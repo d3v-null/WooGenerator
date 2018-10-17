@@ -1,5 +1,5 @@
-import sys
 import os
+
 from .__init__ import MODULE_LOCATION
 
 # Core configuration

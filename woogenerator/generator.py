@@ -46,40 +46,30 @@ import time
 import traceback
 import webbrowser
 import zipfile
-import pudb
-from bisect import insort
 from collections import OrderedDict
-from copy import copy
 from pprint import pformat, pprint
-
-from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 
 from exitstatus import ExitStatus
 from six import string_types
 
 from .images import process_images
-from .matching import (AttacheeSkuMatcher, AttacheeTitleMatcher,
-                       AttachmentIDMatcher, CategoryMatcher,
-                       CategoryTitleMatcher, ImageMatcher, Match, MatchList,
-                       ProductMatcher, StrictImageMatcher, VariationMatcher)
+from .matching import (CategoryMatcher, CategoryTitleMatcher, ImageMatcher,
+                       Match, MatchList, ProductMatcher, StrictImageMatcher,
+                       VariationMatcher)
 from .namespace.core import (MatchNamespace, ParserNamespace, ResultsNamespace,
                              UpdateNamespace)
 from .namespace.prod import SettingsNamespaceProd
-from .parsing.api import ApiParseWoo
 from .parsing.dyn import CsvParseDyn
 from .parsing.special import CsvParseSpecial
-from .parsing.woo import WooCatList
 from .utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
                     TimeUtils)
-from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
-                             do_category_matches_group, do_delta_group,
-                             do_duplicates_group, do_duplicates_summary_group,
-                             do_failures_group, do_img_sync_group,
-                             do_main_summary_group, do_matches_group,
-                             do_matches_summary_group, do_post_summary_group,
-                             do_successes_group, do_sync_group,
-                             do_var_sync_group, do_variation_matches_group)
-
+from .utils.reporter import (
+    ReporterNamespace, do_cat_sync_gruop, do_category_matches_group,
+    do_delta_group, do_duplicates_group, do_duplicates_summary_group,
+    do_failures_group, do_img_sync_group, do_main_summary_group,
+    do_matches_group, do_matches_summary_group, do_post_summary_group,
+    do_successes_group, do_sync_group, do_var_sync_group,
+    do_variation_matches_group)
 
 # to run full sync test on TT
 """
@@ -148,7 +138,8 @@ def check_warnings(settings):
         Registrar.print_message_dict(0)
         usr_prompt_continue(settings)
         if Registrar.DEBUG_TRACE:
-            import pudb; pudb.set_trace()
+            import pudb
+            pudb.set_trace()
 
     elif Registrar.warnings:
         print("there were some warnings that should be reviewed")
@@ -157,21 +148,18 @@ def check_warnings(settings):
 
 def populate_master_parsers(parsers, settings):
     """Create and populates the various parsers."""
-    Registrar.register_message('schema: %s, woo_schemas: %s' % (
-        settings.schema, settings.woo_schemas
-    ))
+    Registrar.register_message('schema: %s, woo_schemas: %s' %
+                               (settings.schema, settings.woo_schemas))
 
     parsers.dyn = CsvParseDyn()
     parsers.special = CsvParseSpecial()
 
     if Registrar.DEBUG_GEN:
-        Registrar.register_message(
-            "master_download_client_args: %s" %
-            settings.master_download_client_args)
+        Registrar.register_message("master_download_client_args: %s" %
+                                   settings.master_download_client_args)
 
     with settings.master_download_client_class(
-        **settings.master_download_client_args
-    ) as client:
+            **settings.master_download_client_args) as client:
 
         if settings.schema_is_woo:
             if settings.do_dyns:
@@ -179,8 +167,7 @@ def populate_master_parsers(parsers, settings):
                 client.analyse_remote(
                     parsers.dyn,
                     data_path=settings.dprc_path,
-                    gid=settings.dprc_gid
-                )
+                    gid=settings.dprc_gid)
                 settings.dprc_rules = parsers.dyn.taxos
 
                 Registrar.register_message("analysing dprp rules")
@@ -188,8 +175,7 @@ def populate_master_parsers(parsers, settings):
                 client.analyse_remote(
                     parsers.dyn,
                     data_path=settings.dprp_path,
-                    gid=settings.dprp_gid
-                )
+                    gid=settings.dprp_gid)
                 settings.dprp_rules = parsers.dyn.taxos
 
             if settings.do_specials:
@@ -197,12 +183,10 @@ def populate_master_parsers(parsers, settings):
                 client.analyse_remote(
                     parsers.special,
                     data_path=settings.specials_path,
-                    gid=settings.spec_gid
-                )
+                    gid=settings.spec_gid)
                 if Registrar.DEBUG_SPECIAL:
                     Registrar.register_message(
-                        "all specials: %s" % parsers.special.tabulate()
-                    )
+                        "all specials: %s" % parsers.special.tabulate())
 
                 settings.special_rules = parsers.special.rules
 
@@ -214,23 +198,15 @@ def populate_master_parsers(parsers, settings):
 
                 if settings.current_special_groups:
                     Registrar.register_message(
-                        "current_special_groups: \n%s" % (
-                            parsers.special.taxo_container.container(
-                                settings.current_special_groups
-                            ).tabulate()
-                        )
-                    )
+                        "current_special_groups: \n%s" %
+                        (parsers.special.taxo_container.container(
+                            settings.current_special_groups).tabulate()))
                 else:
                     Registrar.register_warning(
-                        (
-                            "No special groups were found, "
-                            "here are the latest specials: \n%s"
-                        ) % (
-                            parsers.special.taxo_container.container(
-                                parsers.special.last_5()
-                            ).tabulate()
-                        )
-                    )
+                        ("No special groups were found, "
+                         "here are the latest specials: \n%s") %
+                        (parsers.special.taxo_container.container(
+                            parsers.special.last_5()).tabulate()))
 
         master_parser_args = settings.master_parser_args
 
@@ -238,28 +214,22 @@ def populate_master_parsers(parsers, settings):
         if os.path.exists(settings.master_path):
             master_mod_ts = max(
                 os.path.getmtime(settings.master_path),
-                os.path.getctime(settings.master_path)
-            )
+                os.path.getctime(settings.master_path))
             master_mod_dt = TimeUtils.inform_datetime(
                 TimeUtils.timestamp2datetime(master_mod_ts),
-                TimeUtils._local_tz
-            )
+                TimeUtils._local_tz)
         elif hasattr(client, 'get_gm_modtime'):
             master_mod_dt = TimeUtils.localize_datetime(
-                client.get_gm_modtime(settings.gen_gid),
-                TimeUtils._local_tz
-            )
+                client.get_gm_modtime(settings.gen_gid), TimeUtils._local_tz)
 
         master_parser_args['defaults'].update({
-            'modified_local': master_mod_dt,
-            'modified_gmt': TimeUtils.localize_datetime(
-                master_mod_dt, TimeUtils.utc_tz
-            )
+            'modified_local':
+            master_mod_dt,
+            'modified_gmt':
+            TimeUtils.localize_datetime(master_mod_dt, TimeUtils.utc_tz)
         })
 
-        parsers.master = settings.master_parser_class(
-            **master_parser_args
-        )
+        parsers.master = settings.master_parser_class(**master_parser_args)
 
         Registrar.register_progress("analysing master product data")
 
@@ -273,18 +243,20 @@ def populate_master_parsers(parsers, settings):
 
         client.analyse_remote(parsers.master, **analysis_kwargs)
 
-        if Registrar.DEBUG_PARSER and hasattr(
-                parsers.master, 'categories_name'):
+        if Registrar.DEBUG_PARSER and hasattr(parsers.master,
+                                              'categories_name'):
             for category_name, category_list in getattr(
                     parsers.master, 'categories_name').items():
                 if len(category_list) < 2:
                     continue
-                if SeqUtils.check_equal(
-                        [category.namesum for category in category_list]):
+                if SeqUtils.check_equal([
+                    category.namesum for category in category_list
+                ]):  # yapf: disable
                     continue
-                Registrar.register_warning("bad category: %50s | %d | %s" % (
-                    category_name[:50], len(category_list), str(category_list)
-                ))
+                Registrar.register_warning(
+                    "bad category: %50s | %d | %s" % (category_name[:50],
+                                                      len(category_list),
+                                                      str(category_list)))
 
         return parsers
 
@@ -309,9 +281,7 @@ def populate_slave_parsers(parsers, settings):
 
         with cat_sync_client_class(**cat_sync_client_args) as client:
             client.analyse_remote_categories(
-                parsers.slave,
-                data_path=settings.slave_cat_path
-            )
+                parsers.slave, data_path=settings.slave_cat_path)
 
     # TODO: ignore products which are post_status = trash
 
@@ -337,8 +307,7 @@ def populate_slave_parsers(parsers, settings):
                 var_client.analyse_remote_variations(
                     parsers.slave,
                     parent_pkey=parent_id,
-                    data_path=settings.get_slave_var_path(parent_id)
-                )
+                    data_path=settings.get_slave_var_path(parent_id))
 
     if settings.schema_is_woo and settings.do_images:
         Registrar.register_progress("analysing API image data")
@@ -349,8 +318,7 @@ def populate_slave_parsers(parsers, settings):
             client.analyse_remote_imgs(
                 parsers.slave,
                 data_path=settings.slave_img_path,
-                skip_unattached_images=settings.skip_unattached_images
-            )
+                skip_unattached_images=settings.skip_unattached_images)
 
     if Registrar.DEBUG_CLIENT:
         container = settings.slave_parser_class.product_container.container
@@ -371,13 +339,10 @@ def export_categories(settings, parser, csv_file, export_target):
     category_container = \
         settings.master_parser_class.category_container.container
     category_list = category_container([
-        category for category in parser.categories.values()
-        if category.members
+        category for category in parser.categories.values() if category.members
     ])
     category_list.export_items(
-        csv_file, category_col_names,
-        coldata_target=export_target
-    )
+        csv_file, category_col_names, coldata_target=export_target)
 
 
 def export_master_parser(settings, parsers):
@@ -399,30 +364,25 @@ def export_master_parser(settings, parsers):
         if col in product_colnames:
             del product_colnames[col]
 
-    extra_colnames = OrderedDict([
-        ('title_1', 'meta:title_1'),
-        ('title_2', 'meta:title_2')
-    ])
+    extra_colnames = OrderedDict([('title_1', 'meta:title_1'),
+                                  ('title_2', 'meta:title_2')])
     if settings.schema_is_woo and settings.do_attributes:
         extra_colnames = SeqUtils.combine_ordered_dicts(
             extra_colnames,
             settings.coldata_class.get_attribute_colnames_native(
-                parsers.master.attributes, parsers.master.vattributes
-            )
-        )
-    product_colnames = SeqUtils.combine_ordered_dicts(
-        product_colnames, extra_colnames
-    )
+                parsers.master.attributes, parsers.master.vattributes))
+    product_colnames = SeqUtils.combine_ordered_dicts(product_colnames,
+                                                      extra_colnames)
 
     container = parsers.master.product_container.container
 
     product_list = container(parsers.master.products.values())
 
     product_list.export_items(
-        settings.fla_path, product_colnames,
+        settings.fla_path,
+        product_colnames,
         coldata_target=export_target,
-        extra_colnames=extra_colnames
-    )
+        extra_colnames=extra_colnames)
 
     # TODO: stop exporting modified_gmt to spreadsheet
 
@@ -441,17 +401,16 @@ def export_master_parser(settings, parsers):
                 parsers.master.vattributes
             )
         variation_col_names = SeqUtils.combine_ordered_dicts(
-            variation_col_names, extra_variation_col_names
-        )
+            variation_col_names, extra_variation_col_names)
         if settings.do_variations and parsers.master.variations:
 
             variation_list = variation_container(
                 parsers.master.variations.values())
             variation_list.export_items(
-                settings.flv_path, variation_col_names,
+                settings.flv_path,
+                variation_col_names,
                 coldata_target=export_target,
-                extra_colnames=extra_variation_col_names
-            )
+                extra_colnames=extra_variation_col_names)
 
             updated_variations = parsers.master.updated_variations.values()
 
@@ -459,15 +418,15 @@ def export_master_parser(settings, parsers):
                 updated_variations_list = variation_container(
                     updated_variations)
                 updated_variations_list.export_items(
-                    settings.flvu_path, variation_col_names,
+                    settings.flvu_path,
+                    variation_col_names,
                     coldata_target=export_target,
-                    extra_colnames=extra_variation_col_names
-                )
+                    extra_colnames=extra_variation_col_names)
 
         # categories
         if settings.do_categories and parsers.master.categories:
-            export_categories(
-                settings, parsers.master, settings.cat_path, export_target)
+            export_categories(settings, parsers.master, settings.cat_path,
+                              export_target)
 
         # specials
         if settings.do_specials and settings.current_special_id:
@@ -475,27 +434,27 @@ def export_master_parser(settings, parsers):
             if special_products:
                 special_product_list = container(special_products)
                 special_product_list.export_items(
-                    settings.fls_path, product_colnames,
+                    settings.fls_path,
+                    product_colnames,
                     coldata_target=export_target,
-                    extra_colnames=extra_colnames
-                )
+                    extra_colnames=extra_colnames)
             special_variations = parsers.master.onspecial_variations.values()
             if special_variations:
                 sp_variation_list = variation_container(special_variations)
                 sp_variation_list.export_items(
-                    settings.flvs_path, variation_col_names,
+                    settings.flvs_path,
+                    variation_col_names,
                     coldata_target=export_target,
-                    extra_colnames=extra_variation_col_names
-                )
+                    extra_colnames=extra_variation_col_names)
 
         updated_products = parsers.master.updated_products.values()
         if updated_products:
             updated_product_list = container(updated_products)
             updated_product_list.export_items(
-                settings.flu_path, product_colnames,
+                settings.flu_path,
+                product_colnames,
                 coldata_target=export_target,
-                extra_colnames=extra_colnames
-            )
+                extra_colnames=extra_colnames)
 
             # TODO; updated variations
 
@@ -541,30 +500,24 @@ def cache_api_data(settings, parsers):
 def do_match_images(parsers, matches, settings):
     if Registrar.DEBUG_IMG:
         Registrar.register_message(
-            "matching %d master attachments with %d slave attachments" %
-            (len(parsers.master.attachments),
-             len(parsers.slave.attachments)))
+            "matching %d master attachments with %d slave attachments" % (len(
+                parsers.master.attachments), len(parsers.slave.attachments)))
 
-    matches.image = MatchNamespace(
-        index_fn=StrictImageMatcher.image_index_fn
-    )
+    matches.image = MatchNamespace(index_fn=StrictImageMatcher.image_index_fn)
 
     image_matcher = ImageMatcher()
     image_matcher.clear()
-    master_imgs_attachments = OrderedDict([
-        (index, image) for index, image in parsers.master.attachments.items()
-        if image.attaches.has_products_categories
-    ])
+    master_imgs_attachments = OrderedDict(
+        [(index, image) for index, image in parsers.master.attachments.items()
+         if image.attaches.has_products_categories])
     slave_imgs_attachments = parsers.slave.attachments
     if settings.skip_unattached_images:
-        slave_imgs_attachments = OrderedDict([
-            (index, image) for index, image in slave_imgs_attachments.items()
-            if image.attaches.has_products_categories
-        ])
+        slave_imgs_attachments = OrderedDict(
+            [(index, image) for index, image in slave_imgs_attachments.items()
+             if image.attaches.has_products_categories])
 
-    image_matcher.process_registers(
-        slave_imgs_attachments, master_imgs_attachments
-    )
+    image_matcher.process_registers(slave_imgs_attachments,
+                                    master_imgs_attachments)
 
     matches.image.globals.add_matches(image_matcher.pure_matches)
     matches.image.masterless.add_matches(image_matcher.masterless_matches)
@@ -572,8 +525,8 @@ def do_match_images(parsers, matches, settings):
 
     if Registrar.DEBUG_IMG:
         if image_matcher.pure_matches:
-            Registrar.register_message("All Image matches:\n%s" % (
-                '\n'.join(map(str, image_matcher.matches))))
+            Registrar.register_message("All Image matches:\n%s" % ('\n'.join(
+                map(str, image_matcher.matches))))
 
     matches.image.valid += image_matcher.pure_matches
 
@@ -589,21 +542,18 @@ def do_match_images(parsers, matches, settings):
         image_matcher.duplicate_matches.__class__()
 
     filename_duplicate_indices_m = set([
-        attachment.index
-        for match in image_matcher.duplicate_matches
+        attachment.index for match in image_matcher.duplicate_matches
         for attachment in match.m_objects
     ])
     filename_duplicate_indices_s = set([
-        attachment.index
-        for match in image_matcher.duplicate_matches
+        attachment.index for match in image_matcher.duplicate_matches
         for attachment in match.s_objects
     ])
 
     for match in image_matcher.duplicate_matches:
         if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
             Registrar.register_message(
-                "analysing duplicate match:\n%s" % match.tabulate()
-            )
+                "analysing duplicate match:\n%s" % match.tabulate())
         # why this mess? Well, let me explain.
         # Let's say we have a file 'placeholder.png' that has been uploaded
         #   to the server multiple times, each of these files will be called
@@ -614,18 +564,12 @@ def do_match_images(parsers, matches, settings):
         #   the SKUs of all the products that are attached to the file
 
         def process_extra_match(extra_match):
-            extra_valid_indices_m.update([
-                attachment.index
-                for attachment in extra_match.m_objects
-            ])
-            extra_valid_indices_s.update([
-                attachment.index
-                for attachment in extra_match.s_objects
-            ])
-            if (
-                extra_match.type == 'pure'
-                or (extra_match.type == 'duplicate' and extra_match.m_len == 1)
-            ):
+            extra_valid_indices_m.update(
+                [attachment.index for attachment in extra_match.m_objects])
+            extra_valid_indices_s.update(
+                [attachment.index for attachment in extra_match.s_objects])
+            if (extra_match.type == 'pure' or
+                (extra_match.type == 'duplicate' and extra_match.m_len == 1)):
                 matches.image.valid += [sub_match]
             elif extra_match.type == 'masterless':
                 try:
@@ -638,16 +582,18 @@ def do_match_images(parsers, matches, settings):
                 except AssertionError as exc:
                     Registrar.register_warning(exc)
             else:
-                matches.image.duplicate['file_basename'].add_matches([
-                    extra_match
-                ])
+                matches.image.duplicate['file_basename'].add_matches(
+                    [extra_match])
 
         remaining_match = match.__class__()
         remaining_match.consume(match)
 
         for sub_matching, allow_dup in [
             ('find_file_basename_matches', False),
-            ('find_attachee_sku_matches', True,),
+            (
+                'find_attachee_sku_matches',
+                True,
+            ),
             ('find_norm_title_matches', True),
         ]:
             sub_matches = getattr(image_matcher, sub_matching)(remaining_match)
@@ -655,34 +601,21 @@ def do_match_images(parsers, matches, settings):
             for key, sub_match in sub_matches.items():
                 if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
                     Registrar.register_message(
-                        "%s sub match %s is %s:\n%s" % (
-                            sub_matching,
-                            key,
-                            sub_match.type,
-                            sub_match.tabulate()
-                        )
-                    )
-                if (
-                    sub_match.type == 'pure'
-                    or (
-                        allow_dup
-                        and sub_match.type == 'duplicate'
-                        and sub_match.m_len == 1
-                    )
-                ):
+                        "%s sub match %s is %s:\n%s" % (sub_matching, key,
+                                                        sub_match.type,
+                                                        sub_match.tabulate()))
+                if (sub_match.type == 'pure'
+                        or (allow_dup and sub_match.type == 'duplicate'
+                            and sub_match.m_len == 1)):
                     process_extra_match(sub_match)
                 else:
                     remaining_match.consume(sub_match)
             if remaining_match.type == 'empty':
                 break
             if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
-                Registrar.register_message(
-                    "%s remaining match is %s:\n%s" % (
-                        sub_matching,
-                        remaining_match.type,
-                        remaining_match.tabulate()
-                    )
-                )
+                Registrar.register_message("%s remaining match is %s:\n%s" %
+                                           (sub_matching, remaining_match.type,
+                                            remaining_match.tabulate()))
             if remaining_match.type == 'duplicate':
                 continue
             process_extra_match(remaining_match)
@@ -691,27 +624,18 @@ def do_match_images(parsers, matches, settings):
 
         if remaining_match.type != 'empty':
             exc = UserWarning(
-                (
-                    "Could not match images\n%s"
-                ) % (
-                    remaining_match.tabulate()
-                )
-            )
+                ("Could not match images\n%s") % (remaining_match.tabulate()))
             Registrar.register_warning(exc)
 
             if remaining_match.m_len > 0:
                 for m_object in remaining_match.m_objects:
-                    split_match = match.__class__(
-                        m_objects=[m_object]
-                    )
+                    split_match = match.__class__(m_objects=[m_object])
                     process_extra_match(split_match)
 
             if remaining_match.s_len > 0:
                 split_match = match.__class__(
-                    s_objects=remaining_match.s_objects
-                )
+                    s_objects=remaining_match.s_objects)
                 process_extra_match(split_match)
-
 
     try:
         assert \
@@ -737,17 +661,14 @@ def do_match_images(parsers, matches, settings):
             )
     except AssertionError as exc:
         warn = RuntimeWarning(
-            "could not match all images.\n%s\n%s" % (
-                "\n".join([
-                    "%s:\n%s" % (key, dup_matches.tabulate())
-                    for key, dup_matches in matches.image.duplicate.items()
-                ]),
-                str(exc)
-            )
-        )
+            "could not match all images.\n%s\n%s" % ("\n".join([
+                "%s:\n%s" % (key, dup_matches.tabulate())
+                for key, dup_matches in matches.image.duplicate.items()
+            ]), str(exc)))
         Registrar.register_warning(warn)
         if Registrar.DEBUG_TRACE:
-            import pudb; pudb.set_trace()
+            import pudb
+            pudb.set_trace()
 
     if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
         Registrar.register_message(
@@ -790,24 +711,21 @@ def do_match_categories(parsers, matches, settings):
 
     if Registrar.DEBUG_CATS:
         Registrar.register_message(
-            "matching %d master categories with %d slave categories" %
-            (len(parsers.master.categories),
-             len(parsers.slave.categories)))
+            "matching %d master categories with %d slave categories" % (len(
+                parsers.master.categories), len(parsers.slave.categories)))
 
     # Matching on "cat_name"
 
     matches.category = MatchNamespace(
-        index_fn=CategoryMatcher.category_index_fn
-    )
+        index_fn=CategoryMatcher.category_index_fn)
 
-    if not(parsers.master.categories and parsers.slave.categories):
+    if not (parsers.master.categories and parsers.slave.categories):
         return matches
 
     category_matcher = CategoryMatcher()
     category_matcher.clear()
-    category_matcher.process_registers(
-        parsers.slave.categories, parsers.master.categories
-    )
+    category_matcher.process_registers(parsers.slave.categories,
+                                       parsers.master.categories)
 
     matches.category.globals.add_matches(category_matcher.pure_matches)
     matches.category.masterless.add_matches(
@@ -817,8 +735,8 @@ def do_match_categories(parsers, matches, settings):
     if Registrar.DEBUG_CATS:
         if category_matcher.pure_matches:
             Registrar.register_message(
-                "All Category matches on cat_name:\n%s" % (
-                    '\n'.join(map(str, category_matcher.matches))))
+                "All Category matches on cat_name:\n%s" % ('\n'.join(
+                    map(str, category_matcher.matches))))
 
     # using valid because the category tree can collapse multiple
     # master categories into single slave
@@ -833,17 +751,13 @@ def do_match_categories(parsers, matches, settings):
             master_taxo_sums = [cat.namesum for cat in match.m_objects]
             # If there is more than one master category in the match,
             # it is only valid if they have the same name
-            if (
-                len(master_taxo_sums) > 1
-                and all(master_taxo_sums)
-                and SeqUtils.check_equal(master_taxo_sums)
-            ):
+            if (len(master_taxo_sums) > 1 and all(master_taxo_sums)
+                    and SeqUtils.check_equal(master_taxo_sums)):
                 if len(match.s_objects) == 1:
                     if len(match.m_objects) > 1:
-                        deepest_m_object = sorted([
-                            (m_object.depth, m_object)
-                            for m_object in match.m_objects
-                        ])[-1][1]
+                        deepest_m_object = sorted(
+                            [(m_object.depth, m_object)
+                             for m_object in match.m_objects])[-1][1]
                         # Other matches are irrelevant if they have the same
                         # name
                         match = Match([deepest_m_object], match.s_objects)
@@ -856,10 +770,9 @@ def do_match_categories(parsers, matches, settings):
                     continue
             matches.category.invalid.append(match)
         if matches.category.invalid:
-            exc = UserWarning(
-                "categories couldn't be synchronized because of "
-                "ambiguous names:\n%s"
-                % '\n'.join(map(str, matches.category.invalid)))
+            exc = UserWarning("categories couldn't be synchronized because of "
+                              "ambiguous names:\n%s" % '\n'.join(
+                                  map(str, matches.category.invalid)))
             Registrar.register_error(exc)
             raise exc
 
@@ -868,22 +781,17 @@ def do_match_categories(parsers, matches, settings):
 
     # TODO: Now try and match the masterless / slaveless categories on title
     # instead of cat_name
-    master_orphaned_categories = OrderedDict([
-        (category.rowcount, category)
-        for category in itertools.chain(*[
-            match.m_objects for match in matches.category.slaveless])
-    ])
-    slave_orphaned_categories = OrderedDict([
-        (category.title, category)
-        for category in itertools.chain(*[
-            match.s_objects for match in matches.category.masterless])
-    ])
+    master_orphaned_categories = OrderedDict(
+        [(category.rowcount, category) for category in itertools.chain(
+            *[match.m_objects for match in matches.category.slaveless])])
+    slave_orphaned_categories = OrderedDict(
+        [(category.title, category) for category in itertools.chain(
+            *[match.s_objects for match in matches.category.masterless])])
 
     title_matcher = CategoryTitleMatcher()
     title_matcher.clear()
-    title_matcher.process_registers(
-        slave_orphaned_categories, master_orphaned_categories
-    )
+    title_matcher.process_registers(slave_orphaned_categories,
+                                    master_orphaned_categories)
 
     matches.category.globals.add_matches(title_matcher.pure_matches)
     matches.category.valid += title_matcher.pure_matches
@@ -893,10 +801,9 @@ def do_match_categories(parsers, matches, settings):
     if matches.category.slaveless and matches.category.masterless:
         exc = UserWarning(
             "You may want to fix up the following "
-            "categories before syncing:\n%s\n%s"
-            %
-            ('\n'.join(map(str, category_matcher.slaveless_matches)),
-             '\n'.join(map(str, category_matcher.masterless_matches))))
+            "categories before syncing:\n%s\n%s" % ('\n'.join(
+                map(str, category_matcher.slaveless_matches)), '\n'.join(
+                    map(str, category_matcher.masterless_matches))))
 
         Registrar.register_error(exc)
         # raise exc
@@ -919,32 +826,25 @@ def do_match_prod(parsers, matches, settings):
         return matches
 
     product_matcher = ProductMatcher()
-    product_matcher.process_registers(
-        parsers.slave.products, parsers.master.products
-    )
+    product_matcher.process_registers(parsers.slave.products,
+                                      parsers.master.products)
     # print product_matcher.__repr__()
 
     matches.globals.add_matches(product_matcher.pure_matches)
     matches.masterless.add_matches(product_matcher.masterless_matches)
-    matches.deny_anomalous(
-        'product_matcher.masterless_matches',
-        product_matcher.masterless_matches
-    )
+    matches.deny_anomalous('product_matcher.masterless_matches',
+                           product_matcher.masterless_matches)
     matches.slaveless.add_matches(product_matcher.slaveless_matches)
-    matches.deny_anomalous(
-        'product_matcher.slaveless_matches', product_matcher.slaveless_matches
-    )
+    matches.deny_anomalous('product_matcher.slaveless_matches',
+                           product_matcher.slaveless_matches)
 
     try:
-        matches.deny_anomalous(
-            'product_matcher.duplicate_matches',
-            product_matcher.duplicate_matches,
-            True
-        )
+        matches.deny_anomalous('product_matcher.duplicate_matches',
+                               product_matcher.duplicate_matches, True)
     except AssertionError as exc:
         exc = UserWarning(
-            "products couldn't be synchronized because of ambiguous SKUs:%s"
-            % '\n'.join(map(str, product_matcher.duplicate_matches)))
+            "products couldn't be synchronized because of ambiguous SKUs:%s" %
+            '\n'.join(map(str, product_matcher.duplicate_matches)))
         Registrar.register_error(exc)
         raise exc
 
@@ -952,34 +852,28 @@ def do_match_prod(parsers, matches, settings):
 def do_match_var(parsers, matches, settings):
     # TODO: finish and test
     matches.variation = MatchNamespace(
-        index_fn=ProductMatcher.product_index_fn
-    )
+        index_fn=ProductMatcher.product_index_fn)
 
     if not settings.do_variations:
         return
 
     variation_matcher = VariationMatcher()
-    variation_matcher.process_registers(
-        parsers.slave.variations, parsers.master.variations
-    )
+    variation_matcher.process_registers(parsers.slave.variations,
+                                        parsers.master.variations)
 
     if Registrar.DEBUG_VARS:
-        Registrar.register_message("variation matcher:\n%s" %
-                                   variation_matcher.__repr__())
+        Registrar.register_message(
+            "variation matcher:\n%s" % variation_matcher.__repr__())
 
     matches.variation.globals.add_matches(variation_matcher.pure_matches)
     matches.variation.masterless.add_matches(
         variation_matcher.masterless_matches)
-    matches.variation.deny_anomalous(
-        'variation_matcher.masterless_matches',
-        variation_matcher.masterless_matches
-    )
+    matches.variation.deny_anomalous('variation_matcher.masterless_matches',
+                                     variation_matcher.masterless_matches)
     matches.variation.slaveless.add_matches(
         variation_matcher.slaveless_matches)
-    matches.variation.deny_anomalous(
-        'variation_matcher.slaveless_matches',
-        variation_matcher.slaveless_matches
-    )
+    matches.variation.deny_anomalous('variation_matcher.slaveless_matches',
+                                     variation_matcher.slaveless_matches)
     if variation_matcher.duplicate_matches:
         matches.variation.duplicate['index'] = \
             variation_matcher.duplicate_matches
@@ -1015,44 +909,36 @@ def do_merge_images(matches, parsers, updates, settings):
     for count, match in enumerate(matches.image.slaveless):
         m_object = match.m_object
         Registrar.register_message(
-            "will create image %d: %s" % (
-                count, m_object.identifier
-            )
-        )
+            "will create image %d: %s" % (count, m_object.identifier))
         if not (m_object.attaches.products or m_object.attaches.categories):
             continue
 
         empty_s_object = parsers.slave.get_empty_attachment_instance()
-        sync_update = settings.syncupdate_class_img(
-            m_object, empty_s_object
-        )
+        sync_update = settings.syncupdate_class_img(m_object, empty_s_object)
         sync_update.update(sync_handles)
         updates.image.slaveless.append(sync_update)
 
     # TODO: only delete duplicate images without attaches
     # import pudb; pudb.set_trace()
 
-    for count, match in enumerate(
-        matches.image.duplicate['file_basename']
-        # + matches.image.masterless
-    ):
+    for count, match in enumerate(matches.image.duplicate['file_basename']
+                                  # + matches.image.masterless
+                                  ):
         if not match.s_len:
             continue
-        deletes = []
         for dup_count, s_object in enumerate(match.s_objects):
             if s_object.attaches:
                 Registrar.register_message(
-                    "will not delete image with attaches: %d:\n%s\n%s" % (
-                        count, s_object.identifier, s_object.attaches
-                    ))
+                    "will not delete image with attaches: %d:\n%s\n%s" %
+                    (count, s_object.identifier, s_object.attaches))
                 continue
 
             if not dup_count:
                 # keep at least 1 of the duplicates
                 continue
             sync_update = settings.syncupdate_class_img(None, s_object)
-            Registrar.register_message("will delete image: %d:\n%s" % (
-                count, s_object.identifier))
+            Registrar.register_message(
+                "will delete image: %d:\n%s" % (count, s_object.identifier))
 
             updates.image.masterless.append(sync_update)
 
@@ -1107,9 +993,8 @@ def do_merge_categories(matches, parsers, updates, settings):
             # not all masterless matches have a singular master object.
             # Only select the deepest one.
             if len(match.m_objects) > 1:
-                m_object = sorted([
-                    (m_object.depth, m_object) for m_object in match.m_objects
-                ])[-1][1]
+                m_object = sorted([(m_object.depth, m_object)
+                                   for m_object in match.m_objects])[-1][1]
             else:
                 m_object = match.m_object
 
@@ -1117,10 +1002,7 @@ def do_merge_categories(matches, parsers, updates, settings):
             # the same category name as one being created, then there will be a
             # conflict
             Registrar.register_message(
-                "will create category %d: %s" % (
-                    count, m_object.identifier
-                )
-            )
+                "will create category %d: %s" % (count, m_object.identifier))
             empty_s_object = parsers.slave.get_empty_category_instance()
             sync_update = settings.syncupdate_class_cat(
                 m_object, empty_s_object)
@@ -1128,6 +1010,7 @@ def do_merge_categories(matches, parsers, updates, settings):
             updates.category.slaveless.append(sync_update)
 
     return updates
+
 
 # TODO: do_merge_attributes ?
 
@@ -1144,17 +1027,16 @@ def get_update_prod(settings, m_object, s_object):
     sync_update.update(settings.sync_handles_prod)
 
     if settings.do_categories:
-        sync_update.simplify_sync_warning_value_listed(
-            'product_categories', ['term_id'])
+        sync_update.simplify_sync_warning_value_listed('product_categories',
+                                                       ['term_id'])
 
     if settings.do_images:
         sync_update.simplify_sync_warning_value_listed(
-            'attachment_objects', ['id', 'title', 'source_url', 'position']
-        )
+            'attachment_objects', ['id', 'title', 'source_url', 'position'])
 
     if settings.do_attributes:
-        sync_update.simplify_sync_warning_value_listed(
-            'attributes', ['term_id'])
+        sync_update.simplify_sync_warning_value_listed('attributes',
+                                                       ['term_id'])
 
     return sync_update
 
@@ -1167,8 +1049,8 @@ def do_merge_prod(matches, parsers, updates, settings):
 
     for count, match in enumerate(matches.globals):
         if Registrar.DEBUG_UPDATE:
-            Registrar.register_message("processing match %d:\n%s" % (
-                count, match.tabulate()))
+            Registrar.register_message(
+                "processing match %d:\n%s" % (count, match.tabulate()))
         m_object = match.m_object
         s_object = match.s_object
 
@@ -1187,8 +1069,8 @@ def do_merge_prod(matches, parsers, updates, settings):
         #   updates
 
         if Registrar.DEBUG_VARS:
-            Registrar.register_message("prod update %d:\n%s" % (
-                count, sync_update.tabulate()))
+            Registrar.register_message(
+                "prod update %d:\n%s" % (count, sync_update.tabulate()))
 
         if sync_update.m_updated:
             updates.master.append(sync_update)
@@ -1197,9 +1079,8 @@ def do_merge_prod(matches, parsers, updates, settings):
             continue
 
         if Registrar.DEBUG_UPDATE:
-            Registrar.register_message("update %d:\n%s" % (
-                count, sync_update.tabulate()
-            ))
+            Registrar.register_message(
+                "update %d:\n%s" % (count, sync_update.tabulate()))
 
         if sync_update.s_updated and sync_update.s_deltas:
             updates.delta_slave.append(sync_update)
@@ -1218,18 +1099,15 @@ def do_merge_prod(matches, parsers, updates, settings):
             continue
 
         Registrar.register_message(
-            "will create product %d: %s" % (
-                count, m_object.identifier
-            )
-        )
+            "will create product %d: %s" % (count, m_object.identifier))
         sync_update = get_update_prod(settings, m_object, None)
         updates.slaveless.append(sync_update)
 
     for count, match in enumerate(matches.masterless):
         s_object = match.s_object
 
-        Registrar.register_message("will delete product: %d:\n%s" % (
-            count, s_object.identifier))
+        Registrar.register_message(
+            "will delete product: %d:\n%s" % (count, s_object.identifier))
 
         sync_update = get_update_prod(settings, None, s_object)
 
@@ -1245,8 +1123,8 @@ def get_update_var(settings, m_object, s_object):
             'image', ['id', 'title', 'source_url'])
 
     if settings.do_attributes:
-        sync_update.simplify_sync_warning_value_listed(
-            'attributes', ['term_id'])
+        sync_update.simplify_sync_warning_value_listed('attributes',
+                                                       ['term_id'])
 
     return sync_update
 
@@ -1267,8 +1145,8 @@ def do_merge_var(matches, parsers, updates, settings):
 
     for count, match in enumerate(matches.variation.globals):
         if Registrar.DEBUG_VARS:
-            Registrar.register_message("processing match %d:\n%s" % (
-                count, match.tabulate()))
+            Registrar.register_message(
+                "processing match %d:\n%s" % (count, match.tabulate()))
         m_object = match.m_object
         s_object = match.s_object
 
@@ -1282,8 +1160,8 @@ def do_merge_var(matches, parsers, updates, settings):
         #   updates
 
         if Registrar.DEBUG_VARS:
-            Registrar.register_message("var update %d:\n%s" % (
-                count, sync_update.tabulate()))
+            Registrar.register_message(
+                "var update %d:\n%s" % (count, sync_update.tabulate()))
 
         if sync_update.s_updated and sync_update.s_deltas:
             updates.variation.delta_slave.append(sync_update)
@@ -1306,8 +1184,8 @@ def do_merge_var(matches, parsers, updates, settings):
 
         sync_update = get_update_var(settings, m_object, None)
 
-        Registrar.register_message("Will create variation %d:\n%s" % (
-            count, m_object.identifier))
+        Registrar.register_message(
+            "Will create variation %d:\n%s" % (count, m_object.identifier))
 
         updates.variation.slaveless.append(sync_update)
         # TODO: figure out which attribute terms to add to parent?
@@ -1315,8 +1193,8 @@ def do_merge_var(matches, parsers, updates, settings):
     for count, match in enumerate(matches.variation.masterless):
         s_object = match.s_object
 
-        Registrar.register_message("will delete variation: %d:\n%s" % (
-            count, s_object.identifier))
+        Registrar.register_message(
+            "will delete variation: %d:\n%s" % (count, s_object.identifier))
 
         sync_update = get_update_var(settings, None, s_object)
 
@@ -1333,8 +1211,8 @@ def do_report_images(reporters, matches, updates, parsers, settings):
     do_img_sync_group(reporters.img, matches, updates, parsers, settings)
 
     if settings.get('report_matching'):
-        do_matches_group(
-            reporters.img, matches.image, updates, parsers, settings)
+        do_matches_group(reporters.img, matches.image, updates, parsers,
+                         settings)
 
     if reporters.img:
         reporters.img.write_document_to_file('img', settings.rep_img_path)
@@ -1355,6 +1233,7 @@ def do_report_categories(reporters, matches, updates, parsers, settings):
 
     return reporters
 
+
 # TODO: do_report_attributes ?
 
 
@@ -1364,25 +1243,17 @@ def do_report_attributes(reporters, matches, updates, parsers, settings):
 
 
 def do_report(reporters, matches, updates, parsers, settings):
-    """ Write report of changes to be made. """
+    """Write report of changes to be made."""
 
     if not settings.get('do_report'):
         return reporters
 
     Registrar.register_progress("Write Report")
 
-    do_main_summary_group(
-        reporters.main, matches, updates, parsers, settings
-    )
-    do_delta_group(
-        reporters.main, matches, updates, parsers, settings
-    )
-    do_sync_group(
-        reporters.main, matches, updates, parsers, settings
-    )
-    do_var_sync_group(
-        reporters.main, matches, updates, parsers, settings
-    )
+    do_main_summary_group(reporters.main, matches, updates, parsers, settings)
+    do_delta_group(reporters.main, matches, updates, parsers, settings)
+    do_sync_group(reporters.main, matches, updates, parsers, settings)
+    do_var_sync_group(reporters.main, matches, updates, parsers, settings)
 
     if reporters.main:
         reporters.main.write_document_to_file('main', settings.rep_main_path)
@@ -1390,30 +1261,25 @@ def do_report(reporters, matches, updates, parsers, settings):
     if settings.get('report_matching'):
         Registrar.register_progress("Write Matching Report")
 
-        do_matches_summary_group(
-            reporters.match, matches, updates, parsers, settings
-        )
-        do_matches_group(
-            reporters.match, matches, updates, parsers, settings
-        )
+        do_matches_summary_group(reporters.match, matches, updates, parsers,
+                                 settings)
+        do_matches_group(reporters.match, matches, updates, parsers, settings)
         if settings.do_variations:
-            do_variation_matches_group(
-                reporters.match, matches, updates, parsers, settings
-            )
+            do_variation_matches_group(reporters.match, matches, updates,
+                                       parsers, settings)
         if settings.do_categories:
-            do_category_matches_group(
-                reporters.match, matches, updates, parsers, settings
-            )
+            do_category_matches_group(reporters.match, matches, updates,
+                                      parsers, settings)
 
         if reporters.match:
-            reporters.match.write_document_to_file(
-                'match', settings.rep_match_path)
+            reporters.match.write_document_to_file('match',
+                                                   settings.rep_match_path)
 
     return reporters
 
 
 def do_report_post(reporters, results, settings):
-    """ Reports results from performing updates."""
+    """Reports results from performing updates."""
     # raise NotImplementedError()
     if settings.get('do_report'):
         Registrar.register_progress("Write Post Report")
@@ -1422,8 +1288,8 @@ def do_report_post(reporters, results, settings):
         do_failures_group(reporters.post, results, settings)
         do_successes_group(reporters.post, results, settings)
         if reporters.post:
-            reporters.post.write_document_to_file(
-                'post', settings.rep_post_path)
+            reporters.post.write_document_to_file('post',
+                                                  settings.rep_post_path)
 
 
 def handle_failed_update(update, results, exc, settings, source=None):
@@ -1437,18 +1303,13 @@ def handle_failed_update(update, results, exc, settings, source=None):
         results.fails_slave.append(fail)
     else:
         pkey = ''
-    Registrar.register_error(
-        "ERROR UPDATING %s (%s): %s\n%s\n%s" % (
-            source or '',
-            pkey,
-            repr(exc),
-            update.tabulate(),
-            traceback.format_exc()
-        )
-    )
+    Registrar.register_error("ERROR UPDATING %s (%s): %s\n%s\n%s" %
+                             (source or '', pkey, repr(exc), update.tabulate(),
+                              traceback.format_exc()))
 
     if Registrar.DEBUG_TRACE:
-        import pudb; pudb.set_trace()
+        import pudb
+        pudb.set_trace()
 
 
 def usr_prompt_continue(settings):
@@ -1459,9 +1320,7 @@ def usr_prompt_continue(settings):
         raw_in = input("\n".join([
             "Please read reports and then make your selection",
             " - press Enter to continue and perform updates",
-            " - press s to skip updates",
-            " - press c to cancel",
-            "..."
+            " - press s to skip updates", " - press c to cancel", "..."
         ]))
     except SyntaxError:
         raw_in = ""
@@ -1471,14 +1330,16 @@ def usr_prompt_continue(settings):
         raise SystemExit
 
 
-def upload_new_items_slave(
-    parsers, results, settings, client, new_updates, _type='product'
-):
+def upload_new_items_slave(parsers,
+                           results,
+                           settings,
+                           client,
+                           new_updates,
+                           _type='product'):
 
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
-            len(new_updates), items_plural='new %s(s)' % _type
-        )
+            len(new_updates), items_plural='new %s(s)' % _type)
 
     if not (new_updates and settings.update_slave):
         return
@@ -1508,9 +1369,8 @@ def upload_new_items_slave(
             new_object_gen = sync_update.old_m_object_gen
 
             if new_object_gen.parent:
-                remaining_m_objects = set([
-                    sync_update.old_m_object_gen for update_ in new_updates
-                ])
+                remaining_m_objects = set(
+                    [sync_update.old_m_object_gen for update_ in new_updates])
                 parent = new_object_gen.parent
                 if not parent.is_root and parent in remaining_m_objects:
                     new_updates.append(sync_update)
@@ -1520,20 +1380,13 @@ def upload_new_items_slave(
             # have to refresh sync_update to get parent wpid since parente
             # wpid is populated in do_updates_categories_master
             sync_update = type_get_update_fns.get(_type)(
-                settings,
-                sync_update.old_m_object,
-                sync_update.old_s_object
-            )
+                settings, sync_update.old_m_object, sync_update.old_s_object)
 
         core_data = sync_update.get_slave_updates()
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
-                "new %s (core format) %s" % (
-                    _type,
-                    core_data
-                )
-            )
+                "new %s (core format) %s" % (_type, core_data))
 
         update_count += 1
         if Registrar.DEBUG_PROGRESS:
@@ -1550,18 +1403,15 @@ def upload_new_items_slave(
             response = client.create_item_core(core_data, **create_item_kwargs)
             response_api_data = response.json()
         except BaseException as exc:
-            handle_failed_update(
-                sync_update, results, exc, settings, settings.slave_name
-            )
+            handle_failed_update(sync_update, results, exc, settings,
+                                 settings.slave_name)
             continue
         if client.page_nesting:
             response_api_data = response_api_data[client.endpoint_singular]
 
         response_gen_object = getattr(
-            parsers.slave, type_analyse_api_obj_fns[_type]
-        )(
-            response_api_data, **process_item_kwargs
-        )
+            parsers.slave, type_analyse_api_obj_fns[_type])(
+                response_api_data, **process_item_kwargs)
 
         sync_update.set_new_s_object_gen(response_gen_object)
         sync_update.old_m_object_gen.update(response_gen_object)
@@ -1574,19 +1424,16 @@ def upload_new_images_slave(parsers, results, settings, client, new_updates):
     # TODO: fix constantly re-uploading images
 
     upload_new_items_slave(
-        parsers, results, settings, client, new_updates, _type="image"
-    )
+        parsers, results, settings, client, new_updates, _type="image")
 
 
 # TODO: collapse upload_changes functions
-def upload_image_changes_slave(
-    parsers, results, settings, client, change_updates
-):
+def upload_image_changes_slave(parsers, results, settings, client,
+                               change_updates):
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
             len(change_updates),
-            items_plural='%s updates' % client.endpoint_singular
-        )
+            items_plural='%s updates' % client.endpoint_singular)
 
     if not settings.update_slave:
         return
@@ -1606,9 +1453,8 @@ def upload_image_changes_slave(
             if client.page_nesting:
                 response_api_data = response_api_data[client.endpoint_singular]
         except Exception as exc:
-            handle_failed_update(
-                sync_update, results, exc, settings, settings.slave_name
-            )
+            handle_failed_update(sync_update, results, exc, settings,
+                                 settings.slave_name)
             continue
 
         if response_api_data['id'] != pkey:
@@ -1621,8 +1467,7 @@ def upload_image_changes_slave(
                     response_api_data, settings.coldata_img_target
                 )
             response_gen_data = settings.coldata_class_img.translate_data_to(
-                response_core_data, settings.coldata_gen_target_write
-            )
+                response_core_data, settings.coldata_gen_target_write)
             sync_update.old_s_object_gen.update(response_gen_data)
             response_gen_object = sync_update.old_s_object_gen
 
@@ -1638,8 +1483,8 @@ def do_updates_images_master(updates, parsers, results, settings):
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message(
                 "performing update < %5s | %5s > = \n%100s, %100s " %
-                (update.master_id, update.slave_id,
-                 str(update.old_m_object), str(update.old_s_object)))
+                (update.master_id, update.slave_id, str(update.old_m_object),
+                 str(update.old_s_object)))
         if old_master_id not in parsers.master.attachments:
             exc = UserWarning(
                 "couldn't fine pkey %s in parsers.master.attachments" %
@@ -1647,8 +1492,7 @@ def do_updates_images_master(updates, parsers, results, settings):
             Registrar.register_error(exc)
             continue
         parsers.master.attachments[old_master_id].update(
-            update.get_master_updates_native()
-        )
+            update.get_master_updates_native())
 
 
 def delete_images_slave(parsers, results, settings, client, delete_updates):
@@ -1701,8 +1545,7 @@ def do_updates_images_slave(updates, parsers, results, settings):
         for update in updates.image.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                endpoint_singular, new_item_api
-            ))
+                endpoint_singular, new_item_api))
             Registrar.register_warning(exc)
 
     delete_updates = []
@@ -1711,18 +1554,14 @@ def do_updates_images_slave(updates, parsers, results, settings):
     else:
         for update in updates.image.masterless:
             exc = UserWarning("{} needs to be deleted: {} | {}".format(
-                endpoint_singular,
-                update.old_s_object.get('ID'),
-                update.old_s_object.get('source_url')
-            ))
+                endpoint_singular, update.old_s_object.get('ID'),
+                update.old_s_object.get('source_url')))
             Registrar.register_warning(exc)
 
     Registrar.register_progress(
         "Changing {1}, creating {2} and deleting {3} {0}".format(
             endpoint_plural, len(change_updates), len(new_updates),
-            len(delete_updates)
-        )
-    )
+            len(delete_updates)))
 
     if not (new_updates or change_updates or delete_updates):
         return
@@ -1733,35 +1572,29 @@ def do_updates_images_slave(updates, parsers, results, settings):
 
     with sync_client_class(**sync_client_args) as client:
         if new_updates:
-            upload_new_images_slave(
-                parsers, results.image.new, settings, client, new_updates
-            )
+            upload_new_images_slave(parsers, results.image.new, settings,
+                                    client, new_updates)
 
         if change_updates:
-            upload_image_changes_slave(
-                parsers, results.image, settings, client, change_updates
-            )
+            upload_image_changes_slave(parsers, results.image, settings,
+                                       client, change_updates)
 
         if delete_updates:
-            delete_images_slave(
-                parsers, results, settings, client, delete_updates
-            )
+            delete_images_slave(parsers, results, settings, client,
+                                delete_updates)
 
 
-def upload_new_categories_slave(
-    parsers, results, settings, client, new_updates
-):
+def upload_new_categories_slave(parsers, results, settings, client,
+                                new_updates):
     """
     Create new categories in client in an order which creates parents first.
     """
     upload_new_items_slave(
-        parsers, results, settings, client, new_updates, _type="category"
-    )
+        parsers, results, settings, client, new_updates, _type="category")
 
 
-def upload_category_changes_slave(
-    parsers, results, settings, client, change_updates
-):
+def upload_category_changes_slave(parsers, results, settings, client,
+                                  change_updates):
     """
     Upload a list of category changes
     """
@@ -1769,8 +1602,7 @@ def upload_category_changes_slave(
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
             len(change_updates),
-            items_plural='%s updates' % client.endpoint_singular
-        )
+            items_plural='%s updates' % client.endpoint_singular)
 
     if not settings.update_slave:
         return
@@ -1788,25 +1620,19 @@ def upload_category_changes_slave(
             response_raw = client.upload_changes(pkey, changes)
             response_api_data = response_raw.json()
         except Exception as exc:
-            handle_failed_update(
-                sync_update, results, exc, settings, settings.slave_name
-            )
+            handle_failed_update(sync_update, results, exc, settings,
+                                 settings.slave_name)
             continue
 
         response_core_data = settings.coldata_class_cat.translate_data_from(
-            response_api_data, settings.coldata_cat_target
-        )
+            response_api_data, settings.coldata_cat_target)
         response_gen_data = settings.coldata_class_cat.translate_data_to(
-            response_core_data, settings.coldata_gen_target_write
-        )
+            response_core_data, settings.coldata_gen_target_write)
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
-                "%s being updated with parser data: %s" % (
-                    client.endpoint_singular,
-                    pformat(response_gen_data)
-                )
-            )
+                "%s being updated with parser data: %s" %
+                (client.endpoint_singular, pformat(response_gen_data)))
 
         sync_update.old_s_object_gen.update(response_gen_data)
         sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
@@ -1820,10 +1646,8 @@ def do_updates_categories_master(updates, parsers, results, settings):
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message(
                 "performing update < %5s | %5s > = \n%100s, %100s " %
-                (
-                    update.master_id, update.slave_id,
-                    str(update.old_m_object), str(update.old_s_object))
-                )
+                (update.master_id, update.slave_id, str(update.old_m_object),
+                 str(update.old_s_object)))
         if update.master_id not in parsers.master.categories:
             exc = UserWarning(
                 "couldn't fine pkey %s in parsers.master.categories" %
@@ -1831,13 +1655,11 @@ def do_updates_categories_master(updates, parsers, results, settings):
             Registrar.register_error(exc)
             continue
         parsers.master.categories[update.master_id].update(
-            update.get_master_updates_native()
-        )
+            update.get_master_updates_native())
 
 
-def delete_categories_slave(
-    parsers, results, settings, client, delete_updates
-):
+def delete_categories_slave(parsers, results, settings, client,
+                            delete_updates):
     raise NotImplementedError()
 
 
@@ -1875,8 +1697,7 @@ def do_updates_categories_slave(updates, parsers, results, settings):
         for update in updates.category.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                endpoint_singular, new_item_api
-            ))
+                endpoint_singular, new_item_api))
             Registrar.register_warning(exc)
 
     delete_updates = []
@@ -1886,16 +1707,13 @@ def do_updates_categories_slave(updates, parsers, results, settings):
         for update in updates.category.masterless:
             deleted_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be deleted: {1}".format(
-                endpoint_singular, deleted_item_api
-            ))
+                endpoint_singular, deleted_item_api))
             Registrar.register_warning(exc)
 
     Registrar.register_progress(
         "Changing {1}, creating {2} and deleting {3} {0}".format(
             endpoint_plural, len(change_updates), len(new_updates),
-            len(delete_updates)
-        )
-    )
+            len(delete_updates)))
 
     if not (new_updates or change_updates or delete_updates):
         return
@@ -1906,19 +1724,16 @@ def do_updates_categories_slave(updates, parsers, results, settings):
 
     with sync_client_class(**sync_client_args) as client:
         if new_updates:
-            upload_new_categories_slave(
-                parsers, results.category.new, settings, client, new_updates
-            )
+            upload_new_categories_slave(parsers, results.category.new,
+                                        settings, client, new_updates)
 
         if change_updates:
-            upload_category_changes_slave(
-                parsers, results.category, settings, client, change_updates
-            )
+            upload_category_changes_slave(parsers, results.category, settings,
+                                          client, change_updates)
 
         if delete_updates:
-            delete_categories_slave(
-                parsers, results, settings, client, delete_updates
-            )
+            delete_categories_slave(parsers, results, settings, client,
+                                    delete_updates)
 
 
 # TODO: do_updates_attributes_master ?
@@ -1941,8 +1756,7 @@ def upload_new_products(parsers, results, settings, client, new_updates):
     """
 
     upload_new_items_slave(
-        parsers, results, settings, client, new_updates, _type="product"
-    )
+        parsers, results, settings, client, new_updates, _type="product")
 
 
 def upload_product_changes(parsers, results, settings, client, change_updates):
@@ -1950,8 +1764,7 @@ def upload_product_changes(parsers, results, settings, client, change_updates):
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
             len(change_updates),
-            items_plural='%s updates' % client.endpoint_singular
-        )
+            items_plural='%s updates' % client.endpoint_singular)
 
     if not settings.update_slave:
         return
@@ -1969,25 +1782,19 @@ def upload_product_changes(parsers, results, settings, client, change_updates):
             response_raw = client.upload_changes(pkey, changes)
             response_api_data = response_raw.json()
         except Exception as exc:
-            handle_failed_update(
-                sync_update, results, exc, settings, settings.slave_name
-            )
+            handle_failed_update(sync_update, results, exc, settings,
+                                 settings.slave_name)
             continue
 
         response_core_data = settings.coldata_class.translate_data_from(
-            response_api_data, settings.coldata_cat_target
-        )
+            response_api_data, settings.coldata_cat_target)
         response_gen_data = settings.coldata_class.translate_data_to(
-            response_core_data, settings.coldata_gen_target_write
-        )
+            response_core_data, settings.coldata_gen_target_write)
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
-                "%s being updated with parser data: %s" % (
-                    client.endpoint_singular,
-                    pformat(response_gen_data)
-                )
-            )
+                "%s being updated with parser data: %s" %
+                (client.endpoint_singular, pformat(response_gen_data)))
 
         sync_update.old_s_object_gen.update(response_gen_data)
         sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
@@ -2033,8 +1840,7 @@ def do_updates_prod_slave(updates, parsers, results, settings):
         for update in updates.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                endpoint_singular, new_item_api
-            ))
+                endpoint_singular, new_item_api))
             Registrar.register_warning(exc)
 
     delete_updates = []
@@ -2044,16 +1850,13 @@ def do_updates_prod_slave(updates, parsers, results, settings):
         for update in updates.masterless:
             deleted_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be deleted: {1}".format(
-                endpoint_singular, deleted_item_api
-            ))
+                endpoint_singular, deleted_item_api))
             Registrar.register_warning(exc)
 
     Registrar.register_progress(
         "Changing {1}, creating {2} and deleting {3} {0}".format(
             endpoint_plural, len(change_updates), len(new_updates),
-            len(delete_updates)
-        )
-    )
+            len(delete_updates)))
 
     if not (new_updates or change_updates or delete_updates):
         return
@@ -2064,18 +1867,15 @@ def do_updates_prod_slave(updates, parsers, results, settings):
 
     with sync_client_class(**sync_client_args) as client:
         if new_updates:
-            upload_new_products(
-                parsers, results, settings, client, new_updates
-            )
+            upload_new_products(parsers, results, settings, client,
+                                new_updates)
         if change_updates:
-            upload_product_changes(
-                parsers, results, settings, client, change_updates
-            )
+            upload_product_changes(parsers, results, settings, client,
+                                   change_updates)
 
         if delete_updates:
-            delete_products_slave(
-                parsers, results, settings, client, delete_updates
-            )
+            delete_products_slave(parsers, results, settings, client,
+                                  delete_updates)
 
 
 def do_updates_prod_master(updates, parsers, settings, results):
@@ -2084,17 +1884,15 @@ def do_updates_prod_master(updates, parsers, settings, results):
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message(
                 "performing update < %5s | %5s > = \n%100s, %100s " %
-                (update.master_id, update.slave_id,
-                 str(update.old_m_object), str(update.old_s_object)))
+                (update.master_id, update.slave_id, str(update.old_m_object),
+                 str(update.old_s_object)))
         if old_master_id not in parsers.master.items:
-            exc = UserWarning(
-                "couldn't fine pkey %s in parsers.master.items" %
-                update.master_id)
+            exc = UserWarning("couldn't fine pkey %s in parsers.master.items" %
+                              update.master_id)
             Registrar.register_error(exc)
             continue
         parsers.master.items[old_master_id].update(
-            update.get_master_updates_native()
-        )
+            update.get_master_updates_native())
 
 
 def do_updates_var_master(updates, parsers, results, settings):
@@ -2103,8 +1901,8 @@ def do_updates_var_master(updates, parsers, results, settings):
         if Registrar.DEBUG_UPDATE:
             Registrar.register_message(
                 "performing update < %5s | %5s > = \n%100s, %100s " %
-                (update.master_id, update.slave_id,
-                 str(update.old_m_object), str(update.old_s_object)))
+                (update.master_id, update.slave_id, str(update.old_m_object),
+                 str(update.old_s_object)))
         if old_master_id not in parsers.master.variations:
             exc = UserWarning(
                 "couldn't fine pkey %s in parsers.master.attachments" %
@@ -2112,21 +1910,17 @@ def do_updates_var_master(updates, parsers, results, settings):
             Registrar.register_error(exc)
             continue
         parsers.master.variations[old_master_id].update(
-            update.get_master_updates_native()
-        )
+            update.get_master_updates_native())
 
 
-def upload_new_variations_slave(
-    parsers, results, settings, client, new_updates
-):
+def upload_new_variations_slave(parsers, results, settings, client,
+                                new_updates):
     upload_new_items_slave(
-        parsers, results, settings, client, new_updates, _type="variation"
-    )
+        parsers, results, settings, client, new_updates, _type="variation")
 
 
-def upload_variation_changes_slave(
-    parsers, results, settings, client, change_updates
-):
+def upload_variation_changes_slave(parsers, results, settings, client,
+                                   change_updates):
     """
     Upload a list of variation changes
     """
@@ -2145,9 +1939,7 @@ def upload_variation_changes_slave(
 
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(
-            len(change_updates),
-            items_plural='%s updates' % endpoint_singular
-        )
+            len(change_updates), items_plural='%s updates' % endpoint_singular)
 
     if not settings.update_slave:
         return
@@ -2167,25 +1959,19 @@ def upload_variation_changes_slave(
                 pkey, changes, parent_pkey=parent_pkey)
             response_api_data = response_raw.json()
         except Exception as exc:
-            handle_failed_update(
-                sync_update, results, exc, settings, settings.slave_name
-            )
+            handle_failed_update(sync_update, results, exc, settings,
+                                 settings.slave_name)
             continue
 
         response_core_data = settings.coldata_class_cat.translate_data_from(
-            response_api_data, settings.coldata_cat_target
-        )
+            response_api_data, settings.coldata_cat_target)
         response_gen_data = settings.coldata_class_cat.translate_data_to(
-            response_core_data, settings.coldata_gen_target_write
-        )
+            response_core_data, settings.coldata_gen_target_write)
 
         if Registrar.DEBUG_API:
             Registrar.register_message(
-                "%s being updated with parser data: %s" % (
-                    endpoint_singular,
-                    pformat(response_gen_data)
-                )
-            )
+                "%s being updated with parser data: %s" %
+                (endpoint_singular, pformat(response_gen_data)))
 
         sync_update.old_s_object_gen.update(response_gen_data)
         sync_update.set_new_s_object_gen(sync_update.old_s_object_gen)
@@ -2194,9 +1980,8 @@ def upload_variation_changes_slave(
         results.successes.append(sync_update)
 
 
-def delete_variations_slave(
-    parsers, results, settings, client, delete_updates
-):
+def delete_variations_slave(parsers, results, settings, client,
+                            delete_updates):
     raise NotImplementedError()
 
 
@@ -2230,8 +2015,7 @@ def do_updates_var_slave(updates, parsers, results, settings):
         for update in updates.variation.slaveless:
             new_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be created: {1}".format(
-                endpoint_singular, new_item_api
-            ))
+                endpoint_singular, new_item_api))
             Registrar.register_warning(exc)
 
     delete_updates = []
@@ -2241,16 +2025,13 @@ def do_updates_var_slave(updates, parsers, results, settings):
         for update in updates.variation.masterless:
             deleted_item_api = update.get_slave_updates_native()
             exc = UserWarning("{0} needs to be deleted: {1}".format(
-                endpoint_singular, deleted_item_api
-            ))
+                endpoint_singular, deleted_item_api))
             Registrar.register_warning(exc)
 
     Registrar.register_progress(
         "Changing {1}, creating {2} and deleting {3} {0}".format(
             endpoint_plural, len(change_updates), len(new_updates),
-            len(delete_updates)
-        )
-    )
+            len(delete_updates)))
 
     if not (new_updates or change_updates or delete_updates):
         return
@@ -2261,19 +2042,16 @@ def do_updates_var_slave(updates, parsers, results, settings):
 
     with sync_client_class(**sync_client_args) as client:
         if new_updates:
-            upload_new_variations_slave(
-                parsers, results.variation.new, settings, client, new_updates
-            )
+            upload_new_variations_slave(parsers, results.variation.new,
+                                        settings, client, new_updates)
 
         if change_updates:
-            upload_variation_changes_slave(
-                parsers, results.variation, settings, client, change_updates
-            )
+            upload_variation_changes_slave(parsers, results.variation,
+                                           settings, client, change_updates)
 
         if delete_updates:
-            delete_variations_slave(
-                parsers, results, settings, client, delete_updates
-            )
+            delete_variations_slave(parsers, results, settings, client,
+                                    delete_updates)
 
 
 def main(override_args=None, settings=None):
@@ -2307,9 +2085,7 @@ def main(override_args=None, settings=None):
     if parsers.slave.objects:
         cache_api_data(settings, parsers)
 
-    matches = MatchNamespace(
-        index_fn=ProductMatcher.product_index_fn
-    )
+    matches = MatchNamespace(index_fn=ProductMatcher.product_index_fn)
     updates = UpdateNamespace()
     reporters = ReporterNamespace()
     results = ResultsNamespace()
@@ -2317,12 +2093,9 @@ def main(override_args=None, settings=None):
     if settings.do_images:
         do_match_images(parsers, matches, settings)
         do_merge_images(matches, parsers, updates, settings)
-        do_report_images(
-            reporters, matches, updates, parsers, settings
-        )
+        do_report_images(reporters, matches, updates, parsers, settings)
         Registrar.register_message(
-            "pre-sync summary: \n%s" % reporters.img.get_summary_text()
-        )
+            "pre-sync summary: \n%s" % reporters.img.get_summary_text())
         check_warnings(settings)
         if not settings.report_and_quit:
             do_updates_images_master(updates, parsers, results, settings)
@@ -2339,25 +2112,20 @@ def main(override_args=None, settings=None):
 
         do_match_categories(parsers, matches, settings)
         do_merge_categories(matches, parsers, updates, settings)
-        do_report_categories(
-            reporters, matches, updates, parsers, settings
-        )
+        do_report_categories(reporters, matches, updates, parsers, settings)
         Registrar.register_message(
-            "pre-sync summary: \n%s" % reporters.cat.get_summary_text()
-        )
+            "pre-sync summary: \n%s" % reporters.cat.get_summary_text())
         check_warnings(settings)
         if not settings.report_and_quit:
             do_updates_categories_master(updates, parsers, results, settings)
             if settings.report_matched_categories:
-                export_categories(
-                    settings, parsers.master, settings.rep_matched_cat_path,
-                    'wc-csv'
-                )
-                reporters.cat.add_csv_file(
-                    'matched_cat', settings.rep_matched_cat_path)
+                export_categories(settings, parsers.master,
+                                  settings.rep_matched_cat_path, 'wc-csv')
+                reporters.cat.add_csv_file('matched_cat',
+                                           settings.rep_matched_cat_path)
             try:
-                do_updates_categories_slave(
-                    updates, parsers, results, settings)
+                do_updates_categories_slave(updates, parsers, results,
+                                            settings)
             except (SystemExit, KeyboardInterrupt) as exc:
                 Registrar.register_error(exc)
                 return reporters, results
@@ -2366,24 +2134,22 @@ def main(override_args=None, settings=None):
         sys.exit(ExitStatus.success)
 
     if settings.do_attributes:
-        Registrar.register_error(NotImplementedError(
-            "Functions past this point have not been completed"))
+        Registrar.register_error(
+            NotImplementedError(
+                "Functions past this point have not been completed"))
         return reporters, results
 
         do_match_attributes(parsers, matches, settings)
         do_merge_attributes(matches, parsers, updates, settings)
-        do_report_attributes(
-            reporters, matches, updates, parsers, settings
-        )
+        do_report_attributes(reporters, matches, updates, parsers, settings)
         Registrar.register_message(
-            "pre-sync summary: \n%s" % reporters.attr.get_summary_text()
-        )
+            "pre-sync summary: \n%s" % reporters.attr.get_summary_text())
         check_warnings(settings)
         if not settings.report_and_quit:
             do_updates_attributes_master(updates, parsers, results, settings)
             try:
-                do_updates_attributes_slave(
-                    updates, parsers, results, settings)
+                do_updates_attributes_slave(updates, parsers, results,
+                                            settings)
             except (SystemExit, KeyboardInterrupt) as exc:
                 Registrar.register_error(exc)
                 return reporters, results
@@ -2397,8 +2163,7 @@ def main(override_args=None, settings=None):
         #     reporters, matches, updates, parsers, settings
         # )
         Registrar.register_message(
-            "pre-sync summary: \n%s" % reporters.var.get_summary_text()
-        )
+            "pre-sync summary: \n%s" % reporters.var.get_summary_text())
         check_warnings(settings)
         do_updates_var_master(updates, parsers, settings, results)
 
@@ -2414,8 +2179,7 @@ def main(override_args=None, settings=None):
     check_warnings(settings)
 
     Registrar.register_message(
-        "pre-sync summary: \n%s" % reporters.main.get_summary_text()
-    )
+        "pre-sync summary: \n%s" % reporters.main.get_summary_text())
 
     try:
         do_updates_prod_slave(updates, parsers, results, settings)
@@ -2435,8 +2199,7 @@ def main(override_args=None, settings=None):
     do_report_post(reporters, results, settings)
 
     Registrar.register_message(
-        "post-sync summary: \n%s" % reporters.post.get_summary_text()
-    )
+        "post-sync summary: \n%s" % reporters.post.get_summary_text())
 
     #########################################
     # Display reports
@@ -2468,8 +2231,8 @@ def catch_main(override_args=None):
     if override_args is not None:
         override_args_repr = ' '.join(override_args)
 
-    full_run_str = "%s %s %s" % (
-        str(sys.executable), str(file_path), override_args_repr)
+    full_run_str = "%s %s %s" % (str(sys.executable), str(file_path),
+                                 override_args_repr)
 
     settings = SettingsNamespaceProd()
 
@@ -2488,8 +2251,8 @@ def catch_main(override_args=None):
             status = 74
             print("cwd: %s" % os.getcwd())
         elif exc.__class__ in [
-            "ReadTimeout", "ConnectionError", "ConnectTimeout",
-            "ServerNotFoundError"
+                "ReadTimeout", "ConnectionError", "ConnectTimeout",
+                "ServerNotFoundError"
         ]:
             status = 69  # service unavailable
 

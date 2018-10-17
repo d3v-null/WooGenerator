@@ -1,31 +1,19 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
-import base64
-import cgi
-import functools
-import inspect
 import itertools
-import json
 import math
-import numbers
 import os
 import random
 import re
 import sys
 import time
-import traceback
-import unicodedata
-from collections import Counter, OrderedDict
-from HTMLParser import HTMLParser
-from urlparse import parse_qs, urlparse
+from collections import OrderedDict
 
 import phpserialize
 import unicodecsv
-import unidecode
 from jsonpath_ng import jsonpath
-from kitchen.text import converters
-from six import binary_type, integer_types, string_types, text_type
+from six import text_type, string_types
 
 from .sanitation import SanitationUtils
 
@@ -33,23 +21,19 @@ DEFAULT_ENCODING = 'utf8'
 
 
 class DescriptorUtils(object):
-
     class DescriptorPropertySafe(property):
-        """
-        Differentiates safe properties created with DescriptorUtils from other properties.
-        """
+        """property which can be safely accessed."""
+
         pass
 
     class DescriptorPropertySafeNormalized(property):
-        """
-        Differentiates safe normalized properties created with DescriptorUtils from other properties.
-        """
+        """Normalized property which can be safely accessed."""
+
         pass
 
     class DescriptorPropertyKwargAlias(property):
-        """
-        Differentiates kwarg alias properties created with DescriptorUtils from other properties.
-        """
+        """Kwarg Alias style property."""
+
         pass
 
     @classmethod
@@ -65,13 +49,15 @@ class DescriptorUtils(object):
     @classmethod
     def safe_normalized_key_property(cls, key):
         def getter(self):
-            assert key in self.keys(), "{} must be set before get in {}".format(
-                key, repr(type(self)))
+            assert key in self.keys(
+            ), "{} must be set before get in {}".format(key, repr(type(self)))
             return SanitationUtils.normalize_val(self[key])
 
         def setter(self, value):
-            assert isinstance(value, (str, text_type)), "{} must be set with string not {}".format(
-                key, type(value))
+            assert isinstance(
+                value,
+                string_types), "{} must be set with string not {}".format(
+                    key, type(value))
             self[key] = value
 
         return cls.DescriptorPropertySafeNormalized(getter, setter)
@@ -98,6 +84,7 @@ class SeqUtils(object):
     """
     Utilities for manipulating sequences like lists and dicts
     """
+
     @classmethod
     def combine_two_lists(cls, list_a, list_b):
         """
@@ -138,8 +125,10 @@ class SeqUtils(object):
     @classmethod
     def combine_two_ordered_dicts(cls, dict_a, dict_b):
         """
-        Combine OrderedDict a with b by starting with A and overwriting with items from b.
-        Attempt to preserve order
+        Combine two ordered dicts, preserving order.
+
+        Combine OrderedDict a with b by starting with A and overwriting with
+        items from b.
         """
         if not dict_a:
             return dict_b if dict_b else OrderedDict()
@@ -171,17 +160,16 @@ class SeqUtils(object):
 
     @classmethod
     def get_all_keys(cls, *args):
-        return SeqUtils.filter_unique_true(itertools.chain(*(
-            arg.keys() for arg in args if isinstance(arg, dict)
-        )))
+        return SeqUtils.filter_unique_true(
+            itertools.chain(*(arg.keys()
+                              for arg in args if isinstance(arg, dict))))
 
     @classmethod
     def keys_not_in(cls, dictionary, keys):
         assert isinstance(dictionary, dict)
-        return type(dictionary)([
-            (key, value) for key, value in dictionary.items()
-            if key not in keys
-        ])
+        return type(dictionary)([(key, value)
+                                 for key, value in dictionary.items()
+                                 if key not in keys])
 
     @classmethod
     def check_equal(cls, iterator):
@@ -198,6 +186,7 @@ class SeqUtils(object):
         except StopIteration:
             return True
         return all(first == rest for rest in iterator)
+
 
 class JSONPathUtils(object):
     re_simple_path = r'^[A-Za-z0-9_-]+$'
@@ -236,10 +225,7 @@ class JSONPathUtils(object):
             datum.value[field] = {}
             field_value = datum.value[field]
         return jsonpath.DatumInContext(
-            value=field_value,
-            path=jsonpath.Fields(field),
-            context=datum
-        )
+            value=field_value, path=jsonpath.Fields(field), context=datum)
 
     @classmethod
     def blank_reified_fields(cls, path, datum):
@@ -249,9 +235,8 @@ class JSONPathUtils(object):
         """
         if '*' not in path.fields:
             return path.fields
-        else:
-            # differs from jsonpath.Fields.reified_fields here:
-            raise cls.NonSingularPathError("'*' in path not supported")
+        # differs from jsonpath.Fields.reified_fields here:
+        raise cls.NonSingularPathError("'*' in path not supported")
 
     @classmethod
     def blank_find(cls, path, datum):
@@ -261,21 +246,19 @@ class JSONPathUtils(object):
         """
         if isinstance(path, jsonpath.Child):
             return [
-                submatch
-                for subdata in cls.blank_find(path.left, datum)
+                submatch for subdata in cls.blank_find(path.left, datum)
                 for submatch in cls.blank_find(path.right, subdata)
             ]
         if isinstance(path, jsonpath.Fields):
-            datum  = jsonpath.DatumInContext.wrap(datum)
+            datum = jsonpath.DatumInContext.wrap(datum)
 
             return [
-                field_datum
-                for field_datum in [
+                field_datum for field_datum in [
                     cls.blank_get_field_datum(path, datum, field)
                     for field in cls.blank_reified_fields(path, datum)
-                ]
-                if field_datum is not None
+                ] if field_datum is not None
             ]
+        return None
 
     @classmethod
     def blank_update(cls, path, data, val):
@@ -291,20 +274,20 @@ class JSONPathUtils(object):
             for datum in cls.blank_find(path.left, data):
                 cls.blank_update(path.right, datum.value, val)
             return data
-        elif isinstance(path, jsonpath.Fields):
+        if isinstance(path, jsonpath.Fields):
             for field in cls.blank_reified_fields(path, data):
                 if field in data and hasattr(val, '__call__'):
                     val(data[field], data, field)
                     continue
                 data[field] = val
             return data
-        elif isinstance(path, jsonpath.JSONPath):
+        if isinstance(path, jsonpath.JSONPath):
             raise cls.NonSingularPathError(
-                "path is not made of singular jsonpath objects"
-            )
+                "path is not made of singular jsonpath objects")
+        return None
+
 
 class ValidationUtils(object):
-
     @staticmethod
     def is_not_none(arg):
         return arg is not None
@@ -344,7 +327,6 @@ def uniqid(prefix='', more_entropy=False):
 
 
 class PHPUtils(object):
-
     @staticmethod
     def uniqid(prefix="", more_entropy=False):
         # raise DeprecationWarning('uniqid deprecated')
@@ -358,16 +340,19 @@ class PHPUtils(object):
     def serialize(thing):
         if thing:
             return phpserialize.dumps(thing)
+        return None
 
     @staticmethod
     def unserialize(string):
         if string:
             return phpserialize.loads(string)
+        return None
 
     @staticmethod
     def serialize_list(list_):
         if list_:
             return phpserialize.dumps(list_)
+        return None
 
     @staticmethod
     def unserialize_list(string):
@@ -376,11 +361,13 @@ class PHPUtils(object):
             if response:
                 return response.values()
             return []
+        return None
 
     @staticmethod
     def serialize_mapping(list_):
         if list_:
             return phpserialize.dumps(list_)
+        return None
 
     @staticmethod
     def unserialize_mapping(string):
@@ -389,6 +376,8 @@ class PHPUtils(object):
             if response:
                 return response
             return {}
+        return None
+
 
 class MimeUtils(object):
     mime_data = {
@@ -560,13 +549,15 @@ class MimeUtils(object):
         'application/vnd.ms-project': {
             'extensions': ['mpp']
         },
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+        ('application/vnd.openxmlformats-officedocument.wordprocessingml'
+         '.document'): {
             'extensions': ['docx']
         },
         'application/vnd.ms-word.document.macroEnabled.12': {
             'extensions': ['docm']
         },
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.template': {
+        ('application/vnd.openxmlformats-officedocument.wordprocessingml'
+         '.template'): {
             'extensions': ['dotx']
         },
         'application/vnd.ms-word.template.macroEnabled.12': {
@@ -581,7 +572,8 @@ class MimeUtils(object):
         'application/vnd.ms-excel.sheet.binary.macroEnabled.12': {
             'extensions': ['xlsb']
         },
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.template': {
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.template':
+        {
             'extensions': ['xltx']
         },
         'application/vnd.ms-excel.template.macroEnabled.12': {
@@ -590,19 +582,22 @@ class MimeUtils(object):
         'application/vnd.ms-excel.addin.macroEnabled.12': {
             'extensions': ['xlam']
         },
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation': {
+        ('application/vnd.openxmlformats-officedocument.presentationml'
+         '.presentation'): {
             'extensions': ['pptx']
         },
         'application/vnd.ms-powerpoint.presentation.macroEnabled.12': {
             'extensions': ['pptm']
         },
-        'application/vnd.openxmlformats-officedocument.presentationml.slideshow': {
+        ('application/vnd.openxmlformats-officedocument.presentationml'
+         '.slideshow'): {
             'extensions': ['ppsx']
         },
         'application/vnd.ms-powerpoint.slideshow.macroEnabled.12': {
             'extensions': ['ppsm']
         },
-        'application/vnd.openxmlformats-officedocument.presentationml.template': {
+        ('application/vnd.openxmlformats-officedocument.presentationml'
+         '.template'): {
             'extensions': ['potx']
         },
         'application/vnd.ms-powerpoint.template.macroEnabled.12': {
@@ -664,9 +659,10 @@ class MimeUtils(object):
     @classmethod
     def validate_mime_type(cls, string):
         if not string:
-            return
+            return None
         if string.lower() in cls.mime_data:
             return string.lower()
+        return None
 
     @classmethod
     def get_ext_mime_type(cls, extension):
@@ -674,11 +670,15 @@ class MimeUtils(object):
             extensions = data.get('extensions', [])
             if extension.lower() in extensions:
                 return mime_type
+        return None
 
 
 class ProgressCounter(object):
-
-    def __init__(self, total, print_threshold=1, items_plural='items', verb_past='processed'):
+    def __init__(self,
+                 total,
+                 print_threshold=1,
+                 items_plural='items',
+                 verb_past='processed'):
         self.total = total
         self.print_threshold = print_threshold
         self.last_print = time.time()
@@ -698,24 +698,21 @@ class ProgressCounter(object):
             if self.total > 0:
                 percentage = 100 * count / self.total
             line = "(%3d%%) %10d of %10d %s %s" % (
-                percentage, count, self.total, self.items_plural, self.verb_past
-            )
-            if percentage > 1 and percentage < 100:
+                percentage, count, self.total, self.items_plural,
+                self.verb_past)
+            if 1 < percentage < 100:
                 time_elapsed = self.last_print - self.first_print
                 ratio = (float(self.total) / (count) - 1.0)
                 time_remaining = float(time_elapsed) * ratio
-                # line += " | elapsesd: %3f | ratio: %3f" % (time_elapsed, ratio )
                 line += " | remaining: %4d seconds, %4d elapsed   " % (
-                    int(time_remaining),
-                    int(time_elapsed)
-                )
+                    int(time_remaining), int(time_elapsed))
             if self.print_count > 0:
                 line = "\r%s\r" % line
             sys.stdout.write(line)
             sys.stdout.flush()
             self.print_count += 1
         if count == self.total - 1:
-            print "\n"
+            print("\n")
 
 
 class UnicodeCsvDialectUtils(object):
@@ -764,15 +761,16 @@ class UnicodeCsvDialectUtils(object):
     @classmethod
     def dialect_unicode_to_bytestr(cls, dialect):
         for attr in [
-                'delimeter', 'quotechar', 'doublequote', 'escapechar', 'quotechar',
+                'delimeter',
+                'quotechar',
+                'doublequote',
+                'escapechar',
+                'quotechar',
                 'quoting',
         ]:
             if isinstance(getattr(dialect, attr), text_type):
-                setattr(
-                    dialect,
-                    attr,
-                    SanitationUtils.coerce_bytes(getattr(dialect, attr))
-                )
+                setattr(dialect, attr,
+                        SanitationUtils.coerce_bytes(getattr(dialect, attr)))
         return dialect
 
     @classmethod
@@ -785,7 +783,6 @@ class UnicodeCsvDialectUtils(object):
 
 
 class FileUtils(object):
-
     @classmethod
     def get_path_basename(cls, path):
         """

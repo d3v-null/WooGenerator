@@ -13,7 +13,7 @@ class MockUtils(object):
         ])
 
     # class PatchPropertyContext(object):
-    #     """ Create a context where a class or instance's property is patched. """
+    #     """Create a context where a class or instance's property is patched."""
     #     def __init__(self, class_=None, instance=None, property_=None, new_value=None):
     #         if instance:
     #             class_ = instance.__class__

@@ -7,6 +7,7 @@ from collections import OrderedDict
 from copy import copy
 
 import bleach
+from six import text_type
 
 from ..utils import (DescriptorUtils, PHPUtils, SanitationUtils, SeqUtils,
                      ValidationUtils)
@@ -102,7 +103,7 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
 
     @property
     def pricing_rule_conditions(self):
-        roles = map(unicode.lower, self.roles.split('|'))
+        roles = map(text_type.lower, self.roles.split('|'))
         return {
             1: {
                 'args': {
@@ -125,13 +126,12 @@ class ImportDynRule(ImportDynObject, ImportTreeTaxo):
                 ('Discount', 'Discount'),
                 ('Meaning', 'Meaning')
             ])
-        else:
-            return OrderedDict([
-                ('Min ( Buy )', 'Buy'),
-                ('Max ( Receive )', 'Receive'),
-                ('Discount', 'Discount'),
-                ('Meaning', 'Meaning)')
-            ])
+        return OrderedDict([
+            ('Min ( Buy )', 'Buy'),
+            ('Max ( Receive )', 'Receive'),
+            ('Discount', 'Discount'),
+            ('Meaning', 'Meaning)')
+        ])
 
     def __repr__(self):
         rep = "<ImportDynRule | "
@@ -276,6 +276,5 @@ class CsvParseDyn(CsvParseTree):
             if cell:
                 if i < 4:
                     return 0
-                else:
-                    return 1
+                return 1
         return -1

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-from collections import OrderedDict
-
+from ..coldata import (ColDataProductMeridian, ColDataProductVariationMeridian,
+                       ColDataWcProdCategory)
 from .core import SyncClientWC, SyncClientWCLegacy
 from .xero import SyncClientXero
-from ..coldata import ColDataProductMeridian, ColDataWcProdCategory, ColDataProductVariationMeridian
+
 
 class ProdSyncClientMixin(object):
     endpoint_singular = 'product'
@@ -19,13 +19,16 @@ class ProdSyncClientMixin(object):
                 return product
         raise UserWarning("no variable products")
 
+
 class ProdSyncClientWC(SyncClientWC, ProdSyncClientMixin):
     endpoint_singular = ProdSyncClientMixin.endpoint_singular
     coldata_class = ProdSyncClientMixin.coldata_class
 
+
 class ProdSyncClientWCLegacy(SyncClientWCLegacy, ProdSyncClientMixin):
     endpoint_singular = ProdSyncClientMixin.endpoint_singular
     coldata_class = ProdSyncClientMixin.coldata_class
+
 
 class CatSyncClientMixin(object):
     endpoint_singular = 'product_category'
@@ -44,11 +47,13 @@ class CatSyncClientMixin(object):
             self.register_message("Analysed categories:")
             self.register_message(parser.to_str_tree())
 
+
 class CatSyncClientWC(SyncClientWC, CatSyncClientMixin):
     endpoint_singular = CatSyncClientMixin.endpoint_singular
     endpoint_plural = CatSyncClientMixin.endpoint_plural
     coldata_class = CatSyncClientMixin.coldata_class
     primary_key_handle = CatSyncClientMixin.primary_key_handle
+
 
 class CatSyncClientWCLegacy(SyncClientWCLegacy, CatSyncClientMixin):
     endpoint_singular = CatSyncClientMixin.endpoint_singular
@@ -56,11 +61,14 @@ class CatSyncClientWCLegacy(SyncClientWCLegacy, CatSyncClientMixin):
     coldata_class = CatSyncClientMixin.coldata_class
     primary_key_handle = CatSyncClientMixin.primary_key_handle
 
+
 class VarSyncClientMixin(object):
     coldata_class = ColDataProductVariationMeridian
+
     @property
     def endpoint_singular(self):
-        raise UserWarning("concept of endpoint singular does not apply to var sync client")
+        raise UserWarning(
+            "concept of endpoint singular does not apply to var sync client")
 
     def get_variations(self, parent_pkey):
         endpoint, _ = self.get_endpoint(parent_pkey=parent_pkey)
@@ -73,26 +81,24 @@ class VarSyncClientMixin(object):
         """
         Override SyncClientRest.endpoint to work with Variations
         """
-        kwargs.pop('singular', None) # no concept of singular
+        kwargs.pop('singular', None)  # no concept of singular
         assert 'parent_pkey' in kwargs, "must specify parent pkey"
         parent_pkey = kwargs.pop('parent_pkey')
         try:
             parent_pkey = int(parent_pkey)
         except ValueError:
-            raise UserWarning("Can't convert parent_pkey %s to int" % parent_pkey)
+            raise UserWarning(
+                "Can't convert parent_pkey %s to int" % parent_pkey)
 
-        return "%ss/%d/variations" % (
-            ProdSyncClientMixin.endpoint_singular,
-            parent_pkey
-        ), kwargs
+        return "%ss/%d/variations" % (ProdSyncClientMixin.endpoint_singular,
+                                      parent_pkey), kwargs
 
     def analyse_remote_variations(self, parser, **kwargs):
         parent_pkey = kwargs.pop('parent_pkey', None)
         for page in self.get_variations(parent_pkey):
             for page_item in page:
                 parser.process_api_variation_raw(
-                    page_item, parent_id=parent_pkey
-                )
+                    page_item, parent_id=parent_pkey)
 
 
 class VarSyncClientWC(SyncClientWC, VarSyncClientMixin):
@@ -100,17 +106,21 @@ class VarSyncClientWC(SyncClientWC, VarSyncClientMixin):
     endpoint_singular = VarSyncClientMixin.endpoint_singular
     get_endpoint = VarSyncClientMixin.get_endpoint
 
+
 class VarSyncClientWCLegacy(SyncClientWCLegacy, VarSyncClientMixin):
     coldata_class = VarSyncClientMixin.coldata_class
     endpoint_singular = VarSyncClientMixin.endpoint_singular
     get_endpoint = VarSyncClientMixin.get_endpoint
 
     def __init__(self, *args, **kwargs):
-        raise DeprecationWarning("Variations undocumented in WooCommerce Legacy API")
+        raise DeprecationWarning(
+            "Variations undocumented in WooCommerce Legacy API")
+
 
 # class AttrSyncClient(SyncClientWC):
 #     # TODO: this
 #     coldata_class = ColData
+
 
 class ProdSyncClientXero(SyncClientXero):
     endpoint_singular = 'item'

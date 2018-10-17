@@ -25,14 +25,14 @@ from ..utils import Registrar, TimeUtils
 
 
 class SettingsNamespaceProto(argparse.Namespace):
-    """ Provide namespace for settings in first stage, supports getitem """
+    """Provide namespace for settings in first stage, supports getitem."""
 
     argparser_class = ArgumentParserCommon
 
     def __init__(self, *args, **kwargs):
         # This getattr stuff allows the attributes to be set in a subclass
-        self.local_work_dir = getattr(
-            self, 'local_work_dir', DEFAULT_LOCAL_WORK_DIR)
+        self.local_work_dir = getattr(self, 'local_work_dir',
+                                      DEFAULT_LOCAL_WORK_DIR)
         self.local_live_config = getattr(self, 'local_live_config', None)
         self.local_test_config = getattr(self, 'local_test_config', None)
         self.testmode = getattr(self, 'testmode', DEFAULT_TESTMODE)
@@ -40,8 +40,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.out_dir = getattr(self, 'out_dir', DEFAULT_LOCAL_OUT_DIR)
         self.log_dir = getattr(self, 'log_dir', DEFAULT_LOCAL_LOG_DIR)
         self.pickle_dir = getattr(self, 'pickle_dir', DEFAULT_LOCAL_PICKLE_DIR)
-        self.import_name = getattr(
-            self, 'import_name', TimeUtils.get_ms_timestamp())
+        self.import_name = getattr(self, 'import_name',
+                                   TimeUtils.get_ms_timestamp())
         self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
         self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
         self.start_time = getattr(self, 'start_time', time.time())
@@ -72,7 +72,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         return self.get('wc_api_namespace') == 'wc-api'
 
     def join_work_path(self, path):
-        """ Join a given path relative to the local-work-dir in this namespace. """
+        """Join path relative to the local-work-dir in this namespace."""
         response = path
         if self.local_work_dir and path:
             response = os.path.join(self.local_work_dir, path)
@@ -80,7 +80,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     @property
     def second_stage_configs(self):
-        """ Return the second stage config files according to this namespace. """
+        """Return second stage config files according to this namespace."""
         response = []
         if self.local_live_config:
             response.append(self.local_live_config_full)
@@ -92,21 +92,25 @@ class SettingsNamespaceProto(argparse.Namespace):
     def local_test_config_full(self):
         if self.local_test_config:
             return self.join_work_path(self.local_test_config)
+        return None
 
     @property
     def local_live_config_full(self):
         if self.local_live_config:
             return self.join_work_path(self.local_live_config)
+        return None
 
     @property
     def in_dir_full(self):
         if self.in_dir:
             return self.join_work_path(self.in_dir)
+        return None
 
     @property
     def out_dir_full(self):
         if self.out_dir:
             return self.join_work_path(self.out_dir)
+        return None
 
     @property
     def report_dir_full(self):
@@ -116,11 +120,13 @@ class SettingsNamespaceProto(argparse.Namespace):
     def log_dir_full(self):
         if self.log_dir:
             return self.join_work_path(self.log_dir)
+        return None
 
     @property
     def pickle_dir_full(self):
         if self.pickle_dir:
             return self.join_work_path(self.pickle_dir)
+        return None
 
     @property
     def dirs(self):
@@ -199,7 +205,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     @property
     def coldata_class(self):
-        """ Class used to obtain column metadata. """
+        """Class used to obtain column metadata."""
         return ColDataAbstract
 
     @property
@@ -210,10 +216,9 @@ class SettingsNamespaceProto(argparse.Namespace):
     def email_client(self):
         if self.get('mail_type') == 'exchange':
             return EmailClientExchange
-        elif self.get('mail_type') == 'smtp':
+        if self.get('mail_type') == 'smtp':
             return EmailClientSMTP
-        else:
-            raise ValueError("No mail type specified")
+        raise ValueError("No mail type specified")
 
     @property
     def email_connect_params(self):
@@ -253,27 +258,24 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     @property
     def rep_main_path(self):
-        response = '%ssync_report%s.html' % (
-            self.file_prefix, self.file_suffix
-        )
+        response = '%ssync_report%s.html' % (self.file_prefix,
+                                             self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_dup_path(self):
-        response = "%ssync_report_duplicate_%s.html" % (
-            self.file_prefix, self.file_suffix
-        )
+        response = "%ssync_report_duplicate_%s.html" % (self.file_prefix,
+                                                        self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_san_path(self):
-        response = "%ssync_report_sanitation_%s.html" % (
-            self.file_prefix, self.file_suffix
-        )
+        response = "%ssync_report_sanitation_%s.html" % (self.file_prefix,
+                                                         self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
@@ -281,8 +283,7 @@ class SettingsNamespaceProto(argparse.Namespace):
     @property
     def rep_san_master_csv_path(self):
         response = "%s_bad_contact_%s_%s.csv" % (
-            self.file_prefix, self.slave_name, self.file_suffix
-        )
+            self.file_prefix, self.slave_name, self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
@@ -290,62 +291,55 @@ class SettingsNamespaceProto(argparse.Namespace):
     @property
     def rep_san_slave_csv_path(self):
         response = "%s_bad_contact_%s_%s.csv" % (
-            self.file_prefix, self.slave_name, self.file_suffix
-        )
+            self.file_prefix, self.slave_name, self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_match_path(self):
-        response = "%ssync_report_matching_%s.html" % (
-            self.file_prefix, self.file_suffix
-        )
+        response = "%ssync_report_matching_%s.html" % (self.file_prefix,
+                                                       self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_post_path(self):
-        response = "%ssync_report_post_%s.html" % (
-            self.file_prefix, self.file_suffix
-        )
+        response = "%ssync_report_post_%s.html" % (self.file_prefix,
+                                                   self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_fail_master_csv_path(self):
-        response = "%s%s_fails_%s.csv" % (
-            self.file_prefix, self.master_name, self.file_suffix
-        )
+        response = "%s%s_fails_%s.csv" % (self.file_prefix, self.master_name,
+                                          self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_fail_slave_csv_path(self):
-        response = "%s%s_fails_%s.csv" % (
-            self.file_prefix, self.slave_name, self.file_suffix
-        )
+        response = "%s%s_fails_%s.csv" % (self.file_prefix, self.slave_name,
+                                          self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_delta_master_csv_path(self):
-        response = "%s%s_deltas_%s.csv" % (
-            self.file_prefix, self.master_name, self.file_suffix
-        )
+        response = "%s%s_deltas_%s.csv" % (self.file_prefix, self.master_name,
+                                           self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_delta_slave_csv_path(self):
-        response = "%s%s_deltas_%s.csv" % (
-            self.file_prefix, self.slave_name, self.file_suffix
-        )
+        response = "%s%s_deltas_%s.csv" % (self.file_prefix, self.slave_name,
+                                           self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
@@ -365,7 +359,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     def update(self, other):
-        """ Updates the namespace with vars from another namespace. """
+        """Updates the namespace with vars from another namespace."""
         self.__dict__.update(vars(other))
 
     def init_dirs(self):
@@ -415,7 +409,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
     def init_settings(self, override_args=None):
         """
-        Load config file and initialise settings object from given argparser class.
+        Load config file and initialise settings object from given argparser.
         """
 
         meta_settings = MetaSettings()
@@ -429,9 +423,7 @@ class SettingsNamespaceProto(argparse.Namespace):
 
         if Registrar.DEBUG_MESSAGE:
             Registrar.register_message(
-                "proto_parser: \n%s" %
-                pformat(proto_argparser.get_actions())
-            )
+                "proto_parser: \n%s" % pformat(proto_argparser.get_actions()))
 
         parser_override = {'namespace': self}
         if override_args is not None:
@@ -471,11 +463,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         main_settings = argparser.parse_args(**parser_override)
         self.update(main_settings)
 
-        meta_settings.add_state(
-            'main',
-            copy(
-                vars(main_settings)),
-            argparser.default_config_files)
+        meta_settings.add_state('main', copy(vars(main_settings)),
+                                argparser.default_config_files)
 
         self.init_registrar()
 
@@ -491,12 +480,11 @@ class SettingsNamespaceProto(argparse.Namespace):
         if Registrar.DEBUG_MESSAGE:
             Registrar.register_message(
                 "meta settings:\n%s" %
-                meta_settings.tabulate(ignore_keys=['called_with_args'])
-            )
+                meta_settings.tabulate(ignore_keys=['called_with_args']))
 
 
 class ParserNamespace(argparse.Namespace):
-    """ Collect parser variables into a single namespace. """
+    """Collect parser variables into a single namespace."""
 
     def __init__(self, *args, **kwargs):
         super(ParserNamespace, self).__init__(*args, **kwargs)
@@ -505,11 +493,14 @@ class ParserNamespace(argparse.Namespace):
         self.anomalous = {}
 
     def deny_anomalous(self, parselist_type, anomalous_parselist, error=False):
-        """Add the parselist to the list of anomalous parse lists if it is not empty."""
+        """
+        Add parselist to list of anomalous parse lists if it is not empty.
+        """
         try:
             assert not anomalous_parselist, \
-                "There should be no instances of %s parse lists" % parselist_type
-        except AssertionError, exc:
+                ("There should be no instances of %s parse lists" %
+                 parselist_type)
+        except AssertionError as exc:
             self.anomalous[parselist_type] = anomalous_parselist
             if error:
                 Registrar.register_error(exc)
@@ -517,9 +508,10 @@ class ParserNamespace(argparse.Namespace):
             else:
                 Registrar.register_warning(exc)
 
+
 # TODO: move to matching
 class MatchNamespace(argparse.Namespace):
-    """ Collect variables used in matching into a single namespace. """
+    """Collect variables used in matching into a single namespace."""
 
     def __init__(self, index_fn=None, *args, **kwargs):
         super(MatchNamespace, self).__init__(*args, **kwargs)
@@ -532,12 +524,16 @@ class MatchNamespace(argparse.Namespace):
         self.duplicate = OrderedDict()
         self.conflict = OrderedDict()
 
-    def deny_anomalous(self, match_list_type, anomalous_match_list, error=False):
-        """Add the matchlist to the list of anomalous match lists if it is not empty."""
+    def deny_anomalous(self,
+                       match_list_type,
+                       anomalous_match_list,
+                       error=False):
+        """Add matchlist to list of anomalous match lists if not empty."""
         try:
             assert not anomalous_match_list, \
-                "There should be no instances of %s match lists" % match_list_type
-        except AssertionError, exc:
+                ("There should be no instances of %s match lists" %
+                 match_list_type)
+        except AssertionError as exc:
             self.anomalous[match_list_type] = anomalous_match_list
             if error:
                 Registrar.register_error(exc)
@@ -549,13 +545,13 @@ class MatchNamespace(argparse.Namespace):
         response = ''
         for attr_key, attr_val in self.__dict__.items():
             if attr_val and hasattr(attr_val, 'tabulate'):
-                response += "matchlist %s:\n%s\n" % (attr_key, attr_val.tabulate(tablefmt=tablefmt))
+                response += "matchlist %s:\n%s\n" % (
+                    attr_key, attr_val.tabulate(tablefmt=tablefmt))
         return response
 
 
-
 class UpdateNamespace(argparse.Namespace):
-    """ Collect variables used in updates into a single namespace. """
+    """Collect variables used in updates into a single namespace."""
 
     def __init__(self, *args, **kwargs):
         super(UpdateNamespace, self).__init__(*args, **kwargs)
@@ -576,12 +572,13 @@ class UpdateNamespace(argparse.Namespace):
         response = ''
         for attr_key, attr_val in self.__dict__.items():
             if attr_val and hasattr(attr_val, 'tabulate'):
-                response += "updatelist %s:\n%s\n" % (attr_key, attr_val.tabulate(tablefmt=tablefmt))
+                response += "updatelist %s:\n%s\n" % (
+                    attr_key, attr_val.tabulate(tablefmt=tablefmt))
         return response
 
 
 class ResultsNamespace(argparse.Namespace):
-    """ Collect information about failures into a single namespace. """
+    """Collect information about failures into a single namespace."""
 
     result_attrs = ['fails_master', 'fails_slave', 'successes']
 
@@ -593,11 +590,8 @@ class ResultsNamespace(argparse.Namespace):
 
     @property
     def as_dict(self):
-        return dict([
-            (attr, getattr(self, attr))
-            for attr in self.result_attrs
-            if hasattr(self, attr)
-        ])
+        return dict([(attr, getattr(self, attr)) for attr in self.result_attrs
+                     if hasattr(self, attr)])
 
     def __bool__(self):
         return bool(any(self.as_dict.values()))
@@ -645,12 +639,12 @@ class MetaSettings(object):
         for state_name, state in self.states.items():
             state_configs = state.get('configs', [])
             unseen_configs = [
-                config for config in state_configs if config not in seen_configs
+                config for config in state_configs
+                if config not in seen_configs
             ]
-            info_components += [info_fmt % (
-                state_name,
-                ", ".join(unseen_configs)
-            )]
+            info_components += [
+                info_fmt % (state_name, ", ".join(unseen_configs))
+            ]
             seen_configs += unseen_configs
 
         info_components += [subtitle_fmt % "Settings"]
@@ -661,11 +655,12 @@ class MetaSettings(object):
             if key in ignore_keys:
                 continue
             state_table_row = [key] + [
-                state.get('vars', {}).get(key) for state in self.states.values()
+                state.get('vars', {}).get(key)
+                for state in self.states.values()
             ]
             state_table.append(state_table_row)
-        info_components += [tabulate(state_table,
-                                     tablefmt=tablefmt,
-                                     headers="firstrow")]
+        info_components += [
+            tabulate(state_table, tablefmt=tablefmt, headers="firstrow")
+        ]
 
         return info_delimeter.join(info_components)

@@ -1,14 +1,12 @@
-"""
-Introduce woo structure to shop classes.
-"""
+"""Introduce woo structure to shop classes."""
 from __future__ import absolute_import
 
 import re
 from collections import OrderedDict
 from copy import deepcopy
-from past.builtins import cmp
 
-from six import integer_types
+from past.builtins import cmp
+from six import integer_types, string_types
 
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataWcProdCategory)
@@ -28,7 +26,7 @@ from .tree import CsvParseTreeMixin, ImportTreeItem
 
 
 class ImportWooMixin(object):
-    """ all things common to Woo import classes """
+    """all things common to Woo import classes."""
 
     wpid_key = 'ID'
     wpid = DescriptorUtils.safe_key_property(wpid_key)
@@ -54,8 +52,7 @@ class ImportWooMixin(object):
         schedule = self.get('SCHEDULE')
         if schedule:
             return filter(None, SanitationUtils.find_all_tokens(schedule))
-        else:
-            return []
+        return []
 
     def has_special(self, special):
         return special in map(SanitationUtils.normalize_val, self.specials)
@@ -80,9 +77,8 @@ class ImportWooMixin(object):
 
 
 class ImportWooChildMixin(object):
-    """
-    Base mixin class for woo objects which have parents.
-    """
+    """Base mixin class for woo objects which have parents."""
+
     def to_dict(self):
         response = {}
         if hasattr(self, 'parent'):
@@ -358,10 +354,9 @@ class ImportWooCategory(
             if child.is_category:
                 if child.index == index:
                     return child
-                else:
-                    result = child.find_child_category(index)
-                    if result:
-                        return result
+                result = child.find_child_category(index)
+                if result:
+                    return result
         return None
 
     def process_meta(self):
@@ -409,7 +404,8 @@ ImportWooImg.container = WooImgList
 
 
 class CsvParseWooMixin(object):
-    """ All the stuff that's common to Woo Parser classes """
+    """All the stuff that's common to Woo Parser classes."""
+
     object_container = ImportWooObject
     item_container = ImportWooItem
     product_container = ImportWooProduct
@@ -557,7 +553,7 @@ class CsvParseWooMixin(object):
                 )
                 if 1 or self.strict:
                     self.raise_exception(warn)
-                return
+                return None
 
         else:
             if self.DEBUG_IMG:
@@ -765,7 +761,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
         """
         try:
             special = str(special)
-            assert isinstance(special, (str, unicode)), \
+            assert isinstance(special, string_types), \
                 'Special must be a string not {}'.format(
                     type(special).__name__)
             assert special is not '', 'Attribute must not be empty'
@@ -1403,13 +1399,15 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     self.register_updated_product(object_data)
 
     def post_process_inventory(self, object_data):
+        str_no_stock = "0"
+
         object_data.inherit_key('stock_status')
 
         if object_data.is_item:
             stock = object_data.get('stock')
-            if stock or stock is "0":
+            if stock or stock is str_no_stock:
                 object_data['manage_stock'] = 'yes'
-                if stock is "0":
+                if stock is str_no_stock:
                     object_data['stock_status'] = 'outofstock'
             else:
                 object_data['manage_stock'] = 'no'
@@ -1451,30 +1449,30 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 self.register_object(result)
                 self.rowcount += 1
             return result
-        else:
-            category_fullname = special_components.get(
-                self.category_container.fullname_key
+
+        category_fullname = special_components.get(
+            self.category_container.fullname_key
+        )
+        search_data = {
+            self.object_container.title_key: category_fullname
+        }
+        result = self.find_category(search_data)
+        if not result:
+            kwargs = OrderedDict()
+            search_data[self.schema] = ''
+            kwargs['defaults'] = self.cat_defaults
+            kwargs['row_data'] = search_data
+            kwargs['container'] = self.category_container
+            kwargs['parent'] = self.get_special_category()
+            category_code = special_components.get(
+                self.category_container.code_key
             )
-            search_data = {
-                self.object_container.title_key: category_fullname
-            }
-            result = self.find_category(search_data)
-            if not result:
-                kwargs = OrderedDict()
-                search_data[self.schema] = ''
-                kwargs['defaults'] = self.cat_defaults
-                kwargs['row_data'] = search_data
-                kwargs['container'] = self.category_container
-                kwargs['parent'] = self.get_special_category()
-                category_code = special_components.get(
-                    self.category_container.code_key
-                )
-                kwargs['meta'] = [category_fullname, category_code]
-                result = self.new_object(rowcount=self.rowcount, **kwargs)
-                self.process_object(result)
-                self.register_object(result)
-                self.rowcount += 1
-            return result
+            kwargs['meta'] = [category_fullname, category_code]
+            result = self.new_object(rowcount=self.rowcount, **kwargs)
+            self.process_object(result)
+            self.register_object(result)
+            self.rowcount += 1
+        return result
 
     def post_process_current_special(self, object_data):
         # TODO: actually create special category objects register objects to

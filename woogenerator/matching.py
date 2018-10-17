@@ -2,7 +2,7 @@
 Utilities for matching lists of parsing.abstract.ImportObjects
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from collections import OrderedDict
 
@@ -11,8 +11,9 @@ from .utils import InheritenceUtils, Registrar, SanitationUtils, SeqUtils
 
 # TODO: convert matching to use core data
 
+
 class Match(object):
-    """ A list of master objects and slave objects that match in sosme way """
+    """A list of master objects and slave objects that match in sosme way."""
 
     def __init__(self, m_objects=None, s_objects=None):
         if m_objects is None:
@@ -121,7 +122,6 @@ class Match(object):
         objects in the match
         """
         if self.m_len or self.s_len:
-            # Registrar.register_message("getting GCS of %s" % (self.m_objects + self.s_objects))
             return InheritenceUtils.gcs(*(self.m_objects + self.s_objects))
         return None
 
@@ -148,7 +148,6 @@ class Match(object):
 
         for s_object in other.s_objects:
             self.add_s_object(s_object)
-
 
     def find_key_matches(self, key_fn):
         """
@@ -188,8 +187,7 @@ class Match(object):
         length = len(objs)
         return "({0}) [{1:^100s}]".format(
             len(objs),
-            ','.join([obj.__repr__()[:200 / length] for obj in objs])
-        )
+            ','.join([obj.__repr__()[:200 / length] for obj in objs]))
         # ",".join(map(lambda obj: obj.__repr__()[:200 / length], objs)))
 
     def __repr__(self):
@@ -200,12 +198,9 @@ class Match(object):
 
     @property
     def singular_index(self):
-        return " | ".join([
-            str(self.m_object.index),
-            str(self.s_object.index)
-        ])
+        return " | ".join([str(self.m_object.index), str(self.s_object.index)])
 
-    def containerize(self, print_headings=False):  # pylint: disable=too-many-branches
+    def containerize(self, print_headings=False):
         """
         Return the objects within the match wrapped in the best possible container
         determined by the container attribute of the gcs of their classes
@@ -218,11 +213,11 @@ class Match(object):
 
         gcs = self.gcs
         if gcs is not None and hasattr(gcs, 'container'):
-            obj_container = gcs.container(indexer=(
-                lambda import_object: import_object.identifier))
+            obj_container = gcs.container(
+                indexer=(lambda import_object: import_object.identifier))
         else:
-            obj_container = ObjList(indexer=(
-                lambda import_object: import_object.identifier))
+            obj_container = ObjList(
+                indexer=(lambda import_object: import_object.identifier))
 
         # TODO: fix for product objects.
 
@@ -260,12 +255,12 @@ class Match(object):
                     tablefmt=tablefmt,
                     highlight_rules=highlight_rules)
             except TypeError as exc:
-                print "obj_container could not tabulate: %s " % type(
-                    obj_container)
+                print("obj_container could not tabulate: %s " % type(
+                    obj_container))
                 raise exc
             except AssertionError as exc:
-                print "could not tabulate\nm_objects:%s\ns_objects:%s" % (
-                    self.m_objects, self.s_objects)
+                print("could not tabulate\nm_objects:%s\ns_objects:%s" % (
+                    self.m_objects, self.s_objects))
                 raise exc
         else:
             out += 'EMPTY'
@@ -324,12 +319,9 @@ class MatchList(list):
         """
         Adds a match to the list
         """
-        # Registrar.register_message("adding match: %s" % str(match))
         match_s_indices = []
         match_m_indices = []
         for s_object in match.s_objects:
-            # Registrar.register_message('indexing slave %s with %s : %s' \
-            #                         % (s_object, repr(self._index_fn), s_index))
             s_index = self._index_fn(s_object)
             assert \
                 s_index not in self.s_indices, \
@@ -407,8 +399,8 @@ class MatchList(list):
                 match.tabulate(
                     cols=cols,
                     tablefmt=tablefmt,
-                    highlight_rules=highlight_rules)) for match in self
-            if match
+                    highlight_rules=highlight_rules))
+            for match in self if match
         ]) + suffix
 
 
@@ -451,27 +443,27 @@ class AbstractMatcher(Registrar):
 
     @property
     def matches(self):
-        """ return all match lists """
+        """return all match lists."""
         return self._matches['all']
 
     @property
     def pure_matches(self):
-        """ return all matches that contain no more than one slave or master """
+        """return all matches that contain no more than one slave or master."""
         return self._matches['pure']
 
     @property
     def slaveless_matches(self):
-        """ return all matches that contain no slaves """
+        """return all matches that contain no slaves."""
         return self._matches['slaveless']
 
     @property
     def masterless_matches(self):
-        """ return all matches that contain no masters """
+        """return all matches that contain no masters."""
         return self._matches['masterless']
 
     @property
     def duplicate_matches(self):
-        """ return all matches that contain more than one master or slave """
+        """return all matches that contain more than one master or slave."""
         return self._matches['duplicate']
 
     # sa_register is in nonsingular form. regkey => [slaveObjects]
@@ -529,7 +521,7 @@ class AbstractMatcher(Registrar):
             self.process_match(ms_values[0], ms_values[1])
 
     def process_registers_singular_ns(self, sa_register, ma_register):
-        """ Master is nonsingular, slave is singular """
+        """Master is nonsingular, slave is singular."""
         ms_indexed = OrderedDict()
         for reg_values in ma_register.values():
             for reg_value in reg_values:
@@ -548,7 +540,7 @@ class AbstractMatcher(Registrar):
             self.process_match(ms_values[0], ms_values[1])
 
     def process_registers_ns_singular(self, sa_register, ma_register):
-        """ Master is singular, slave is nonsingular """
+        """Master is singular, slave is nonsingular."""
 
         ms_indexed = OrderedDict()
         for reg_value in ma_register.values():
@@ -569,11 +561,11 @@ class AbstractMatcher(Registrar):
 
     @classmethod
     def get_match_type(cls, match):
-        """ Return the type of a given match """
+        """Return the type of a given match."""
         return match.type
 
     def add_match(self, match, match_type):
-        """ Add a match to the instances correct match list """
+        """Add a match to the instances correct match list."""
         self._matches[match_type].add_match(match)
         # try:
         # except Exception as exc:
@@ -595,13 +587,13 @@ class AbstractMatcher(Registrar):
     # ))
 
     def m_filter(self, objects):
-        """ perform the master filter on the objects """
+        """perform the master filter on the objects."""
         if self.m_filter_fn:
             return filter(self.m_filter_fn, objects)
         return objects
 
     def s_filter(self, objects):
-        """ perform the slave filter on the objects """
+        """perform the slave filter on the objects."""
         if self.f_filter_fn:
             return filter(self.f_filter_fn, objects)
         return objects
@@ -660,7 +652,7 @@ class ProductMatcher(AbstractMatcher):
 
     @staticmethod
     def product_index_fn(product_object):
-        """ the product index function for the class """
+        """the product index function for the class."""
         return product_object.codesum
 
     def __init__(self):
@@ -685,7 +677,7 @@ class CategoryMatcher(AbstractMatcher):
 
     @staticmethod
     def category_index_fn(category_object):
-        """ Return the name of the category. """
+        """Return the name of the category."""
         return category_object.cat_name
 
     def __init__(self):
@@ -693,11 +685,13 @@ class CategoryMatcher(AbstractMatcher):
         self.process_registers = self.process_registers_singular
         # self.retrieveObjects = self.retrieveObjectsSingular
 
+
 class CategoryTitleMatcher(CategoryMatcher):
     @staticmethod
     def category_index_fn(category_object):
-        """ Return the name of the category. """
+        """Return the name of the category."""
         return category_object.title
+
 
 class ImageMatcher(AbstractMatcher):
     """
@@ -708,7 +702,7 @@ class ImageMatcher(AbstractMatcher):
 
     @staticmethod
     def image_index_fn(img_object):
-        """ Return the basename of the image file. """
+        """Return the basename of the image file."""
         return img_object.normalized_filename
 
     def __init__(self):
@@ -722,8 +716,7 @@ class ImageMatcher(AbstractMatcher):
         find within the match, matches based on an objects attachee_sku
         """
         return match.find_key_matches(
-            lambda obj: SanitationUtils.normalize_val(obj.attachee_skus)
-        )
+            lambda obj: SanitationUtils.normalize_val(obj.attachee_skus))
 
     @classmethod
     def find_file_basename_matches(cls, match):
@@ -731,8 +724,7 @@ class ImageMatcher(AbstractMatcher):
         find within the match, matches based on an objects file basename
         """
         return match.find_key_matches(
-            lambda obj: SanitationUtils.normalize_val(obj.file_basename)
-        )
+            lambda obj: SanitationUtils.normalize_val(obj.file_basename))
 
     @classmethod
     def find_norm_title_matches(cls, match):
@@ -740,14 +732,13 @@ class ImageMatcher(AbstractMatcher):
         find within the match, matches based on an objects normalized_title
         """
         return match.find_key_matches(
-            lambda obj: SanitationUtils.normalize_val(obj.norm_title)
-        )
+            lambda obj: SanitationUtils.normalize_val(obj.norm_title))
 
 
 class StrictImageMatcher(ImageMatcher):
     @staticmethod
     def image_index_fn(img_object):
-        """ Return the identifier of the image file. """
+        """Return the identifier of the image file."""
         return img_object.identifier
 
 
@@ -760,7 +751,7 @@ class AttachmentIDMatcher(AbstractMatcher):
 
     @staticmethod
     def image_index_fn(img_object):
-        """ Return the basename of the image file. """
+        """Return the basename of the image file."""
         return img_object.wpid
 
     def __init__(self):
@@ -784,6 +775,7 @@ class FilteringMatcher(AbstractMatcher):
     Matching class that only process ImportObjects if their indices are contained
     in a list of allowed indices
     """
+
     # TODO: holy shit this is inefficient
 
     def __init__(self, index_fn, s_match_indices=None, m_match_indices=None):
@@ -806,7 +798,7 @@ class CardMatcher(FilteringMatcher):
 
     @staticmethod
     def card_index_fn(user_object):
-        """ the card index function for the class """
+        """the card index function for the class."""
         assert \
             hasattr(user_object, 'MYOBID'), \
             'must be able to get MYOBID, instead type is %s' % type(
@@ -829,7 +821,7 @@ class EmailMatcher(FilteringMatcher):
 
     @staticmethod
     def email_index_fn(user_object):
-        """ the email index function for the class """
+        """the email index function for the class."""
         assert \
             hasattr(user_object, 'email'), \
             "must be able to get email, instead type is %s" % type(user_object)
@@ -859,10 +851,11 @@ class NocardEmailMatcher(EmailMatcher):
                                                  m_match_indices)
         self.process_registers = self.process_registers_singular_ns
 
+
 class AttacheeSkuMatcher(FilteringMatcher):
     @staticmethod
     def attachee_sku_index_fn(attachment_object):
-        """ gets the sku of the object that the attachment is attached to """
+        """gets the sku of the object that the attachment is attached to."""
         assert \
             hasattr(attachment_object, 'attachee_skus'), \
             "must be able to get attachee_skus, instead type is %s" % type(attachment_object)
@@ -873,14 +866,15 @@ class AttacheeSkuMatcher(FilteringMatcher):
         #     s_match_indices = []
         # if not m_match_indices:
         #     m_match_indices = []
-        super(AttacheeSkuMatcher, self).__init__(self.attachee_sku_index_fn,
-                                           s_match_indices, m_match_indices)
+        super(AttacheeSkuMatcher, self).__init__(
+            self.attachee_sku_index_fn, s_match_indices, m_match_indices)
         self.process_registers = self.process_registers_singular
+
 
 class AttacheeTitleMatcher(FilteringMatcher):
     @staticmethod
     def attachee_title_index_fn(attachment_object):
-        """ gets the sku of the object that the attachment is attached to """
+        """gets the sku of the object that the attachment is attached to."""
         assert \
             hasattr(attachment_object, 'attachee_titles'), \
             "must be able to get attachee_titles, instead type is %s" % type(attachment_object)
@@ -891,6 +885,6 @@ class AttacheeTitleMatcher(FilteringMatcher):
         #     s_match_indices = []
         # if not m_match_indices:
         #     m_match_indices = []
-        super(AttacheeTitleMatcher, self).__init__(self.attachee_title_index_fn,
-                                           s_match_indices, m_match_indices)
+        super(AttacheeTitleMatcher, self).__init__(
+            self.attachee_title_index_fn, s_match_indices, m_match_indices)
         self.process_registers = self.process_registers_singular

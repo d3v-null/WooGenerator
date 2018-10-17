@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 from collections import OrderedDict
 
+from past.builtins import cmp
+
 from ..utils import (DescriptorUtils, Registrar, SanitationUtils, SeqUtils,
                      TimeUtils)
 from ..utils.inheritence import call_bases
@@ -135,8 +137,7 @@ class ImportSpecialRule(ImportTreeItem, ImportSpecialMixin):
     def special_id(self):
         if self.ruleCode == '-':
             return self.parent.special_id
-        else:
-            return '-'.join([self.parent.special_id, self.ruleCode])
+        return '-'.join([self.parent.special_id, self.ruleCode])
 
     @property
     def index(self):
@@ -234,7 +235,7 @@ class CsvParseSpecial(CsvParseTree):
         )
 
     def auto_next(self):
-        """ return the next future rule """
+        """Return the next future rule."""
         all_future = self.all_future()
         response = None
         if all_future:
@@ -244,7 +245,7 @@ class CsvParseSpecial(CsvParseTree):
         return response
 
     def all_future(self):
-        """ return all future rules """
+        """Return all future rules."""
         all_future = []
         for _, special_group in self.rule_groups.items():
             if special_group.has_finished:

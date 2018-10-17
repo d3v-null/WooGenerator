@@ -1,4 +1,4 @@
-""" Client classes for Xero API. """
+"""Client classes for Xero API."""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -8,7 +8,7 @@ from builtins import super
 from xero import Xero
 from xero.auth import PrivateCredentials
 
-from ..utils import ProgressCounter, Registrar, SanitationUtils
+from ..utils import Registrar
 from .core import SyncClientAbstract
 
 
@@ -43,9 +43,7 @@ class SyncClientXero(SyncClientAbstract):
         with open(rsa_key_file) as keyfile:
             rsa_key = keyfile.read()
             superconnect_params['credentials'] = PrivateCredentials(
-                consumer_key=connect_params['api_key'],
-                rsa_key=rsa_key
-            )
+                consumer_key=connect_params['api_key'], rsa_key=rsa_key)
 
         super().__init__(superconnect_params, **kwargs)
 

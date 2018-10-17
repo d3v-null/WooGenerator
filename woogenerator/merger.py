@@ -623,7 +623,7 @@ def do_updates(updates, settings):
 
 
 def do_report_post(reporters, results, settings):
-    """ Reports results from performing updates."""
+    """Reports results from performing updates."""
     if settings.get('do_report'):
         Registrar.register_progress("Write Post Report")
 

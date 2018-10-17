@@ -56,7 +56,7 @@ class TestConfigProd(unittest.TestCase):
         # print "parsed options: %s" % pformat(vars(options))
 
     def test_testmode(self):
-        """ test the logic of testmode, make sure configargparse detects test config """
+        """test the logic of testmode, make sure configargparse detects test config."""
 
 if __name__ == '__main__':
     unittest.main()

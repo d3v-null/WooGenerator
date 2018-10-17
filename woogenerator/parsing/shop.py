@@ -8,6 +8,8 @@ import os
 import re
 from collections import OrderedDict
 
+from six import string_types
+
 from ..coldata import (ColDataAttachment, ColDataProductMeridian,
                        ColDataProductVariationMeridian, ColDataSubAttachment,
                        ColDataWcProdCategory)
@@ -71,8 +73,7 @@ class ImportShopAttachmentMixin(ShopMixin):
         ])
         if any(possible_paths):
             return FileUtils.get_path_basename(possible_paths[0])
-        else:
-            return ''
+        return ''
 
         # if data.get(cls.file_name_key) is not None:
         #     return FileUtils.get_path_basename(data[cls.file_name_key])
@@ -166,6 +167,7 @@ class ImportShopAttachmentMixin(ShopMixin):
     def get_attachment_id(cls, data):
         if data.get(cls.attachment_id_key):
             return data[cls.attachment_id_key]
+        return None
 
     attachment_indexer = get_attachment_id
 
@@ -568,6 +570,7 @@ class ShopObjList(ObjList):
             return self.products.remove(value)
         if value in self._objects:
             return self._objects.remove(value)
+        return None
 
 
 class CsvParseShopMixin(object):
@@ -756,9 +759,9 @@ class CsvParseShopMixin(object):
     def register_attribute(self, object_data, attr, val, var=False):
         try:
             attr = str(attr)
-            assert isinstance(attr, (str, unicode)), \
+            assert isinstance(attr, string_types), \
                 'Attribute must be a string not {}'.format(type(attr).__name__)
-            assert attr is not '', 'Attribute must not be empty'
+            assert attr, 'Attribute must not be empty'
             assert attr[0] is not ' ', \
                 'Attribute must not start with whitespace or '
         except AssertionError as exc:

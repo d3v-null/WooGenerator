@@ -584,11 +584,11 @@ class TestProdSyncClientSimpleWCLegacy(TestProdSyncClientSimple):
         super(TestProdSyncClientSimpleWCLegacy, self).test_upload_product_categories_join_leave()
 
     def test_upload_delete_meta(self):
-        """ Legacy API does not do meta. """
+        """Legacy API does not do meta."""
         pass
 
     def test_upload_changes_meta(self):
-        """ Legacy API does not do meta. """
+        """Legacy API does not do meta."""
         pass
 
 

@@ -24,10 +24,10 @@ from collections import OrderedDict
 from copy import copy, deepcopy
 from pprint import pformat
 
-from past.builtins import cmp
-from tabulate import tabulate
-
 import unicodecsv
+from past.builtins import cmp
+from six import text_type, string_types
+from tabulate import tabulate
 
 from ..coldata import ColDataAbstract
 from ..utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
@@ -99,10 +99,7 @@ class ImportObject(OrderedDict, Registrar):
             coldata_target = self.coldata_target
         # translate data without deleting unknown columns
         data = coldata_class.translate_data_from_to_simple(
-            self.to_dict(),
-            self.coldata_gen_target,
-            coldata_target
-        )
+            self.to_dict(), self.coldata_gen_target, coldata_target)
         extra_colnames = kwargs.get('extra_colnames', OrderedDict())
         if extra_colnames:
             for col, name in extra_colnames.items():
@@ -159,8 +156,8 @@ class ImportObject(OrderedDict, Registrar):
             self.register_message("type_name %s" % repr(type_name))
         identifier_delimeter = self.identifier_delimeter
         if self.DEBUG_ABSTRACT:
-            self.register_message("identifier_delimeter %s" %
-                                  repr(identifier_delimeter))
+            self.register_message(
+                "identifier_delimeter %s" % repr(identifier_delimeter))
         return self.string_anything(index, "<%s>" % type_name,
                                     identifier_delimeter)
 
@@ -178,7 +175,7 @@ class ImportObject(OrderedDict, Registrar):
         return copy_args
 
     def containerize(self):
-        """ Put self in preferred container. """
+        """Put self in preferred container."""
         return self.container([self])
 
     def update(self, other):
@@ -273,6 +270,7 @@ class ObjList(list, Registrar):
         if index not in self.indices:
             self.indices.append(index)
             return list.append(self, object_data)
+        return None
 
     def extend(self, objects):
         for obj in objects:
@@ -300,6 +298,7 @@ class ObjList(list, Registrar):
 
         if values:
             return values[0]
+        return None
 
     @classmethod
     def get_sanitizer(cls, tablefmt=None):
@@ -308,8 +307,7 @@ class ObjList(list, Registrar):
         """
         if tablefmt == 'html':
             return SanitationUtils.sanitize_for_xml
-        else:
-            return SanitationUtils.sanitize_for_table
+        return SanitationUtils.sanitize_for_table
 
     def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):
         """
@@ -328,7 +326,7 @@ class ObjList(list, Registrar):
                 col_header = key
                 if isinstance(val, dict) and 'label' in val:
                     col_header = val['label']
-                elif isinstance(val, basestring):
+                elif isinstance(val, string_types):
                     col_header = val
                 header += [col_header]
             table = []
@@ -350,7 +348,7 @@ class ObjList(list, Registrar):
                         SanitationUtils.coerce_unicode(row[-1])
                     except BaseException:
                         Registrar.register_warning(
-                            "can't turn row into unicode: %s" %
+                            "can't turn row into text_type: %s" %
                             SanitationUtils.coerce_unicode(row))
 
                 table += [row]
@@ -363,15 +361,19 @@ class ObjList(list, Registrar):
                 table_str = re.sub(r'<tr><th>\s*</th>', r'<tr>', table_str)
 
             return table_str
-        else:
-            Registrar.register_warning(
-                "cannot tabulate Objlist: there are no objects")
-            return ""
 
-    def export_items(
-        self, file_path, col_names, dialect=None, encoding="utf8",
-        coldata_target=None, coldata_class=None, extra_colnames=None
-    ):
+        Registrar.register_warning(
+            "cannot tabulate Objlist: there are no objects")
+        return ""
+
+    def export_items(self,
+                     file_path,
+                     col_names,
+                     dialect=None,
+                     encoding="utf8",
+                     coldata_target=None,
+                     coldata_class=None,
+                     extra_colnames=None):
         """Export items in object list to csv in the given file path."""
         assert file_path, "needs a filepath"
         assert col_names, "needs col_names"
@@ -394,11 +396,9 @@ class ObjList(list, Registrar):
                 dialect=csvdialect,
                 fieldnames=col_names.values(),
                 encoding=encoding,
-                extrasaction='ignore'
-            )
-            header_row = OrderedDict([
-                (value, value) for key, value in col_names.items()
-            ])
+                extrasaction='ignore')
+            header_row = OrderedDict(
+                [(value, value) for key, value in col_names.items()])
             dictwriter.writerow(header_row)
             objects = []
             for object_ in self.objects:
@@ -406,9 +406,7 @@ class ObjList(list, Registrar):
                     object_.to_target_type(
                         coldata_class=coldata_class,
                         coldata_target=coldata_target,
-                        extra_colnames=extra_colnames
-                    )
-                )
+                        extra_colnames=extra_colnames))
             dictwriter.writerows(objects)
         self.register_message("WROTE FILE: %s" % file_path)
 
@@ -480,8 +478,8 @@ class CsvParseBase(Registrar):
                 self.indices[col] = sanitized_row.index(sanitized_col)
             if self.indices.get(col) is not None:
                 if self.DEBUG_ABSTRACT:
-                    self.register_message("indices [%s] = %s" %
-                                          (col, self.indices.get(col)))
+                    self.register_message(
+                        "indices [%s] = %s" % (col, self.indices.get(col)))
             else:
                 self.register_error(
                     'Could not find index of %s -> %s in %s' %
@@ -498,23 +496,20 @@ class CsvParseBase(Registrar):
             if col in self.defaults:
                 return self.defaults[col]
             if self.strict:
-                self.register_message(
-                    'No default for column ' + str(col) + ' | '
-                    + str(exc) + ' ' + unicode(self.defaults)
-                )
+                self.register_message('No default for column ' + str(col) +
+                                      ' | ' + str(exc) + ' ' +
+                                      text_type(self.defaults))
             return None
         try:
             if self.DEBUG_ABSTRACT:
-                self.register_message(u"row [%3d] = %s" %
-                                      (index, repr(row[index])))
+                self.register_message(
+                    u"row [%3d] = %s" % (index, repr(row[index])))
             # this may break shit
             return row[index]
         except Exception as exc:
-            self.register_warning(
-                'Could not retrieve ' + str(col) +
-                ' from row[' + str(index) + '] | ' +
-                str(exc) + ' | ' + repr(row)
-            )
+            self.register_warning('Could not retrieve ' + str(col) +
+                                  ' from row[' + str(index) + '] | ' +
+                                  str(exc) + ' | ' + repr(row))
             return None
 
     def sanitize_cell(self, cell):
@@ -554,12 +549,10 @@ class CsvParseBase(Registrar):
                     "-> search_data:\n%s\n"
                     "-> match_keys:\n%s\n"
                     "-> matches:\n%s\n%s"
-                ) % (
-                    pformat(search_data.items()),
-                    pformat(search_keys),
-                    pformat(matches),
-                    pformat(['%s' % registry.get(match) for match in matches])
-                )
+                ) % (pformat(search_data.items()), pformat(search_keys),
+                     pformat(matches),
+                     pformat(['%s' % registry.get(match)
+                              for match in matches]))
                 response = registry.get(list(matches)[0])
         return response
 
@@ -578,7 +571,7 @@ class CsvParseBase(Registrar):
         row_data = OrderedDict()
         for col in self.cols:
             retrieved = self.retrieve_col_from_row(col, row)
-            if retrieved is not None and unicode(retrieved) is not u"":
+            if retrieved is not None and text_type(retrieved) is not u"":
                 row_data[col] = self.sanitize_cell(retrieved)
         return row_data
 
@@ -594,7 +587,7 @@ class CsvParseBase(Registrar):
             mandatory_data['source'] = self.source
         return mandatory_data
 
-    def get_new_obj_container(self, all_data, **kwargs):  # pylint: disable=unused-argument
+    def get_new_obj_container(self, all_data, **kwargs):
         """
         Get container for new object.
 
@@ -605,7 +598,7 @@ class CsvParseBase(Registrar):
             self.register_message(' ')
         return kwargs.get('container', self.object_container)
 
-    def get_kwargs(self, all_data, **kwargs):  # pylint: disable=unused-argument
+    def get_kwargs(self, all_data, **kwargs):
         """
         Get kwargs for creating new_object.
 
@@ -638,8 +631,8 @@ class CsvParseBase(Registrar):
         """
 
         if self.DEBUG_PARSER:
-            self.register_message(
-                'rowcount: {} | kwargs {}'.format(rowcount, kwargs))
+            self.register_message('rowcount: {} | kwargs {}'.format(
+                rowcount, kwargs))
         kwargs['row'] = kwargs.get('row', [])
         kwargs['rowcount'] = rowcount
         default_data = self.get_defaults(**kwargs)
@@ -679,7 +672,7 @@ class CsvParseBase(Registrar):
 
     def analyse_rows(self, unicode_rows, file_name="rows", limit=None):
         """
-        Analyse a list of unicode rows to create objects.
+        Analyse a list of text_type rows to create objects.
         """
 
         if limit and isinstance(limit, int):
@@ -692,8 +685,8 @@ class CsvParseBase(Registrar):
                 for row in unicode_rows:
                     rows.append(row)
             except Exception as exc:
-                warn = Exception("could not append row %d, %s: \n\t%s" % (
-                    len(rows), str(exc), repr(rows[-1:])))
+                warn = Exception("could not append row %d, %s: \n\t%s" %
+                                 (len(rows), str(exc), repr(rows[-1:])))
                 self.raise_exception(warn)
             rowlen = len(rows)
             self.progress_counter = ProgressCounter(rowlen)
@@ -710,10 +703,10 @@ class CsvParseBase(Registrar):
             if unicode_row:
                 non_unicode = [
                     cell for cell in unicode_row
-                    if not isinstance(cell, unicode)
+                    if not isinstance(cell, text_type)
                 ]
                 assert not non_unicode, \
-                    "non-empty cells must be unicode objects, {}".format(
+                    "non-empty cells must be text_type objects, {}".format(
                         repr(non_unicode))
 
             if not any(unicode_row):
@@ -727,38 +720,34 @@ class CsvParseBase(Registrar):
                 #     import pudb; pudb.set_trace()
                 object_data = self.new_object(self.rowcount, row=unicode_row)
             except UserWarning as exc:
-                warn = UserWarning("could not process new object: {}".format(
-                    exc))
-                self.register_warning(
-                    warn,
-                    "%s:%d" % (file_name, self.rowcount))
+                warn = UserWarning(
+                    "could not process new object: {}".format(exc))
+                self.register_warning(warn,
+                                      "%s:%d" % (file_name, self.rowcount))
                 if self.strict:
                     self.raise_exception(warn)
                 continue
             else:
                 if self.DEBUG_PARSER:
-                    self.register_message("%s CREATED" %
-                                          object_data.identifier)
+                    self.register_message(
+                        "%s CREATED" % object_data.identifier)
             try:
                 self.process_object(object_data)
                 if self.DEBUG_PARSER:
-                    self.register_message("%s PROCESSED" %
-                                          object_data.identifier)
+                    self.register_message(
+                        "%s PROCESSED" % object_data.identifier)
             except UserWarning as exc:
-                warn = UserWarning("could not process new object: {}".format(
-                    exc))
-                self.register_error(
-                    warn,
-                    object_data
-                )
+                warn = UserWarning(
+                    "could not process new object: {}".format(exc))
+                self.register_error(warn, object_data)
                 if self.strict:
                     self.raise_exception(warn)
                 continue
             try:
                 self.register_object(object_data)
                 if self.DEBUG_PARSER:
-                    self.register_message("%s REGISTERED" %
-                                          object_data.identifier)
+                    self.register_message(
+                        "%s REGISTERED" % object_data.identifier)
                     self.register_message("%s" % object_data.__repr__())
 
             except UserWarning as exc:
@@ -804,8 +793,7 @@ class CsvParseBase(Registrar):
         if hasattr(self, 'rowcount') and self.rowcount > 1:
             warn = UserWarning(
                 'rowcount should be 0. '
-                'Make sure clear_transients is being called on ancestors'
-            )
+                'Make sure clear_transients is being called on ancestors')
             self.raise_exception(warn)
         if encoding is None:
             encoding = "utf8"
@@ -817,8 +805,9 @@ class CsvParseBase(Registrar):
                 stream_name = 'stream'
 
         if self.DEBUG_PARSER:
-            self.register_message("Analysing stream: {0}, encoding: {1}".
-                                  format(stream_name, encoding))
+            self.register_message(
+                "Analysing stream: {0}, encoding: {1}".format(
+                    stream_name, encoding))
 
         # I can't imagine this having any problems
         byte_sample = SanitationUtils.coerce_bytes(byte_file_obj.read(1000))
@@ -826,8 +815,7 @@ class CsvParseBase(Registrar):
 
         if self.DEBUG_PARSER:
             self.register_message(
-                "dialect_suggestion: %s" % dialect_suggestion
-            )
+                "dialect_suggestion: %s" % dialect_suggestion)
 
         if dialect_suggestion:
             csvdialect = UnicodeCsvDialectUtils.get_dialect_from_suggestion(
@@ -840,8 +828,7 @@ class CsvParseBase(Registrar):
 
         if self.DEBUG_PARSER:
             self.register_message(
-                UnicodeCsvDialectUtils.dialect_to_str(csvdialect)
-            )
+                UnicodeCsvDialectUtils.dialect_to_str(csvdialect))
 
         unicodecsvreader = unicodecsv.reader(
             byte_file_obj, dialect=csvdialect, encoding=encoding, strict=True)
@@ -858,8 +845,7 @@ class CsvParseBase(Registrar):
         """
         if self.DEBUG_PARSER:
             self.register_message(
-                "dialect_suggestion: %s" % dialect_suggestion
-            )
+                "dialect_suggestion: %s" % dialect_suggestion)
 
         with open(file_name, 'rbU') as byte_file_obj:
             return self.analyse_stream(

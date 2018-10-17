@@ -1629,7 +1629,7 @@ class SocialMediaFields(FieldGroup):
             ])))
 
 class RoleGroup(FieldGroup):
-    """ docstring for RoleGroup. """
+    """docstring for RoleGroup."""
 
     fieldGroupType = "ROLE"
     equality_keys = ['direct_brand', 'role']

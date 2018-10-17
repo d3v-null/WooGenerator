@@ -286,7 +286,7 @@ class CsvParseGenMixin(object):
 
 
 class CsvParseGenTree(CsvParseTree, CsvParseGenMixin):
-    """ Parser for tree-based generator structure """
+    """Parser for tree-based generator structure."""
 
     sanitize_cell = CsvParseGenMixin.sanitize_cell
     object_container = CsvParseGenMixin.object_container

@@ -1,6 +1,4 @@
-"""
-Module for API clients
-"""
+"""Module for API clients."""
 import sys
 import os
 

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Module for configuration of woogenerator
-"""
+"""Module for configuration of woogenerator."""
 import sys
 import os
 

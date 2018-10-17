@@ -1,36 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-import base64
-import cgi
-import functools
 import pdb
-import inspect
-import itertools
-import json
-import math
-import numbers
-import os
-import random
-import re
 import sys
-import time
 import traceback
-import unicodedata
 from collections import Counter, OrderedDict
-from HTMLParser import HTMLParser
-from urlparse import parse_qs, urlparse
 
-import phpserialize
-import unicodecsv
-import unidecode
-from jsonpath_ng import jsonpath
-from kitchen.text import converters
-from six import binary_type, integer_types, string_types, text_type
-
-from .sanitation import SanitationUtils
-from .debug import DebugUtils
 from .core import SeqUtils
+from .debug import DebugUtils
+from .sanitation import SanitationUtils
 
 
 class Registrar(object):
@@ -86,31 +64,28 @@ class Registrar(object):
     def get_object_rowcount(cls, object_data):
         if 'rowcount' in object_data:
             return object_data['rowcount']
-        else:
-            raise UserWarning('object does not have rowcount')
+        raise UserWarning('object does not have rowcount')
 
     @classmethod
     def get_object_index(cls, object_data):
         if hasattr(object_data, 'index'):
             return object_data.index
-        else:
-            raise UserWarning(
-                '%s object is not indexable: does not have attr "index"' % (
-                    type(object_data)
-                )
+        raise UserWarning(
+            '%s object is not indexable: does not have attr "index"' % (
+                type(object_data)
             )
+        )
 
     @classmethod
     def get_object_identifier(cls, object_data):
         if hasattr(object_data, 'identifier'):
             return object_data.identifier
-        else:
-            raise UserWarning(
-                '%s object is not identifiable: '
-                'does not have attr "identifier"' % (
-                    type(object_data)
-                )
+        raise UserWarning(
+            '%s object is not identifiable: '
+            'does not have attr "identifier"' % (
+                type(object_data)
             )
+        )
 
     @classmethod
     def passive_resolver(cls, *args):
@@ -180,6 +155,7 @@ class Registrar(object):
                     print("INDEXER IS NOT CALLABLE")
                 index = indexer
             assert hasattr(index, '__hash__'), "Index must be hashable"
+            # assert hasattr(index, '__eq__') or hasattr(index, '__neq__'),
             assert index == index, "index must support eq"
         except AssertionError as exc:
             name = thing.__name__ if hasattr(

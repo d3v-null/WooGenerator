@@ -15,14 +15,18 @@ MAX_BODY_LEN = 1000000
 
 
 class EmailClient(ClientAbstract):
-    """ Interface with a mail client. Boilerplate """
+    """Interface with a mail client. Boilerplate."""
 
     def send(self, message):
-        """ Send an email.message object using the mail client. """
+        """Send an email.message object using the mail client."""
         raise NotImplementedError()
 
-    def compose_message(self, sender, recipients,
-                        subject, body, text_body=None):
+    def compose_message(self,
+                        sender,
+                        recipients,
+                        subject,
+                        body,
+                        text_body=None):
         raise NotImplementedError()
 
     def attach_file(self, message, filename):
@@ -30,14 +34,18 @@ class EmailClient(ClientAbstract):
 
 
 class EmailClientSMTP(ClientAbstract):
-    """ Interface with an SMTP mail client. """
+    """Interface with an SMTP mail client."""
     service_builder = smtplib.SMTP
 
     def __exit__(self, exit_type, value, traceback):
         self.service.quit()
 
-    def compose_message(self, sender, recipients,
-                        subject, body, text_body=None):
+    def compose_message(self,
+                        sender,
+                        recipients,
+                        subject,
+                        body,
+                        text_body=None):
         message = MIMEMultipart()
         message['Subject'] = subject
         message['To'] = ', '.join(recipients)
@@ -51,8 +59,8 @@ class EmailClientSMTP(ClientAbstract):
             msg = MIMEBase('application', 'zip')
             msg.set_payload(attachment_file.read())
             encoders.encode_base64(msg)
-            msg.add_header('Content-Disposition', 'attachment',
-                           filename=filename)
+            msg.add_header(
+                'Content-Disposition', 'attachment', filename=filename)
             message.attach(msg)
         return message
 
@@ -63,18 +71,16 @@ class EmailClientSMTP(ClientAbstract):
         self.service.sendmail(sender, recipients, message)
 
     def attempt_connect(self):
-        self.service = self.service_builder(
-            self.connect_params['host'], self.connect_params['port']
-        )
+        self.service = self.service_builder(self.connect_params['host'],
+                                            self.connect_params['port'])
         self.service.ehlo()
         self.service.starttls()
-        self.service.login(
-            self.connect_params['user'], self.connect_params['pass']
-        )
+        self.service.login(self.connect_params['user'],
+                           self.connect_params['pass'])
 
 
 class EmailClientExchange(ClientAbstract):
-    """ Interface with an exchange mail client """
+    """Interface with an exchange mail client."""
     service_builder = exchangelib.Account
 
     def __init__(self, connect_params, **kwargs):
@@ -82,8 +88,12 @@ class EmailClientExchange(ClientAbstract):
         self.service = None
         self.attempt_connect()
 
-    def compose_message(self, sender, recipients,
-                        subject, body, text_body=None):
+    def compose_message(self,
+                        sender,
+                        recipients,
+                        subject,
+                        body,
+                        text_body=None):
         if body is None:
             body = ''
         body = body[:MAX_BODY_LEN]
@@ -93,20 +103,15 @@ class EmailClientExchange(ClientAbstract):
             account=self.service,
             subject=subject,
             text_body=text_body[:MAX_BODY_LEN],
-            body=exchangelib.HTMLBody(
-                body[:MAX_BODY_LEN]
-            ),
-            to_recipients=recipients
-        )
+            body=exchangelib.HTMLBody(body[:MAX_BODY_LEN]),
+            to_recipients=recipients)
         return message
 
     def attach_file(self, message, path):
         filename = os.path.basename(path)
         with open(path) as attachment_file:
             attachment = exchangelib.FileAttachment(
-                name=filename,
-                content=attachment_file.read()
-            )
+                name=filename, content=attachment_file.read())
             message.attach(attachment)
         return message
 
@@ -119,8 +124,7 @@ class EmailClientExchange(ClientAbstract):
         """
         self.credentials = exchangelib.ServiceAccount(
             username=self.connect_params['user'],
-            password=self.connect_params['pass']
-        )
+            password=self.connect_params['pass'])
 
         self.config = exchangelib.Configuration(
             server=self.connect_params['host'],
@@ -134,5 +138,4 @@ class EmailClientExchange(ClientAbstract):
             credentials=self.credentials,
             autodiscover=False,
             config=self.config,
-            access_type=exchangelib.DELEGATE
-        )
+            access_type=exchangelib.DELEGATE)

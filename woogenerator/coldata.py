@@ -1,4 +1,4 @@
- # -*- coding: utf-8 -
+# -*- coding: utf-8 -
 """
 Utility for keeping track of column metadata for translating between databases.
 """
@@ -7,15 +7,14 @@ from __future__ import absolute_import
 
 import functools
 import itertools
-import re
 from collections import OrderedDict, Mapping
 from copy import copy, deepcopy
-from pprint import pformat, pprint
+from pprint import pformat
 
 import jsonpath_ng
 from jsonpath_ng import jsonpath
 
-from .utils import (FileUtils, JSONPathUtils, MimeUtils, PHPUtils, Registrar,
+from .utils import (FileUtils, JSONPathUtils, MimeUtils, PHPUtils,
                     SanitationUtils, SeqUtils, TimeUtils)
 
 # TODO: Replace dicts with `OrderedDict`s
@@ -690,7 +689,7 @@ class ColDataAbstract(ColDataLegacy):
 
     # @classmethod
     # def path_exists(cls, data, path):
-    #     """ Deprecated, use get_from_path in try/catch block. """
+    #     """Deprecated, use get_from_path in try/catch block."""
     #     if not path:
     #         return
     #     if re.match(cls.re_simple_path, path):

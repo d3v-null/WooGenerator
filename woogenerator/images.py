@@ -6,9 +6,7 @@ from __future__ import absolute_import
 
 import os
 import shutil
-import time
 import traceback
-from datetime import datetime
 
 import piexif
 from PIL import Image, ImageFile, PngImagePlugin
@@ -34,15 +32,16 @@ class MetaGator(Registrar):
 
     @property
     def is_jpg(self):
-        return MimeUtils.get_ext_mime_type(self.ext) in ['image/jpeg', 'image/jp2']
+        return MimeUtils.get_ext_mime_type(
+            self.ext) in ['image/jpeg', 'image/jp2']
 
     @property
     def is_png(self):
         return MimeUtils.get_ext_mime_type(self.ext) in ['image/png']
 
     def write_meta(self, title, description):
-        title, description = map(
-            SanitationUtils.coerce_ascii, (title, description))
+        title, description = map(SanitationUtils.coerce_ascii,
+                                 (title, description))
         # print "title, description: ", title, ', ', description
         if self.is_png:
             # print "image is PNG"
@@ -135,21 +134,20 @@ class MetaGator(Registrar):
         changed = []
         for key in ['title', 'description']:
             if SanitationUtils.similar_comparison(
-                    oldmeta[key]) != SanitationUtils.similar_comparison(newmeta[key]):
+                    oldmeta[key]) != SanitationUtils.similar_comparison(
+                        newmeta[key]):
                 changed += [key]
                 if self.DEBUG_IMG:
                     self.register_message(
-                        u"changing imgmeta[%s] from %s to %s" % (
-                            key, repr(oldmeta[key]), repr(newmeta[key])),
-                        self.fname
-                    )
+                        u"changing imgmeta[%s] from %s to %s" %
+                        (key, repr(oldmeta[key]), repr(newmeta[key])),
+                        self.fname)
         if changed:
             if 'title' not in changed:
                 newmeta['title'] = oldmeta['title']
             if 'description' not in changed:
                 newmeta['description'] = oldmeta['description']
             self.write_meta(newmeta['title'], newmeta['description'])
-
 
 
 def invalid_image(parsers, settings, img_data, error):
@@ -159,6 +157,7 @@ def invalid_image(parsers, settings, img_data, error):
     else:
         Registrar.register_message(error, img_data)
     img_data.invalidate(error)
+
 
 def get_raw_image(settings, img_name):
     """
@@ -179,6 +178,7 @@ def get_raw_image(settings, img_name):
             return os.path.join(path, img_name)
     raise IOError("no image named %s found" % str(img_name))
 
+
 def process_image_meta(settings, parsers, img_data):
     if Registrar.DEBUG_IMG:
         Registrar.register_message("img_data_id: %s" % id(img_data))
@@ -187,29 +187,27 @@ def process_image_meta(settings, parsers, img_data):
         metagator = MetaGator(get_raw_image(settings, img_data.file_name))
         current_meta = metagator.read_meta()
         img_data.update({
-            img_data.title_key: current_meta.get('title'),
-            'alt_text': current_meta.get('title'),
-            'caption': current_meta.get('description'),
-            img_data.description_key: current_meta.get('description'),
-            img_data.descsum_key: current_meta.get('description'),
+            img_data.title_key:
+            current_meta.get('title'),
+            'alt_text':
+            current_meta.get('title'),
+            'caption':
+            current_meta.get('description'),
+            img_data.description_key:
+            current_meta.get('description'),
+            img_data.descsum_key:
+            current_meta.get('description'),
         })
 
     except Exception as exc:
-        invalid_image(
-            parsers,
-            settings,
-            img_data,
-            "error reading meta: " + str(exc)
-        )
+        invalid_image(parsers, settings, img_data,
+                      "error reading meta: " + str(exc))
         return
 
     try:
         title, description = img_data.attaches.title, img_data.attaches.description
         if settings.do_remeta_images:
-            metagator.update_meta({
-                'title': title,
-                'description': description
-            })
+            metagator.update_meta({'title': title, 'description': description})
         img_data.update({
             img_data.title_key: title,
             'alt_text': title,
@@ -219,12 +217,12 @@ def process_image_meta(settings, parsers, img_data):
         })
 
     except Exception as exc:
-        invalid_image(
-            parsers, settings, img_data, "error updating meta: " + str(exc)
-        )
+        invalid_image(parsers, settings, img_data,
+                      "error updating meta: " + str(exc))
         Registrar.register_error(traceback.format_exc())
         return
     return img_data
+
 
 def process_image_size(settings, parsers, img_data):
     if Registrar.DEBUG_IMG:
@@ -232,27 +230,21 @@ def process_image_size(settings, parsers, img_data):
 
     # import pudb; pudb.set_trace()
 
-
     img_raw_path = get_raw_image(settings, img_data.file_name)
     if not os.path.isfile(img_raw_path):
-        invalid_image(
-            parsers,
-            settings,
-            img_data, "SOURCE FILE NOT FOUND: %s" % img_raw_path
-        )
+        invalid_image(parsers, settings, img_data,
+                      "SOURCE FILE NOT FOUND: %s" % img_raw_path)
         return
 
     img_src_mod = max(
-        os.path.getmtime(img_raw_path), os.path.getctime(img_raw_path)
-    )
+        os.path.getmtime(img_raw_path), os.path.getctime(img_raw_path))
     winning_time = img_src_mod
 
     img_dst_path = os.path.join(settings.img_dst, img_data.file_name)
 
     if os.path.isfile(img_dst_path):
         img_dst_mod = max(
-            os.path.getmtime(img_dst_path), os.path.getctime(img_dst_path)
-        )
+            os.path.getmtime(img_dst_path), os.path.getctime(img_dst_path))
         # print "image mod (src, dst): ", img_src_mod, imgdstmod
         if img_dst_mod > img_src_mod:
             winning_time = img_dst_mod
@@ -264,7 +256,6 @@ def process_image_size(settings, parsers, img_data):
         #     os.utime(img_dst_path, None)
         # with open(img_raw_path):
         #     os.utime(img_dst_path, None)
-
 
     if settings.do_resize_images:
         img_data[img_data.file_path_key] = img_dst_path
@@ -283,8 +274,7 @@ def process_image_size(settings, parsers, img_data):
                 image.save(img_dst_path)
 
             img_dst_mod = max(
-                os.path.getmtime(img_dst_path), os.path.getctime(img_dst_path)
-            )
+                os.path.getmtime(img_dst_path), os.path.getctime(img_dst_path))
             if img_dst_mod > img_src_mod:
                 winning_time = img_dst_mod
 
@@ -292,22 +282,23 @@ def process_image_size(settings, parsers, img_data):
         img_data['height'] = image.size[1]
 
     except IOError as exc:
-        invalid_image(
-            parsers, settings, img_data, "could not resize: " + str(exc)
-        )
+        invalid_image(parsers, settings, img_data,
+                      "could not resize: " + str(exc))
 
     img_data['modified_local'] = TimeUtils.timestamp2datetime(winning_time)
-    img_data['modified_gmt'] = TimeUtils.datetime_local2gmt(img_data['modified_local'])
+    img_data['modified_gmt'] = TimeUtils.datetime_local2gmt(
+        img_data['modified_local'])
 
     return img_data
+
 
 def process_images(settings, parsers):
     """Process the attaches information in from the parsers."""
     Registrar.register_progress("processing attaches")
 
     if Registrar.DEBUG_IMG:
-        Registrar.register_message("Looking in dirs: %s" %
-                                   settings.img_raw_dirs)
+        Registrar.register_message(
+            "Looking in dirs: %s" % settings.img_raw_dirs)
 
     if not os.path.exists(settings.img_dst):
         os.makedirs(settings.img_dst)
@@ -315,62 +306,9 @@ def process_images(settings, parsers):
     # list of attaches in compressed directory
     ls_cmp = os.listdir(settings.img_dst)
 
-    # TODO: fix these warnings
-    """
-#######################
-# processing attaches #
-#######################
-
-                                           ACA.jpg | DELETING FROM REFLATTENED
-                                     ACARA-CAH.png | DELETING FROM REFLATTENED
-                                     ACARA-CAL.png | DELETING FROM REFLATTENED
-                                     ACARA-CCH.png | DELETING FROM REFLATTENED
-                                     ACARA-CCL.png | DELETING FROM REFLATTENED
-                                     ACARA-CFH.png | DELETING FROM REFLATTENED
-                                     ACARA-CFL.png | DELETING FROM REFLATTENED
-                                     ACARA-CMH.png | DELETING FROM REFLATTENED
-                                     ACARA-CML.png | DELETING FROM REFLATTENED
-                                     ACARA-EBH.png | DELETING FROM REFLATTENED
-                                     ACARA-EBL.png | DELETING FROM REFLATTENED
-                                       ACARA-S.png | DELETING FROM REFLATTENED
-                                         ACARA.jpg | DELETING FROM REFLATTENED
-                                      ACARB-DH.jpg | DELETING FROM REFLATTENED
-                                      ACARB-DL.jpg | DELETING FROM REFLATTENED
-                                      ACARB-MH.jpg | DELETING FROM REFLATTENED
-                                      ACARB-ML.jpg | DELETING FROM REFLATTENED
-                                       ACARB-S.jpg | DELETING FROM REFLATTENED
-                                     ACARB-XDH.jpg | DELETING FROM REFLATTENED
-                                     ACARB-XDL.jpg | DELETING FROM REFLATTENED
-                                         ACARB.jpg | DELETING FROM REFLATTENED
-                                      ACARC-CH.jpg | DELETING FROM REFLATTENED
-                                      ACARC-CL.jpg | DELETING FROM REFLATTENED
-                                      ACARC-CS.jpg | DELETING FROM REFLATTENED
-                                      ACARC-EH.jpg | DELETING FROM REFLATTENED
-                                      ACARC-EL.jpg | DELETING FROM REFLATTENED
-                                      ACARC-ES.jpg | DELETING FROM REFLATTENED
-                                      ACARC-LH.jpg | DELETING FROM REFLATTENED
-                                      ACARC-LL.jpg | DELETING FROM REFLATTENED
-                                      ACARC-LS.jpg | DELETING FROM REFLATTENED
-                                      ACARC-MH.jpg | DELETING FROM REFLATTENED
-                                      ACARC-ML.jpg | DELETING FROM REFLATTENED
-                                      ACARC-MS.jpg | DELETING FROM REFLATTENED
-                                         ACARC.jpg | DELETING FROM REFLATTENED
-                                     ACARF-ALH.png | DELETING FROM REFLATTENED
-                                     ACARF-ALL.png | DELETING FROM REFLATTENED
-                                     ACARF-ALS.png | DELETING FROM REFLATTENED
-                                     ACARF-CBH.png | DELETING FROM REFLATTENED
-                                     ACARF-CBL.png | DELETING FROM REFLATTENED
-                                     ACARF-CBS.png | DELETING FROM REFLATTENED
-                                     ACARF-CHH.png | DELETING FROM REFLATTENED
-                                     ACARF-CHL.png | DELETING FROM REFLATTENED
-                                     ACARF-CHS.png | DELETING FROM REFLATTENED
-                                     ACARF-CRH.png | DELETING FROM REFLATTENED
-                                     ACARF-CRL.png | DELETING FROM REFLATTENED
-                                     ACARF-CRS.png | DELETING FROM REFLATTENED
-    """
-
     master_parser_attachment_basenames = [
-        attachment.file_name for attachment in parsers.master.attachments.values()
+        attachment.file_name
+        for attachment in parsers.master.attachments.values()
     ]
 
     for fname in ls_cmp:
@@ -389,18 +327,16 @@ def process_images(settings, parsers):
             if img_data.attaches.categories:
                 Registrar.register_message(
                     "Associated Taxos: %s" % str([
-                        (taxo.rowcount, taxo.codesum) for taxo in img_data.attaches.categories
-                    ]),
-                    img_filename
-                )
+                        (taxo.rowcount, taxo.codesum)
+                        for taxo in img_data.attaches.categories
+                    ]), img_filename)
 
             if img_data.attaches.products:
                 Registrar.register_message(
                     "Associated Products: %s" % str([
-                        (item.rowcount, item.codesum) for item in img_data.attaches.products
-                    ]),
-                    img_filename
-                )
+                        (item.rowcount, item.codesum)
+                        for item in img_data.attaches.products
+                    ]), img_filename)
 
         # import pudb; pudb.set_trace()
 
@@ -409,31 +345,20 @@ def process_images(settings, parsers):
             img_data[img_data.file_path_key] = img_raw_path
         except IOError as exc:
             invalid_image(
-                parsers,
-                settings,
-                img_data,
-                UserWarning("could not get raw image: %s " % repr(exc))
-            )
+                parsers, settings, img_data,
+                UserWarning("could not get raw image: %s " % repr(exc)))
             continue
 
         name, ext = os.path.splitext(img_filename)
         if not name:
-            invalid_image(
-                parsers,
-                settings,
-                img_data,
-                UserWarning("could not extract name")
-            )
+            invalid_image(parsers, settings, img_data,
+                          UserWarning("could not extract name"))
             continue
 
         mime_type = MimeUtils.get_ext_mime_type(ext)
         if not mime_type:
-            invalid_image(
-                parsers,
-                settings,
-                img_data,
-                UserWarning("invalid image extension")
-            )
+            invalid_image(parsers, settings, img_data,
+                          UserWarning("invalid image extension"))
             continue
 
         img_data['mime_type'] = mime_type
@@ -443,17 +368,14 @@ def process_images(settings, parsers):
         try:
             title, description = img_data.attaches.title, img_data.attaches.description
         except AttributeError as exc:
-            invalid_image(
-                parsers,
-                settings,
-                img_data,
-                "could not get title or description: " + str(exc)
-            )
+            invalid_image(parsers, settings, img_data,
+                          "could not get title or description: " + str(exc))
             continue
 
         if Registrar.DEBUG_IMG:
-            Registrar.register_message("title: %s | description: %s" %
-                                       (title, description), img_filename)
+            Registrar.register_message(
+                "title: %s | description: %s" % (title, description),
+                img_filename)
 
         # ------
         # REMETA

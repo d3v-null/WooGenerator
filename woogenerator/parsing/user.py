@@ -510,6 +510,7 @@ class CsvParseUser(CsvParseBase):
                     and SanitationUtils.normalize_val(object_data.email) \
                     not in self.filter_items['emails']:
                 return "did not meet emails condition"
+            return None
 
     def register_object(self, object_data):
         reason = self.validate_filters(object_data)

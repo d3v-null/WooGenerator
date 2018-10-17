@@ -1,4 +1,4 @@
-""" Provide configuration namespaces for GDrive <-> WC product sync. """
+"""Provide configuration namespaces for GDrive <-> WC product sync."""
 
 from __future__ import absolute_import
 
@@ -6,7 +6,7 @@ import os
 import urlparse
 from copy import copy
 
-from ..client.core import SyncClientGDrive, SyncClientNull
+from ..client.core import SyncClientGDrive
 from ..client.img import ImgSyncClientWP
 from ..client.prod import (CatSyncClientWC, CatSyncClientWCLegacy,
                            ProdSyncClientWC, ProdSyncClientWCLegacy,
@@ -28,7 +28,7 @@ from .core import SettingsNamespaceProto
 
 
 class SettingsNamespaceProd(SettingsNamespaceProto):
-    """ Provide namespace for product settings. """
+    """Provide namespace for product settings."""
 
     argparser_class = ArgumentParserProd
 
@@ -68,6 +68,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def thumbsize(self):
         if self.thumbsize_x and self.thumbsize_y:
             return (self.thumbsize_x, self.thumbsize_y)
+        return None
 
     @property
     def file_prefix(self):
@@ -95,7 +96,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def img_raw_dir_contents(self):
-        if not '_img_raw_dir_contents' in self:
+        if '_img_raw_dir_contents' not in self:
             self._img_raw_dir_contents = {}
             for dir_ in self.img_raw_dirs:
                 if dir_ and os.path.isdir(dir_):
@@ -104,7 +105,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def coldata_class(self):
-        """ Class used to obtain column metadata. """
+        """Class used to obtain column metadata."""
         return ColDataProductMeridian
 
     @property
@@ -171,18 +172,17 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def master_path(self):
-        """ The path which the master data is downloaded to and read from. """
+        """Get path which the master data is downloaded to and read from."""
         if hasattr(self, 'master_file') and getattr(self, 'master_file'):
             return getattr(self, 'master_file')
-        response = '%s%s-%s%s.csv' % (
-            self.file_prefix, 'master', self.import_name, self.file_suffix
-        )
+        response = '%s%s-%s%s.csv' % (self.file_prefix, 'master',
+                                      self.import_name, self.file_suffix)
         response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
     def slave_path(self):
-        """ The path which the slave data is downloaded to and read from. """
+        """Get path which the slave data is downloaded to and read from."""
         if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
             return getattr(self, 'slave_file')
         response = '%s%s' % (self.file_prefix, 'slave')
@@ -199,115 +199,106 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def specials_path(self):
-        """ The path which the specials data is downloaded to and read from. """
+        """Get path which the specials data is downloaded to and read from."""
         if hasattr(self, 'specials_file') and getattr(self, 'specials_file'):
             return getattr(self, 'specials_file')
-        response = '%s%s-%s%s.csv' % (
-            self.file_prefix, 'specials', self.import_name, self.file_suffix
-        )
+        response = '%s%s-%s%s.csv' % (self.file_prefix, 'specials',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.in_dir_full, response)
 
     @property
     def dprc_path(self):
-        """ The path which the dynamic pricing category data is stored. """
+        """Get path which the dynamic pricing category data is stored."""
         if hasattr(self, 'dprc_file') and getattr(self, 'dprc_file'):
             return getattr(self, 'dprc_file')
-        response = '%s%s-%s%s.csv' % (
-            self.file_prefix, 'dprc', self.import_name, self.file_suffix
-        )
+        response = '%s%s-%s%s.csv' % (self.file_prefix, 'dprc',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.in_dir_full, response)
 
     @property
     def dprp_path(self):
-        """ The path which the dynamic pricing product data is stored. """
+        """Get path which the dynamic pricing product data is stored."""
         if hasattr(self, 'dprp_file') and getattr(self, 'dprp_file'):
             return getattr(self, 'dprp_file')
-        response = '%s%s-%s%s.csv' % (
-            self.file_prefix, 'dprp', self.import_name, self.file_suffix
-        )
+        response = '%s%s-%s%s.csv' % (self.file_prefix, 'dprp',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.in_dir_full, response)
 
     @property
     def myo_path(self):
-        """ The path which the master myob csv data is stored. """
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'myob', self.import_name, self.file_suffix
-        )
+        """Get path which the master myob csv data is stored."""
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'myob',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def xero_path(self):
-        """ The path which the flattened master xero csv data is stored. """
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'master_xero', self.import_name, self.file_suffix
-        )
+        """Get path which the flattened master xero csv data is stored."""
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'master_xero',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def fla_path(self):
-        """ The path which the flattened master csv data is stored. """
+        """Get path which the flattened master csv data is stored."""
         if self.schema_is_myo:
             return self.myo_path
         if self.schema_is_xero:
             return self.xero_path
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'flattened', self.import_name, self.file_suffix
-        )
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def flv_path(self):
-        """ The path which the flattened master variation csv data is stored. """
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'flattened-variations', self.import_name, self.file_suffix
-        )
+        """Get path which the flattened master variation csv data is stored."""
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened-variations',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def flu_path(self):
-        """ The path which the flattened master updated csv data is stored. """
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'flattened-updated', self.import_name, self.file_suffix
-        )
+        """Get path which the flattened master updated csv data is stored."""
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened-updated',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def flvu_path(self):
-        """ The path which the flattened master updated variations csv data is stored. """
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'flattened-variations-updated', self.import_name, self.file_suffix
-        )
+        """Get path where flattened updated variations csv data is stored."""
+        response = "%s%s-%s%s.csv" % (self.file_prefix,
+                                      'flattened-variations-updated',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def fls_path(self):
-        """ The path which the flattened master specials csv data is stored. """
+        """Get path of flattened master specials csv data."""
         # don't need import name
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'flattened', self.current_special_id, self.file_suffix
-        )
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened',
+                                      self.current_special_id,
+                                      self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def flvs_path(self):
-        """ The path which the flattened master specials variations csv data is stored. """
+        """Get path of flattened specials variations csv data."""
         # don't need import name
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'flattened-variations', self.current_special_id, self.file_suffix
-        )
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened-variations',
+                                      self.current_special_id,
+                                      self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def cat_path(self):
-        """ The path which the flattened master categories csv data is stored. """
-        response = "%s%s-%s%s.csv" % (
-            self.file_prefix, 'categories', self.import_name, self.file_suffix
-        )
+        """Get path of flattened master categories csv data."""
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'categories',
+                                      self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def slave_cat_path(self):
-        """ The path which the slave woo api category json data is cached. """
+        """Get path which the slave woo api category json data is cached."""
         if hasattr(self, 'slave_cat_file') and getattr(self, 'slave_cat_file'):
             return getattr(self, 'slave_cat_file')
         response = '%s%s' % (self.file_prefix, 'slave_cat')
@@ -322,7 +313,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_img_path(self):
-        """ The path which the slave wp api image json data is cached. """
+        """Get path which the slave wp api image json data is cached."""
         if hasattr(self, 'slave_img_file') and getattr(self, 'slave_img_file'):
             return getattr(self, 'slave_img_file')
         response = '%s%s' % (self.file_prefix, 'slave_img')
@@ -332,7 +323,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return os.path.join(self.in_dir_full, response)
 
     def get_slave_var_path(self, parent_id=None):
-        """ The path which the slave wp api variation json data is cached. """
+        """Get path which the slave wp api variation json data is cached."""
         key = 'slave_var_file_%s' % parent_id
         if hasattr(self, key) and getattr(self, key):
             return getattr(self, key)
@@ -346,35 +337,31 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def rep_delta_slave_csv_path(self):
-        """ The path which the delta slave csv report is stored. """
-        response = "%s%s_%s-%s.csv" % (
-            self.file_prefix, 'delta_report', self.slave_name, self.import_name
-        )
+        """Get path which the delta slave csv report is stored."""
+        response = "%s%s_%s-%s.csv" % (self.file_prefix, 'delta_report',
+                                       self.slave_name, self.import_name)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def rep_img_path(self):
-        response = '%ssync_report_img%s.html' % (
-            self.file_prefix, self.file_suffix
-        )
+        response = '%ssync_report_img%s.html' % (self.file_prefix,
+                                                 self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_cat_path(self):
-        response = '%ssync_report_cat%s.html' % (
-            self.file_prefix, self.file_suffix
-        )
+        response = '%ssync_report_cat%s.html' % (self.file_prefix,
+                                                 self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
     def rep_matched_cat_path(self):
-        response = '%ssync_report_matched_cat%s.csv' % (
-            self.file_prefix, self.file_suffix
-        )
+        response = '%ssync_report_matched_cat%s.csv' % (self.file_prefix,
+                                                        self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
@@ -390,9 +377,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def rep_web_link(self):
         response = os.path.basename(self.rep_main_path)
         if self.get('web_address'):
-            response = urlparse.urljoin(
-                self.web_address, response
-            )
+            response = urlparse.urljoin(self.web_address, response)
         return response
 
     @property
@@ -407,8 +392,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def sync_handles_prod(self):
         response = self.coldata_class.get_sync_handles(
-            self.coldata_gen_target_write, self.coldata_target_write
-        )
+            self.coldata_gen_target_write, self.coldata_target_write)
         for handle in self.exclude_handles:
             if handle in response:
                 del response[handle]
@@ -417,8 +401,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def sync_handles_var(self):
         response = self.coldata_class_var.get_sync_handles(
-            self.coldata_gen_target_write, self.coldata_target_write
-        )
+            self.coldata_gen_target_write, self.coldata_target_write)
         for handle in self.exclude_handles_var:
             if handle in response:
                 del response[handle]
@@ -427,8 +410,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def sync_handles_img(self):
         response = self.coldata_class_img.get_sync_handles(
-            self.coldata_gen_target_write, self.coldata_img_target_write
-        )
+            self.coldata_gen_target_write, self.coldata_img_target_write)
         # for handle in ['post_status', 'file_path']:
         for handle in self.exclude_handles_img:
             if handle in response:
@@ -438,8 +420,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     @property
     def sync_handles_cat(self):
         response = self.coldata_class_cat.get_sync_handles(
-            self.coldata_gen_target_write, self.coldata_cat_target_write
-        )
+            self.coldata_gen_target_write, self.coldata_cat_target_write)
         for handle in self.exclude_handles_cat:
             if handle in response:
                 del response[handle]
@@ -464,89 +445,73 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def exclude_cols(self):
-        """
-        The generator columns which have been configured to be ignored in products.
-        """
+        """Get generator columns configured to be ignored in products."""
         return self.coldata_class.translate_handle_seq(
-            self.exclude_handles, self.coldata_gen_target_write
-        )
+            self.exclude_handles, self.coldata_gen_target_write)
 
     @property
     def exclude_handles(self):
-        """
-        The handles which have been configured to be ignored in products.
-        """
+        """Get handles which have been configured to be ignored in products."""
         response = set()
         for property_ in self.exclude_properties:
-            response.update(self.coldata_class.get_property_inclusions(property_))
+            response.update(
+                self.coldata_class.get_property_inclusions(property_))
         return list(response)
 
     @property
     def exclude_cols_cat(self):
-        """
-        The Generator columns which have been configured to be ignored in categories.
-        """
+        """Get Generator columns configured to be ignored in categories."""
         return self.coldata_class_cat.translate_handle_seq(
-            self.exclude_handles_cat, self.coldata_gen_target_write
-        )
+            self.exclude_handles_cat, self.coldata_gen_target_write)
 
     @property
     def exclude_handles_var(self):
-        """
-        The handles which have been configured to be ignored in variations.
-        """
+        """Get handles configured to be ignored in variations."""
         response = set([])
         for property_ in self.exclude_properties:
-            response.update(self.coldata_class_var.get_property_inclusions(property_))
+            response.update(
+                self.coldata_class_var.get_property_inclusions(property_))
         return list(response)
-
 
     @property
     def exclude_handles_cat(self):
-        """
-        The handles which have been configured to be ignored in categories.
-        """
+        """Get handles configured to be ignored in categories."""
         response = set([
             # 'post_status'
         ])
         for property_ in self.exclude_properties:
-            response.update(self.coldata_class_cat.get_property_inclusions(property_))
+            response.update(
+                self.coldata_class_cat.get_property_inclusions(property_))
         return list(response)
 
     @property
     def exclude_handles_img(self):
-        """
-        The handles which have been configured to be ignored in images.
-        """
+        """Get handles which have been configured to be ignored in images."""
         return set(['post_status', 'menu_order', 'meta', 'file_name'])
 
     @property
     def master_parser_class(self):
-        """ Class used to parse master data """
+        """Class used to parse master data."""
         if self.schema_is_myo:
             return CsvParseMyo
-        elif self.schema_is_xero:
+        if self.schema_is_xero:
             return CsvParseXero
-        elif self.schema_is_woo:
+        if self.schema_is_woo:
             if self.schema == CsvParseTT.target_schema:
                 return CsvParseTT
             if self.schema == CsvParseVT.target_schema:
                 return CsvParseVT
             return CsvParseWoo
-        else:
-            raise UserWarning(
-                "could not determine schema type. "
-                "%s is not one of %s. "
-                "try setting woo_schemas, xero_schemas, myo_schemas" % (
-                    self.schema, self.woo_schemas + self.myo_schemas + self.xero_schemas
-                )
-            )
-
+        raise UserWarning(
+            "could not determine schema type. "
+            "%s is not one of %s. "
+            "try setting woo_schemas, xero_schemas, myo_schemas" %
+            (self.schema,
+             self.woo_schemas + self.myo_schemas + self.xero_schemas))
 
     @property
     def master_parser_args(self):
-        """ Arguments used to create the master parser. """
-
+        """Arguments used to create the master parser."""
         response = {
             'import_name': self.import_name,
             'cols': self.coldata_class.get_col_data_native('read').keys(),
@@ -554,12 +519,12 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             'schema': self.schema,
         }
         for key, settings_key in [
-                ('item_depth', 'item_depth'),
-                ('taxo_depth', 'taxo_depth'),
-                ('special_rules', 'special_rules'),
-                ('dprp_rules', 'dprp_rules'),
-                ('dprc_rules', 'dprc_rules'),
-                ('current_special_groups', 'current_special_groups'),
+            ('item_depth', 'item_depth'),
+            ('taxo_depth', 'taxo_depth'),
+            ('special_rules', 'special_rules'),
+            ('dprp_rules', 'dprp_rules'),
+            ('dprc_rules', 'dprc_rules'),
+            ('current_special_groups', 'current_special_groups'),
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
@@ -571,7 +536,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def master_download_client_class(self):
-        """ The class which is used to download and parse master data. """
+        """Get class which is used to download and parse master data."""
         response = self.local_client_class
         if self.download_master:
             response = SyncClientGDrive
@@ -579,7 +544,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def master_upload_client_class(self):
-        """ The class which is used to download and parse master data. """
+        """Get class which is used to download and parse master data."""
         response = self.local_client_class
         if self['update_master']:
             response = SyncClientGDrive
@@ -589,14 +554,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
     def g_drive_params(self):
         response = {}
         for key, settings_key in [
-                ('scopes', 'gdrive_scopes'),
-                ('client_secret_file', 'gdrive_client_secret_file'),
-                ('app_name', 'gdrive_app_name'),
-                ('oauth_client_id', 'gdrive_oauth_client_id'),
-                ('oauth_client_secret', 'gdrive_oauth_client_secret'),
-                ('credentials_dir', 'gdrive_credentials_dir'),
-                ('credentials_file', 'gdrive_credentials_file'),
-                ('gen_fid', 'gen_fid')
+            ('scopes', 'gdrive_scopes'),
+            ('client_secret_file', 'gdrive_client_secret_file'),
+            ('app_name', 'gdrive_app_name'),
+            ('oauth_client_id', 'gdrive_oauth_client_id'),
+            ('oauth_client_secret', 'gdrive_oauth_client_secret'),
+            ('credentials_dir', 'gdrive_credentials_dir'),
+            ('credentials_file', 'gdrive_credentials_file'),
+            ('gen_fid', 'gen_fid')
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
@@ -606,20 +571,15 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def master_download_client_args(self):
-        """ Return the arguments which are used by the client to analyse master data. """
-
+        """Return arguments used by the client to analyse master data."""
         response = {}
         if self.master_download_client_class == SyncClientGDrive:
-            response.update({
-                'gdrive_params': self.g_drive_params
-            })
+            response.update({'gdrive_params': self.g_drive_params})
         else:
-            response.update({
-                'encoding': self.get('master_encoding', 'utf8')
-            })
+            response.update({'encoding': self.get('master_encoding', 'utf8')})
         for key, settings_key in [
-                ('dialect_suggestion', 'master_dialect_suggestion'),
-                ('limit', 'master_parse_limit'),
+            ('dialect_suggestion', 'master_dialect_suggestion'),
+            ('limit', 'master_parse_limit'),
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
@@ -685,9 +645,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_upload_client_args(self):
-        response = {
-            'connect_params': self.slave_wc_api_params
-        }
+        response = {'connect_params': self.slave_wc_api_params}
         return response
 
     @property
@@ -702,9 +660,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_cat_sync_client_args(self):
-        return {
-            'connect_params': self.slave_wc_api_params
-        }
+        return {'connect_params': self.slave_wc_api_params}
 
     @property
     def slave_img_sync_client_class(self):
@@ -715,9 +671,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_img_sync_client_args(self):
-        return {
-            'connect_params': self.slave_wp_api_params
-        }
+        return {'connect_params': self.slave_wp_api_params}
 
     @property
     def slave_var_sync_client_class(self):
@@ -731,10 +685,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def slave_var_sync_client_args(self):
-        return {
-            'connect_params': self.slave_wc_api_params
-        }
-
+        return {'connect_params': self.slave_wc_api_params}
 
     @property
     def syncupdate_class_prod(self):
@@ -797,7 +748,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
             if self['specials_mode'] == 'all_future':
                 exc = UserWarning(
                     "all_future specials mode not implemented yet. "
-                    "will behave like auto_next, use override to set other specials"
+                    "will behave like auto_next, use override to set other "
+                    "specials"
                 )
                 Registrar.register_warning(exc)
             if self['current_special']:
@@ -809,7 +761,6 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         CsvParseWoo.do_dyns = self.do_dyns
         CsvParseWoo.do_specials = self.do_specials
         ApiParseWoo.save_api_data = self.save_api_data
-
 
     @property
     def master_pkey(self):

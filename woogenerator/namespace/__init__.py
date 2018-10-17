@@ -1,6 +1,4 @@
-"""
-Module for namespaces of woogenerator
-"""
+"""Module for namespaces of woogenerator."""
 
 import sys
 import os

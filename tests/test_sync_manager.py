@@ -1,4 +1,4 @@
-""" Boilerplate Test Cases common to merger and generator """
+"""Boilerplate Test Cases common to merger and generator."""
 
 from __future__ import print_function
 
@@ -142,7 +142,7 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         )
 
     def make_temp_with_lines(self, filename, lines, suffix=''):
-        """ Safely create a new temp file with the contents of filename at lines. """
+        """Safely create a new temp file with the contents of filename at lines."""
         source = os.path.basename(filename)
         with open(filename) as in_file:
             in_contents = in_file.readlines()

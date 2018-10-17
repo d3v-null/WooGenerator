@@ -1,6 +1,4 @@
-"""
-Introduce woo api structure to shop classes.
-"""
+"""Introduce woo api structure to shop classes."""
 from __future__ import absolute_import, print_function
 
 import datetime

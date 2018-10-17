@@ -19,22 +19,21 @@ from StringIO import StringIO
 from urllib import urlencode
 from urlparse import urlparse
 
+import requests
+from requests.exceptions import ConnectionError, ReadTimeout
+
 import httplib2
 import oauth2client
-import paramiko
 import pymysql
-import requests
 from apiclient import discovery
 from oauth2client import client, tools
-from requests.exceptions import ReadTimeout, ConnectionError
 from simplejson import JSONDecodeError
 from sshtunnel import SSHTunnelForwarder
-
 from wordpress import API
 from wordpress.helpers import UrlUtils
 
-from ..coldata import ColDataProductMeridian, ColDataWpEntity, ColDataWpPost
-from ..utils import FileUtils, ProgressCounter, Registrar, SanitationUtils
+from ..coldata import ColDataWpEntity, ColDataWpPost
+from ..utils import ProgressCounter, Registrar, SanitationUtils
 from ..utils.clock import TimeUtils
 
 
@@ -42,10 +41,10 @@ class AbstractServiceInterface(object):
     """Defines the interface to an abstract service"""
 
     def close(self):
-        """ Abstract method for closing the service """
+        """Abstract method for closing the service."""
 
     def connect(self, connect_params):
-        """ Abstract method for connecting to the service """
+        """Abstract method for connecting to the service."""
         raise NotImplementedError()
 
     def put(self, *args, **kwargs):
@@ -58,15 +57,15 @@ class AbstractServiceInterface(object):
 
 
 class WPAPIService(API, AbstractServiceInterface):
-    """ A child of the wordpress API that implements the Service interface """
+    """A child of the wordpress API that implements the Service interface."""
 
     def connect(self, connect_params):
-        """ Overrides AbstractServiceInterface, connect not used """
+        """Overrides AbstractServiceInterface, connect not used."""
         pass
 
 
 class ClientAbstract(Registrar):
-    """ Interface with a service as a client. Boilerplate. """
+    """Interface with a service as a client. Boilerplate."""
     service_builder = AbstractServiceInterface
     service_name = 'UNKN'
 
@@ -88,7 +87,7 @@ class ClientAbstract(Registrar):
 
     @property
     def connection_ready(self):
-        """ determine if connection is ready for use """
+        """determine if connection is ready for use."""
         return self.service
 
     def assert_connect(self):
@@ -106,7 +105,7 @@ class ClientAbstract(Registrar):
 
     def attempt_connect(self):
         """
-        Attempt to connect using instances `connect_params` and `service_builder`
+        Connect using instances `connect_params` and `service_builder`
         """
         positional_args = self.connect_params.pop('positional', [])
         service_name = self.service_name
@@ -117,13 +116,12 @@ class ClientAbstract(Registrar):
                 "building service (%s) with args:\n%s\nand kwargs:\n%s" %
                 (str(service_name), pformat(positional_args),
                  pformat(self.connect_params)))
-        self.service = self.service_builder(
-            *positional_args,
-            **self.connect_params
-        )
+        self.service = self.service_builder(*positional_args,
+                                            **self.connect_params)
+
 
 class SyncClientAbstract(ClientAbstract):
-    """ Interface with a service as a client to perform syncing. """
+    """Interface with a service as a client to perform syncing."""
 
     service_name = 'ABSTRACT'
 
@@ -156,19 +154,17 @@ class SyncClientAbstract(ClientAbstract):
         if pkey is None:
             pkey = updates_core.pop(self.primary_key_handle)
         updates_api = self.coldata_class.translate_data_to(
-            updates_core, self.coldata_target_write
-        )
+            updates_core, self.coldata_target_write)
         return self.upload_changes(pkey, updates_api, **kwargs)
 
     def create_item_core(self, core_data, **kwargs):
         api_data = self.coldata_class.translate_data_to(
-            core_data, self.coldata_target_write
-        )
+            core_data, self.coldata_target_write)
         return self.create_item(api_data, **kwargs)
 
 
 class SyncClientNull(SyncClientAbstract):
-    """ Designed to act like a client but fails on all actions """
+    """Designed to act like a client but fails on all actions."""
 
     service_name = 'NULL'
     coldata_class = ColDataWpEntity
@@ -194,18 +190,14 @@ class SyncClientNull(SyncClientAbstract):
     def upload_changes(self, pkey, updates=None, **kwargs):
         super(SyncClientNull, self).upload_changes(pkey, **kwargs)
         native_pkey = self.coldata_class.translate_handle(
-            self.primary_key_handle, self.coldata_target
-        )
-        updates.update({
-            native_pkey: pkey
-        })
-        # This is a expensive way of cleaning data that i don't think is necessary
+            self.primary_key_handle, self.coldata_target)
+        updates.update({native_pkey: pkey})
+        # This is a expensive way of cleaning
+        # data that i don't think is necessary
         updates_core = self.coldata_class.translate_data_from(
-            updates, self.coldata_target_write
-        )
+            updates, self.coldata_target_write)
         updates_api = self.coldata_class.translate_data_to(
-            updates_core, self.coldata_target
-        )
+            updates_core, self.coldata_target)
 
         updates_api = updates
         response = requests.Response()
@@ -217,43 +209,36 @@ class SyncClientNull(SyncClientAbstract):
             file_path = updates_core.pop(self.file_path_handle, None)
             if file_path:
                 if getattr(self, 'source_url_handle', None):
-                    updates_core.update({
-                        self.source_url_handle: file_path
-                    })
-                response_raw = super(SyncClientNull, self).create_item_core(updates_core, **kwargs)
+                    updates_core.update({self.source_url_handle: file_path})
+                response_raw = super(SyncClientNull, self).create_item_core(
+                    updates_core, **kwargs)
                 response_api = response_raw.json()
                 if self.page_nesting:
                     response_api = response_api.get(self.endpoint_singular)
                 response_core = self.coldata_class.translate_data_from(
-                    response_api, self.coldata_target_write
-                )
+                    response_api, self.coldata_target_write)
                 pkey = response_core.pop(self.primary_key_handle)
-                updates_core.update({
-                    self.file_path_handle: file_path
-                })
-        return super(SyncClientNull, self).upload_changes_core(pkey, updates_core, **kwargs)
+                updates_core.update({self.file_path_handle: file_path})
+        return super(SyncClientNull, self).upload_changes_core(
+            pkey, updates_core, **kwargs)
 
     def create_item(self, data, **kwargs):
         native_pkey = self.coldata_class.translate_handle(
-            self.primary_key_handle, self.coldata_target
-        )
+            self.primary_key_handle, self.coldata_target)
         native_slug_key = self.coldata_class.translate_handle(
-            'slug', self.coldata_target_write
-        )
+            'slug', self.coldata_target_write)
         native_title_key = self.coldata_class.translate_handle(
-            'title', self.coldata_target_write
-        )
+            'title', self.coldata_target_write)
         if not isinstance(data, dict):
             data = {}
         data[native_pkey] = self.fake_id
-        data[native_slug_key] = SanitationUtils.slugify(data.get(native_title_key, ''))
+        data[native_slug_key] = SanitationUtils.slugify(
+            data.get(native_title_key, ''))
         self.fake_id += 1
         data_core = self.coldata_class.translate_data_from(
-            data, self.coldata_target_write
-        )
+            data, self.coldata_target_write)
         data_api = self.coldata_class.translate_data_to(
-            data_core, self.coldata_target
-        )
+            data_core, self.coldata_target)
         response = requests.Response()
         response._content = SanitationUtils.encode_json(data_api)
         return response
@@ -265,10 +250,12 @@ class SyncClientNull(SyncClientAbstract):
                 if getattr(self, 'source_url_handle', None):
                     core_data[self.source_url_handle] = file_path
                 return self.upload_changes_core(None, core_data)
-        return super(SyncClientNull, self).create_item_core(core_data, **kwargs)
+        return super(SyncClientNull, self).create_item_core(
+            core_data, **kwargs)
+
 
 class SyncClientLocal(SyncClientAbstract):
-    """ Designed to act like a GDrive client but work on a local file instead """
+    """Act like a GDrive client but work on a local file instead."""
 
     service_name = 'LOCAL'
     endpoint_singular = 'api_item'
@@ -290,22 +277,16 @@ class SyncClientLocal(SyncClientAbstract):
     def analyse_remote(self, parser, **kwargs):
         data_path = kwargs.pop('data_path', None)
         analysis_kwargs = {
-            'dialect_suggestion': kwargs.get('dialect_suggestion', self.dialect_suggestion),
-            'encoding': kwargs.get('encoding', self.encoding),
-            'limit': kwargs.get('limit', self.limit)
+            'dialect_suggestion':
+            kwargs.get('dialect_suggestion', self.dialect_suggestion),
+            'encoding':
+            kwargs.get('encoding', self.encoding),
+            'limit':
+            kwargs.get('limit', self.limit)
         }
         if self.DEBUG_PARSER:
-            self.register_message(
-                "analysis_kwargs: %s" % analysis_kwargs
-            )
-        return parser.analyse_file(
-            data_path,
-            **analysis_kwargs
-        )
-        # out_encoding='utf8'
-        # with codecs.open(out_path, mode='rbU', encoding=out_encoding) as out_file:
-        # return parser.analyse_stream(out_file, limit=limit,
-        # encoding=out_encoding)
+            self.register_message("analysis_kwargs: %s" % analysis_kwargs)
+        return parser.analyse_file(data_path, **analysis_kwargs)
 
     def analyse_remote_categories(self, parser, **kwargs):
         data_path = kwargs.pop('data_path', None)
@@ -314,7 +295,8 @@ class SyncClientLocal(SyncClientAbstract):
         with open(data_path, 'rbU') as data_file:
             decoded = SanitationUtils.decode_json(data_file.read())
             if not decoded:
-                warn = UserWarning("could not analyse_remote_categories, json not decoded")
+                warn = UserWarning(
+                    "could not analyse_remote_categories, json not decoded")
                 self.register_warning(warn)
 
             if isinstance(decoded, list):
@@ -327,7 +309,8 @@ class SyncClientLocal(SyncClientAbstract):
         with open(data_path, 'rbU') as data_file:
             decoded = SanitationUtils.decode_json(data_file.read())
             if not decoded:
-                warn = UserWarning("could not analyse_remote_imgs, json not decoded")
+                warn = UserWarning(
+                    "could not analyse_remote_imgs, json not decoded")
                 self.register_warning(warn)
 
             if isinstance(decoded, list):
@@ -342,27 +325,25 @@ class SyncClientLocal(SyncClientAbstract):
         with open(data_path, 'rbU') as data_file:
             decoded = SanitationUtils.decode_json(data_file.read())
             if not decoded:
-                warn = UserWarning("could not analyse_remote_imgs, json not decoded")
+                warn = UserWarning(
+                    "could not analyse_remote_imgs, json not decoded")
                 self.register_warning(warn)
 
             if isinstance(decoded, list):
                 for decoded_item in decoded:
                     parser.process_api_variation_raw(
-                        decoded_item, parent_id=parent_pkey
-                    )
+                        decoded_item, parent_id=parent_pkey)
 
 
 class SyncClientLocalStream(SyncClientLocal):
-    """ Designed to act like a GDrive client but work on a local stream instead """
+    """Act like a GDrive client but work on a local stream instead."""
 
     def analyse_remote(self, parser, byte_file_obj, limit=None, **kwargs):
         return parser.analyse_stream(byte_file_obj, limit=limit)
 
 
 class SyncClientGDrive(SyncClientAbstract):
-    """
-    Use google drive apiclient to build an api client
-    """
+    """Use google drive apiclient to build an api client."""
     service_builder = discovery.build
     service_name = 'GDRIVE'
 
@@ -449,11 +430,10 @@ class SyncClientGDrive(SyncClientAbstract):
                 self.register_error('An error occurred: %s' % resp)
 
     def get_gm_modtime(self, gid=None):
-        """ Get modtime of a drive file (individual gid not supported yet) """
+        """Get modtime of a drive file (individual gid not supported yet)."""
         # TODO: individual gid mod times
         return TimeUtils.normalize_iso8601_gdrive_api(
-            self.drive_file['modifiedDate']
-        )
+            self.drive_file['modifiedDate'])
 
     def analyse_remote(self, parser, data_path=None, **kwargs):
         gid = kwargs.pop('gid', None)
@@ -477,19 +457,14 @@ class SyncClientGDrive(SyncClientAbstract):
                 return
             if data_path:
                 with codecs.open(
-                    data_path,
-                    encoding=analysis_kwargs['encoding'],
-                    mode='w'
-                ) as out_file:
+                        data_path, encoding=analysis_kwargs['encoding'],
+                        mode='w') as out_file:
                     out_file.write(content)
-                parser.analyse_file(
-                    data_path, **analysis_kwargs)
+                parser.analyse_file(data_path, **analysis_kwargs)
             else:
                 with closing(StringIO(content)) as content_stream:
                     parser.analyse_stream(
-                        content_stream,
-                        limit=analysis_kwargs['limit']
-                    )
+                        content_stream, limit=analysis_kwargs['limit'])
 
             if Registrar.DEBUG_GDRIVE:
                 message = "downloaded contents of spreadsheet"
@@ -498,10 +473,12 @@ class SyncClientGDrive(SyncClientAbstract):
                 if out_file:
                     message += ' to file %s' % data_path
 
+
 # TODO: probably move REST stuff to rest.py
 
+
 class SyncClientRest(SyncClientAbstract):
-    """ Abstract REST API Client. """
+    """Abstract REST API Client."""
 
     coldata_class = ColDataWpEntity
     coldata_target = None
@@ -523,16 +500,14 @@ class SyncClientRest(SyncClientAbstract):
     page_nesting = True
     search_param = None
     meta_listed = False
-    readonly_keys = {
-        'core': ['id']
-    }
+    readonly_keys = {'core': ['id']}
     key_translation = {
         # 'api_key': 'consumer_key',
         # 'api_secret': 'consumer_secret'
     }
 
     class ApiIterator(Iterable):
-        """ An iterator for traversing items in the API. """
+        """An iterator for traversing items in the API."""
 
         def __init__(self, service, endpoint, **kwargs):
             assert isinstance(service, WPAPIService)
@@ -552,7 +527,8 @@ class SyncClientRest(SyncClientAbstract):
 
             self.next_page = None
             if self.pagination_number_key in endpoint_queries:
-                self.next_page = int(endpoint_queries[self.pagination_number_key])
+                self.next_page = int(
+                    endpoint_queries[self.pagination_number_key])
             self.limit = 10
             if self.pagination_limit_key in endpoint_queries:
                 self.limit = int(endpoint_queries[self.pagination_limit_key])
@@ -580,10 +556,7 @@ class SyncClientRest(SyncClientAbstract):
                     next_response_url = link['url']
                     self.next_page = int(
                         UrlUtils.get_query_singular(
-                            next_response_url,
-                            self.pagination_number_key
-                        )
-                    )
+                            next_response_url, self.pagination_number_key))
                     if not self.next_page:
                         return
                     assert \
@@ -591,13 +564,8 @@ class SyncClientRest(SyncClientAbstract):
                         "next page (%s) should be lte total pages (%s)" \
                         % (str(self.next_page), str(self.total_pages))
                     self.next_endpoint = UrlUtils.set_query_singular(
-                        prev_endpoint,
-                        self.pagination_number_key,
-                        self.next_page
-                    )
-
-                    # if Registrar.DEBUG_API:
-                    #     Registrar.register_message('next_endpoint: %s' % str(self.next_endpoint))
+                        prev_endpoint, self.pagination_number_key,
+                        self.next_page)
 
             if self.next_page:
                 self.offset = (self.limit * self.next_page) + 1
@@ -606,7 +574,7 @@ class SyncClientRest(SyncClientAbstract):
             return self
 
         def next(self):
-            """ Used by Iterable to get next item in the API """
+            """Used by Iterable to get next item in the API."""
             if Registrar.DEBUG_API:
                 Registrar.register_message('start')
 
@@ -619,7 +587,8 @@ class SyncClientRest(SyncClientAbstract):
             # get API response
             try:
                 if Registrar.DEBUG_API:
-                    Registrar.register_message("api calling endpoint %s" % self.next_endpoint)
+                    Registrar.register_message(
+                        "api calling endpoint %s" % self.next_endpoint)
                 self.prev_response = self.service.get(self.next_endpoint)
             except (ReadTimeout, ConnectionError) as exc:
                 # instead of processing this endoint, do the page product by
@@ -659,11 +628,8 @@ class SyncClientRest(SyncClientAbstract):
 
                 if Registrar.DEBUG_API:
                     Registrar.register_message(
-                        'timed out, retrying %s after %ss' % (
-                            self.next_endpoint,
-                            sleep_time
-                        )
-                    )
+                        'timed out, retrying %s after %ss' %
+                        (self.next_endpoint, sleep_time))
 
                 time.sleep(sleep_time)
 
@@ -671,8 +637,9 @@ class SyncClientRest(SyncClientAbstract):
 
             # handle API errors
             if self.prev_response.status_code in range(400, 500):
-                raise requests.ConnectionError('api call failed: %dd with %s' % (
-                    self.prev_response.status_code, self.prev_response.text))
+                raise requests.ConnectionError(
+                    'api call failed: %dd with %s' %
+                    (self.prev_response.status_code, self.prev_response.text))
 
             # can still 200 and fail
             try:
@@ -680,15 +647,14 @@ class SyncClientRest(SyncClientAbstract):
             except JSONDecodeError:
                 prev_response_json = {}
                 exc = requests.ConnectionError(
-                    'api call to %s failed: %s' %
-                    (self.next_endpoint, self.prev_response.text))
+                    'api call to %s failed: %s' % (self.next_endpoint,
+                                                   self.prev_response.text))
                 Registrar.register_error(exc)
 
-            # if Registrar.DEBUG_API:
-            #     Registrar.register_message('first api response: %s' % str(prev_response_json))
             if 'errors' in prev_response_json:
-                raise requests.ConnectionError('first api call returned errors: %s' %
-                                               (prev_response_json['errors']))
+                raise requests.ConnectionError(
+                    'first api call returned errors: %s' %
+                    (prev_response_json['errors']))
 
             # process API headers
             self.process_headers(self.prev_response)
@@ -700,8 +666,9 @@ class SyncClientRest(SyncClientAbstract):
                 if self.limit is not None:
                     total_items = max(self.limit, total_items)
                 self.progress_counter = ProgressCounter(
-                    total_items, items_plural='api_items', verb_past='downloaded'
-                )
+                    total_items,
+                    items_plural='api_items',
+                    verb_past='downloaded')
             result_count = 0
             if self.limit and self.next_page:
                 result_count = self.limit * self.next_page
@@ -709,7 +676,8 @@ class SyncClientRest(SyncClientAbstract):
                 self.progress_counter.maybe_print_update(result_count)
 
             if Registrar.DEBUG_API:
-                Registrar.register_message("api returned json: %s" % prev_response_json)
+                Registrar.register_message(
+                    "api returned json: %s" % prev_response_json)
 
             return prev_response_json
 
@@ -760,18 +728,15 @@ class SyncClientRest(SyncClientAbstract):
         endpoint, kwargs = self.get_endpoint(**kwargs)
         if self.search_param and search:
             endpoint_parsed = urlparse(endpoint)
-            endpoint_path, endpoint_query = endpoint_parsed.path, endpoint_parsed.query
+            endpoint_path, endpoint_query = \
+                endpoint_parsed.path, endpoint_parsed.query
             additional_query = '%s=%s' % (self.search_param, search)
             if endpoint_query:
                 endpoint_query += '&%s' % additional_query
             else:
                 endpoint_query = additional_query
             endpoint = "%s?%s" % (endpoint_path, endpoint_query)
-            # print "search_param and search exist, new endpoint: %s" % endpoint
-            # quit()
         else:
-            # print "search_param and search DNE, %s %s" % (self.search_param, search)
-            # quit()
             pass
 
         api_iterator = self.get_iterator(endpoint)
@@ -784,8 +749,9 @@ class SyncClientRest(SyncClientAbstract):
                 if limit is not None:
                     total_items = min(limit, total_items)
                 progress_counter = ProgressCounter(
-                    total_items, items_plural='api_items', verb_past='analysed'
-                )
+                    total_items,
+                    items_plural='api_items',
+                    verb_past='analysed')
             if Registrar.DEBUG_PROGRESS:
                 progress_counter.maybe_print_update(result_count)
 
@@ -820,10 +786,10 @@ class SyncClientRest(SyncClientAbstract):
         endpoint, kwargs = self.get_endpoint(**kwargs)
         endpoint_parsed = urlparse(endpoint)
         endpoint = '%s/%d' % (endpoint_parsed.path, pkey)
-        query_string = '&'.join(filter(None, [
-            endpoint_parsed.query,
-            kwargs.get('extra_query_string')
-        ]))
+        query_string = '&'.join(
+            filter(None,
+                   [endpoint_parsed.query,
+                    kwargs.get('extra_query_string')]))
         if query_string:
             endpoint += '?%s' % query_string
         return endpoint
@@ -833,13 +799,12 @@ class SyncClientRest(SyncClientAbstract):
         try:
             assert response.json()
         except BaseException:
-            raise UserWarning("json should exist, instead response was %s" %
-                              response.text)
+            raise UserWarning(
+                "json should exist, instead response was %s" % response.text)
         assert not isinstance(
-            response.json(), int
-        ), "could not convert response to json: %s %s" % (
-            str(response), str(response.json())
-        )
+            response.json(),
+            int), "could not convert response to json: %s %s" % (
+                str(response), str(response.json()))
         assert 'errors' not in response.json(
         ), "response has errors: %s" % str(response.json()['errors'])
         return response
@@ -852,8 +817,8 @@ class SyncClientRest(SyncClientAbstract):
             page_key = getattr(self, 'page_key', self.endpoint_singular)
             data = {page_key: data}
         if Registrar.DEBUG_API:
-            Registrar.register_message("updating %s: %s" %
-                                       (service_endpoint, data))
+            Registrar.register_message(
+                "updating %s: %s" % (service_endpoint, data))
         response = self.service.put(service_endpoint, data)
         return self.process_response(response)
 
@@ -870,15 +835,16 @@ class SyncClientRest(SyncClientAbstract):
             endpoint = self.endpoint_plural
 
         endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
-        if self.pagination_limit_key not in endpoint_queries \
-        and self.limit is not None:
+        if (self.pagination_limit_key not in endpoint_queries
+                and self.limit is not None):
             endpoint_queries[self.pagination_limit_key] = self.limit
 
-        if self.pagination_offset_key not in endpoint_queries \
-        and self.offset is not None:
+        if (self.pagination_offset_key not in endpoint_queries
+                and self.offset is not None):
             endpoint_queries[self.pagination_offset_key] = self.offset
         if endpoint_queries:
-            endpoint = UrlUtils.substitute_query(endpoint, urlencode(endpoint_queries))
+            endpoint = UrlUtils.substitute_query(endpoint,
+                                                 urlencode(endpoint_queries))
         return self.ApiIterator(
             self.service,
             endpoint,
@@ -898,10 +864,8 @@ class SyncClientRest(SyncClientAbstract):
         if page_key is None:
             page_key = getattr(self, 'page_key', endpoint)
         # import pudb; pudb.set_trace()
-        return itertools.chain(
-            (page[page_key] if self.page_nesting else page)
-            for page in self.get_iterator(endpoint)
-        )
+        return itertools.chain((page[page_key] if self.page_nesting else page)
+                               for page in self.get_iterator(endpoint))
 
     def create_item(self, data, **kwargs):
         """
@@ -921,10 +885,8 @@ class SyncClientRest(SyncClientAbstract):
             page_key = getattr(self, 'page_key', endpoint_singular)
             data = {page_key: data}
         if Registrar.DEBUG_API:
-            Registrar.register_message("creating %s: %s" % (
-                endpoint,
-                pformat(data)[:1000]
-            ))
+            Registrar.register_message(
+                "creating %s: %s" % (endpoint, pformat(data)[:1000]))
         # TODO: add a better read timeout
         try:
             response = self.service.post(endpoint, data, **kwargs)
@@ -936,9 +898,8 @@ class SyncClientRest(SyncClientAbstract):
         try:
             response.json()
         except JSONDecodeError as exc:
-            raise UserWarning(
-                "Should be able to decode JSON: %s" %
-                (repr(response.text), exc))
+            raise UserWarning("Should be able to decode JSON: %s" % (repr(
+                response.text), exc))
         assert response.json(), "json should exist"
         assert not isinstance(
             response.json(),
@@ -981,7 +942,6 @@ class SyncClientRest(SyncClientAbstract):
         else:
             return function(data)
 
-
     @classmethod
     def get_item_core(cls, item, key):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
@@ -991,12 +951,7 @@ class SyncClientRest(SyncClientAbstract):
     def get_data_core(cls, data, key):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
-            data,
-            functools.partial(
-                cls.get_item_core,
-                key=key
-            )
-        )
+            data, functools.partial(cls.get_item_core, key=key))
 
     @classmethod
     def get_item_meta(cls, item, key, default=None):
@@ -1013,13 +968,8 @@ class SyncClientRest(SyncClientAbstract):
     def get_data_meta(cls, data, key, default=None):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
-            data,
-            functools.partial(
-                cls.get_item_meta,
-                key=key,
-                default=default
-            )
-        )
+            data, functools.partial(
+                cls.get_item_meta, key=key, default=default))
 
     @classmethod
     def set_item_core(cls, item, key, value):
@@ -1032,13 +982,8 @@ class SyncClientRest(SyncClientAbstract):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
-            functools.partial(
-                cls.set_item_core,
-                key=key,
-                value=value
-            ),
-            wrap_response=True
-        )
+            functools.partial(cls.set_item_core, key=key, value=value),
+            wrap_response=True)
 
     @classmethod
     def set_item_meta(cls, item, meta):
@@ -1047,14 +992,15 @@ class SyncClientRest(SyncClientAbstract):
             if not cls.meta_set_key in item:
                 item[cls.meta_set_key] = []
             for key, value in meta.items():
-                item[cls.meta_set_key].append(
-                    {'key':key, 'value':str(value)}
-                )
+                item[cls.meta_set_key].append({
+                    'key': key,
+                    'value': str(value)
+                })
         else:
             if not cls.meta_set_key in item:
                 item[cls.meta_set_key] = {}
             for key, value in meta.items():
-                item[cls.meta_set_key].update(**{key:value})
+                item[cls.meta_set_key].update(**{key: value})
         return item
 
     @classmethod
@@ -1062,29 +1008,21 @@ class SyncClientRest(SyncClientAbstract):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
-            functools.partial(
-                cls.set_item_meta,
-                meta=meta
-            ),
-            wrap_response=True
-        )
+            functools.partial(cls.set_item_meta, meta=meta),
+            wrap_response=True)
 
     @classmethod
     def delete_item_meta(cls, item, meta_key):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
-        return cls.set_item_meta(item, {meta_key:''})
+        return cls.set_item_meta(item, {meta_key: ''})
 
     @classmethod
     def delete_data_meta(cls, data, meta_key):
         # TODO: deprecate this in favour of coldata_class.translate_data_from
         return cls.apply_to_data_item(
             data,
-            functools.partial(
-                cls.set_item_meta,
-                meta_key=meta_key
-            ),
-            wrap_response=True
-        )
+            functools.partial(cls.set_item_meta, meta_key=meta_key),
+            wrap_response=True)
 
     @classmethod
     def strip_item_readonly(cls, item):
@@ -1093,28 +1031,26 @@ class SyncClientRest(SyncClientAbstract):
             return item
         for key in readonly_keys.pop('core', []):
             if key in item:
-                del(item[key])
+                del (item[key])
         for key, sub_keys in readonly_keys.items():
             if isinstance(item.get(key), list):
                 new_list = []
                 for list_item in item[key]:
                     for sub_key in sub_keys:
                         if sub_key in list_item:
-                            del(list_item[sub_key])
+                            del (list_item[sub_key])
                     new_list.append(list_item)
             else:
                 for sub_key in sub_keys:
                     if key in item and sub_key in item[key]:
-                        del(item[key][sub_key])
+                        del (item[key][sub_key])
         return item
 
     @classmethod
     def strip_data_readonly(cls, data):
         return cls.apply_to_data_item(
-            data,
-            functools.partial(cls.set_item_meta),
-            wrap_response=True
-        )
+            data, functools.partial(cls.set_item_meta), wrap_response=True)
+
 
 class SyncClientWC(SyncClientRest):
     """
@@ -1141,11 +1077,11 @@ class SyncClientWC(SyncClientRest):
     readonly_keys = {
         'core': [
             'id', 'permalink', 'date_created', 'date_created_gmt',
-             'date_modified', 'date_modified_gmt', 'price', 'price_html',
-             'on_sale', 'purchasable', 'total_sales', 'backorders_allowed',
-             'backordered', 'shipping_required', 'shipping_taxable',
-             'shipping_class_id', 'average_rating', 'rating_count', 'related_ids',
-             'variations'
+            'date_modified', 'date_modified_gmt', 'price', 'price_html',
+            'on_sale', 'purchasable', 'total_sales', 'backorders_allowed',
+            'backordered', 'shipping_required', 'shipping_taxable',
+            'shipping_class_id', 'average_rating', 'rating_count',
+            'related_ids', 'variations'
         ],
         'downloads': ['id'],
         'categories': ['name', 'slug'],
@@ -1154,10 +1090,9 @@ class SyncClientWC(SyncClientRest):
             'date_created', 'date_created_gmt', 'date_modified',
             'date_modified_gmt'
         ],
-        meta_set_key: [
-            'id'
-        ]
+        meta_set_key: ['id']
     }
+
 
 class SyncClientWCLegacy(SyncClientRest):
     """
@@ -1180,32 +1115,27 @@ class SyncClientWCLegacy(SyncClientRest):
     meta_listed = False
     readonly_keys = {
         'core': [
-            'id', 'permalink', 'created_at', 'updated_at', 'price', 'price_html',
-            'total_sales', 'backorders_allowed', 'taxable', 'backorders_allowed',
-            'backordered', 'purchasable', 'visible', 'on_sale',
-            'shipping_required', 'shipping_taxable', 'shipping_class_id',
-            'average_rating', 'rating_count', 'related_ids', 'featured_src',
-            'total_sales', 'parent'
+            'id', 'permalink', 'created_at', 'updated_at', 'price',
+            'price_html', 'total_sales', 'backorders_allowed', 'taxable',
+            'backorders_allowed', 'backordered', 'purchasable', 'visible',
+            'on_sale', 'shipping_required', 'shipping_taxable',
+            'shipping_class_id', 'average_rating', 'rating_count',
+            'related_ids', 'featured_src', 'total_sales', 'parent'
         ],
         'dimensions': ['unit'],
-        'images': [
-            'created_at', 'updated_at'
-        ],
+        'images': ['created_at', 'updated_at'],
         'downloads': ['id'],
         'categories': ['name', 'slug'],
         'tags': ['name', 'slug'],
-        'meta': [
-            'id'
-        ],
+        'meta': ['id'],
         'variations': [
             'id', 'created_at', 'updated_at', 'permalink', 'price', 'taxable',
-            'back-ordered', 'purchasable', 'visible', 'on_sale', 'shipping_class_id'
+            'back-ordered', 'purchasable', 'visible', 'on_sale',
+            'shipping_class_id'
         ]
     }
     total_pages_key = 'X-WC-TotalPages'
     total_items_key = 'X-WC-Total'
-
-
 
 
 class SyncClientWP(SyncClientRest):
@@ -1215,7 +1145,8 @@ class SyncClientWP(SyncClientRest):
     coldata_target = 'wp-api-v2'
     coldata_target_write = 'wp-api-v2-edit'
     mandatory_params = [
-        'consumer_key', 'consumer_secret', 'url', 'wp_user', 'wp_pass', 'callback'
+        'consumer_key', 'consumer_secret', 'url', 'wp_user', 'wp_pass',
+        'callback'
     ]
     page_nesting = False
     search_param = 'search'
@@ -1227,11 +1158,11 @@ class SyncClientWP(SyncClientRest):
 
 
 class LocalNullTunnel(object):
-    """ Pretend to be a SSHTunnelForwarder object for local mocking. """
+    """Pretend to be a SSHTunnelForwarder object for local mocking."""
+
     def __init__(self, **kwargs):
-        self.local_bind_address = (
-            kwargs.get('remote_bind_host'), kwargs.get('remote_bind_port')
-        )
+        self.local_bind_address = (kwargs.get('remote_bind_host'),
+                                   kwargs.get('remote_bind_port'))
 
     def start(self):
         pass
@@ -1239,13 +1170,13 @@ class LocalNullTunnel(object):
     def close(self):
         pass
 
+
 class SyncClientSqlWP(SyncClientAbstract):
     service_builder = SSHTunnelForwarder
     coldata_class = ColDataWpPost
     coldata_target = 'wp-sql'
     coldata_target_write = 'wp-sql'
     primary_key_handle = 'id'
-
     """docstring for UsrSyncClientSqlWP"""
 
     def __init__(self, connect_params, db_params, **kwargs):
@@ -1281,12 +1212,10 @@ class SyncClientSqlWP(SyncClientAbstract):
         cursor = pymysql.connect(**self.db_params).cursor()
 
         wp_db_col_paths = self.coldata_class.get_target_path_translation(
-            self.coldata_target
-        )
+            self.coldata_target)
         native_pkey = wp_db_col_paths[self.primary_key_handle]
         native_pkey = self.coldata_class.translate_handle(
-            self.primary_key_handle, self.coldata_target
-        )
+            self.primary_key_handle, self.coldata_target)
 
         wp_db_core_cols = OrderedDict()
         wp_db_meta_cols = OrderedDict()
@@ -1302,18 +1231,13 @@ class SyncClientSqlWP(SyncClientAbstract):
             elif len(path_tokens) == 1:
                 wp_db_core_cols[db_path] = handle
 
-        select_clause = ",\n\t\t".join(filter(
-            None,
-            [
+        select_clause = ",\n\t\t".join(
+            filter(None, [
                 "core.%s as `%s`" % (key, name)
                 for key, name in wp_db_core_cols.items()
-            ] + [
-                "MAX(CASE WHEN meta.meta_key = '%s' THEN meta.meta_value ELSE \"\" END) as `%s`" % (
-                    key, name
-                )
-                for key, name in wp_db_meta_cols.items()
-            ]
-        ))
+            ] + [("MAX(CASE WHEN meta.meta_key = '%s' "
+                  "THEN meta.meta_value ELSE \"\" END) as `%s`") % (key, name)
+                 for key, name in wp_db_meta_cols.items()]))
 
         sql_select = """
     SELECT
@@ -1337,9 +1261,7 @@ class SyncClientSqlWP(SyncClientAbstract):
         where_clause = ''
         if filter_pkey is not None:
             where_clause = "WHERE filtered.id = {filter_pkey}".format(
-                filter_pkey=filter_pkey
-            )
-
+                filter_pkey=filter_pkey)
 
         sql_select_filter = """
 SELECT *
@@ -1353,19 +1275,19 @@ FROM
             sql_ud=sql_select,
             join_type="LEFT",
             where_clause=where_clause,
-            limit_clause="LIMIT %d" % limit if limit else ""
-        )
+            limit_clause="LIMIT %d" % limit if limit else "")
 
         if Registrar.DEBUG_CLIENT:
             Registrar.register_message(sql_select_filter)
 
         cursor.execute(sql_select_filter)
 
-        headers = [SanitationUtils.coerce_unicode(
-            i[0]) for i in cursor.description]
+        headers = [
+            SanitationUtils.coerce_unicode(i[0]) for i in cursor.description
+        ]
 
-        results = [[SanitationUtils.coerce_unicode(
-            cell) for cell in row] for row in cursor]
+        results = [[SanitationUtils.coerce_unicode(cell) for cell in row]
+                   for row in cursor]
 
         return [headers] + results
 
