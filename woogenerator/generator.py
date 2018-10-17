@@ -63,13 +63,14 @@ from .parsing.dyn import CsvParseDyn
 from .parsing.special import CsvParseSpecial
 from .utils import (ProgressCounter, Registrar, SanitationUtils, SeqUtils,
                     TimeUtils)
-from .utils.reporter import (
-    ReporterNamespace, do_cat_sync_gruop, do_category_matches_group,
-    do_delta_group, do_duplicates_group, do_duplicates_summary_group,
-    do_failures_group, do_img_sync_group, do_main_summary_group,
-    do_matches_group, do_matches_summary_group, do_post_summary_group,
-    do_successes_group, do_sync_group, do_var_sync_group,
-    do_variation_matches_group)
+from .utils.reporter import (ReporterNamespace, do_cat_sync_gruop,
+                             do_category_matches_group, do_delta_group,
+                             do_failures_group, do_img_sync_group,
+                             do_main_summary_group, do_matches_group,
+                             do_matches_summary_group, do_post_summary_group,
+                             do_successes_group, do_sync_group,
+                             do_var_sync_group, do_variation_matches_group)
+
 
 # to run full sync test on TT
 """
@@ -498,6 +499,14 @@ def cache_api_data(settings, parsers):
 
 
 def do_match_images(parsers, matches, settings):
+    """
+    Match images.
+
+    Note: the aim of the game is to eventually populate each master
+    attachment object with a slave api id, so either the master can be matched
+    (in a duplicate match with 1 master, or a pure match)
+    or it must be created in slave (a slaveless match).
+    """
     if Registrar.DEBUG_IMG:
         Registrar.register_message(
             "matching %d master attachments with %d slave attachments" % (len(
@@ -536,19 +545,55 @@ def do_match_images(parsers, matches, settings):
     extra_valid_indices_m = set()
     extra_valid_indices_s = set()
 
-    matches.image.duplicate['norm_file_name'] = \
-        image_matcher.duplicate_matches
-    matches.image.duplicate['file_basename'] = \
-        image_matcher.duplicate_matches.__class__()
+    matches.image.duplicate['normalized_filename'] = MatchList(
+        index_fn=(lambda img: img.normalized_filename)
+    )
+    matches.image.duplicate['file_basename'] = MatchList(
+        index_fn=(lambda img: img.file_basename)
+    )
+    matches.image.duplicate['norm_title'] = MatchList(
+        index_fn=(lambda img: img.norm_title)
+    )
+    matches.image.duplicate['attachee_skus'] = MatchList(
+        index_fn=(lambda img: img.attachee_skus)
+    )
 
-    filename_duplicate_indices_m = set([
+    filename_duplicate_indices_m = {
         attachment.index for match in image_matcher.duplicate_matches
         for attachment in match.m_objects
-    ])
-    filename_duplicate_indices_s = set([
+    }
+
+    filename_duplicate_indices_s = {
         attachment.index for match in image_matcher.duplicate_matches
         for attachment in match.s_objects
-    ])
+    }
+
+    def process_extra_match(extra_match, duplicate_name='normalized_filename'):
+        if extra_match.type == 'duplicate' and extra_match.m_len != 1:
+            try:
+                matches.image.duplicate[duplicate_name].add_matches(
+                    [extra_match])
+            except Exception as exc:
+                pass
+            return
+        extra_valid_indices_m.update(
+            [attachment.index for attachment in extra_match.m_objects])
+        extra_valid_indices_s.update(
+            [attachment.index for attachment in extra_match.s_objects])
+        if extra_match.type == 'pure':
+            matches.image.valid += [extra_match]
+        elif extra_match.type == 'masterless':
+            try:
+                matches.image.masterless.add_matches([extra_match])
+            except AssertionError as exc:
+                Registrar.register_warning(exc)
+        elif extra_match.type == 'slaveless':
+            try:
+                matches.image.slaveless.add_matches([extra_match])
+            except AssertionError as exc:
+                Registrar.register_warning(exc)
+        elif extra_match.type == 'duplicate' and extra_match.m_len == 1:
+            matches.image.valid += [extra_match]
 
     for match in image_matcher.duplicate_matches:
         if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
@@ -563,79 +608,53 @@ def do_match_images(parsers, matches, settings):
         #   first try to sub-match on file basename first, then we sub-match on
         #   the SKUs of all the products that are attached to the file
 
-        def process_extra_match(extra_match):
-            extra_valid_indices_m.update(
-                [attachment.index for attachment in extra_match.m_objects])
-            extra_valid_indices_s.update(
-                [attachment.index for attachment in extra_match.s_objects])
-            if (extra_match.type == 'pure' or
-                (extra_match.type == 'duplicate' and extra_match.m_len == 1)):
-                matches.image.valid += [sub_match]
-            elif extra_match.type == 'masterless':
-                try:
-                    matches.image.masterless.add_matches([extra_match])
-                except AssertionError as exc:
-                    Registrar.register_warning(exc)
-            elif extra_match.type == 'slaveless':
-                try:
-                    matches.image.slaveless.add_matches([extra_match])
-                except AssertionError as exc:
-                    Registrar.register_warning(exc)
-            else:
-                matches.image.duplicate['file_basename'].add_matches(
-                    [extra_match])
-
         remaining_match = match.__class__()
         remaining_match.consume(match)
 
-        for sub_matching, allow_dup in [
-            ('find_file_basename_matches', False),
-            (
-                'find_attachee_sku_matches',
-                True,
-            ),
-            ('find_norm_title_matches', True),
-        ]:
-            sub_matches = getattr(image_matcher, sub_matching)(remaining_match)
-            remaining_match = remaining_match.__class__()
-            for key, sub_match in sub_matches.items():
+        for allow_dup in range(2):
+            for sub_matching, dup_list in [
+                ('find_file_basename_matches', 'file_basename'),
+                ('find_attachee_sku_matches', 'attachee_skus'),
+                ('find_norm_title_matches', 'title_matches'),
+            ]:  # yapf: disable
+                sub_matches = getattr(
+                    image_matcher, sub_matching)(remaining_match)
+                remaining_match = remaining_match.__class__()
+                for key, sub_match in sub_matches.items():
+                    if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
+                        Registrar.register_message(
+                            "%s sub match %s is %s:\n%s" % (
+                                sub_matching, key, sub_match.type,
+                                sub_match.tabulate()))
+                    if (
+                        sub_match.type == 'pure'
+                        or (
+                            allow_dup and sub_match.type == 'duplicate'
+                            and sub_match.m_len == 1
+                        )
+                    ):  # yapf: disable
+                        process_extra_match(sub_match, dup_list)
+                    else:
+                        remaining_match.consume(sub_match)
+                if remaining_match.type == 'empty':
+                    break
                 if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
                     Registrar.register_message(
-                        "%s sub match %s is %s:\n%s" % (sub_matching, key,
-                                                        sub_match.type,
-                                                        sub_match.tabulate()))
-                if (sub_match.type == 'pure'
-                        or (allow_dup and sub_match.type == 'duplicate'
-                            and sub_match.m_len == 1)):
-                    process_extra_match(sub_match)
-                else:
-                    remaining_match.consume(sub_match)
-            if remaining_match.type == 'empty':
+                        "%s remaining match is %s:\n%s" % (
+                            sub_matching, remaining_match.type,
+                            remaining_match.tabulate()))
+                if remaining_match.type == 'duplicate':
+                    continue
+                process_extra_match(remaining_match)
+                remaining_match = remaining_match.__class__()
                 break
-            if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
-                Registrar.register_message("%s remaining match is %s:\n%s" %
-                                           (sub_matching, remaining_match.type,
-                                            remaining_match.tabulate()))
-            if remaining_match.type == 'duplicate':
-                continue
-            process_extra_match(remaining_match)
-            remaining_match = remaining_match.__class__()
-            break
 
         if remaining_match.type != 'empty':
-            exc = UserWarning(
-                ("Could not match images\n%s") % (remaining_match.tabulate()))
+            exc = UserWarning(("Could not match images\n%s") % (
+                remaining_match.tabulate()))
             Registrar.register_warning(exc)
 
-            if remaining_match.m_len > 0:
-                for m_object in remaining_match.m_objects:
-                    split_match = match.__class__(m_objects=[m_object])
-                    process_extra_match(split_match)
-
-            if remaining_match.s_len > 0:
-                split_match = match.__class__(
-                    s_objects=remaining_match.s_objects)
-                process_extra_match(split_match)
+            process_extra_match(remaining_match, 'normalized_filename')
 
     try:
         assert \
@@ -660,15 +679,14 @@ def do_match_images(parsers, matches, settings):
                 extra_valid_indices_s
             )
     except AssertionError as exc:
-        warn = RuntimeWarning(
-            "could not match all images.\n%s\n%s" % ("\n".join([
+        warn = RuntimeWarning((
+                "could not match all images, "
+                "but that's ok because image matching is a mess.\n%s\n%s"
+            ) % ("\n".join([
                 "%s:\n%s" % (key, dup_matches.tabulate())
                 for key, dup_matches in matches.image.duplicate.items()
             ]), str(exc)))
         Registrar.register_warning(warn)
-        if Registrar.DEBUG_TRACE:
-            import pudb
-            pudb.set_trace()
 
     if Registrar.DEBUG_IMG or Registrar.DEBUG_TRACE:
         Registrar.register_message(
@@ -921,9 +939,10 @@ def do_merge_images(matches, parsers, updates, settings):
     # TODO: only delete duplicate images without attaches
     # import pudb; pudb.set_trace()
 
-    for count, match in enumerate(matches.image.duplicate['file_basename']
-                                  # + matches.image.masterless
-                                  ):
+    for count, match in enumerate(
+        # matches.image.duplicate['file_basename']
+        matches.image.masterless
+    ):
         if not match.s_len:
             continue
         for dup_count, s_object in enumerate(match.s_objects):
@@ -1012,9 +1031,6 @@ def do_merge_categories(matches, parsers, updates, settings):
     return updates
 
 
-# TODO: do_merge_attributes ?
-
-
 def do_merge_attributes(matches, parsers, updates, settings):
     if settings.do_attributes:
         raise NotImplementedError("Do Merge Attributes not implemented")
@@ -1022,7 +1038,6 @@ def do_merge_attributes(matches, parsers, updates, settings):
 
 def get_update_prod(settings, m_object, s_object):
     """Return a description of updates required to merge these products."""
-
     sync_update = settings.syncupdate_class_prod(m_object, s_object)
     sync_update.update(settings.sync_handles_prod)
 
@@ -1043,7 +1058,6 @@ def get_update_prod(settings, m_object, s_object):
 
 def do_merge_prod(matches, parsers, updates, settings):
     """Return a description of updates required to merge `matches`."""
-
     if not settings.do_sync:
         return
 
@@ -1315,7 +1329,7 @@ def handle_failed_update(update, results, exc, settings, source=None):
 def usr_prompt_continue(settings):
     # TODO: this is completely broken. just read from stdin
     if not settings.ask_before_update:
-        return
+        return None
     try:
         raw_in = input("\n".join([
             "Please read reports and then make your selection",
@@ -1328,6 +1342,7 @@ def usr_prompt_continue(settings):
         return 's'
     if raw_in == 'c':
         raise SystemExit
+    return None
 
 
 def upload_new_items_slave(parsers,
