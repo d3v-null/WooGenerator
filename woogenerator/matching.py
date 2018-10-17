@@ -205,9 +205,8 @@ class Match(object):
         Return the objects within the match wrapped in the best possible container
         determined by the container attribute of the gcs of their classes
         """
-        assert \
-        self.m_len or self.s_len, \
-        "match must contain m_objects or s_objects to be containerized"
+        assert self.m_len or self.s_len, \
+            "match must contain m_objects or s_objects to be containerized"
 
         obj_container = None
 
