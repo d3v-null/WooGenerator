@@ -764,7 +764,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             assert isinstance(special, string_types), \
                 'Special must be a string not {}'.format(
                     type(special).__name__)
-            assert special is not '', 'Attribute must not be empty'
+            assert special != '', 'Attribute must not be empty'
         except AssertionError as exc:
             self.register_error("could not register special: {}".format(exc))
         self.register_anything(
@@ -1399,15 +1399,13 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                     self.register_updated_product(object_data)
 
     def post_process_inventory(self, object_data):
-        str_no_stock = "0"
-
         object_data.inherit_key('stock_status')
 
         if object_data.is_item:
             stock = object_data.get('stock')
-            if stock or stock is str_no_stock:
+            if stock or stock == "0":
                 object_data['manage_stock'] = 'yes'
-                if stock is str_no_stock:
+                if stock == "0":
                     object_data['stock_status'] = 'outofstock'
             else:
                 object_data['manage_stock'] = 'no'
@@ -1420,7 +1418,7 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
 
         if object_data.is_item:
             visible = object_data.get('VISIBILITY')
-            if visible is "hidden":
+            if visible == "hidden":
                 object_data['catalog_visibility'] = "hidden"
 
     def get_special_category(self, special_components=None):
@@ -1537,7 +1535,11 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
             if value is not None:
                 object_data[key] = value
 
-        if object_data.is_product and not object_data.is_variable:
+        if (
+            object_data.is_product
+            and not object_data.is_variable
+            and object_data.get('catalog_visibility') != 'hidden'
+        ):
             for key in ['WNR']:
                 if not object_data.get(key):
                     exc = UserWarning(
@@ -1565,10 +1567,10 @@ class CsvParseWoo(CsvParseGenTree, CsvParseShopMixin, CsvParseWooMixin):
                 self.post_process_attachments(object_data)
             self.post_process_attributes(object_data)
             self.post_process_specials(object_data)
-            self.post_process_pricing(object_data)
-            self.post_process_inventory(object_data)
-            self.post_process_updated(object_data)
             self.post_process_visibility(object_data)
+            self.post_process_inventory(object_data)
+            self.post_process_pricing(object_data)
+            self.post_process_updated(object_data)
             self.post_process_shipping(object_data)
             if self.specials_category_name and self.current_special_groups:
                 self.post_process_current_special(object_data)
