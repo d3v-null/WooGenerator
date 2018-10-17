@@ -4242,6 +4242,12 @@ class ColDataAttachment(ColDataWpEntity):
                 'path': 'file_name',
                 'type': 'file_basename'
             }
+        },
+        'attached_post_id': {
+            'wp-api': {
+                'path': 'post',
+                'write': False,
+            }
         }
     })
 
