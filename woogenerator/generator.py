@@ -1399,6 +1399,26 @@ def upload_new_items_slave(parsers,
 
         core_data = sync_update.get_slave_updates()
 
+        # ensure all attachment objects have a valid id
+        if 'attachment_objects' in core_data:
+            safe_imgs = []
+            for img_obj in core_data['attachment_objects']:
+                if not img_obj.get('id'):
+                    exc = UserWarning(
+                        "all attachment objects require a"
+                        "valid attachment id")
+                    Registrar.register_warning(exc)
+                    continue
+                safe_imgs += img_obj
+            core_data['attachment_objects'] = safe_imgs
+
+        if 'image' in core_data:
+            if not core_data['image'].get('id'):
+                exc = UserWarning(
+                    "attachment object requires a valid attachment id")
+                Registrar.register_warning(exc)
+                del core_data['image']
+
         if Registrar.DEBUG_API:
             Registrar.register_message(
                 "new %s (core format) %s" % (_type, core_data))
@@ -1794,6 +1814,20 @@ def upload_product_changes(parsers, results, settings, client, change_updates):
         try:
             pkey = sync_update.slave_id
             changes = sync_update.get_slave_updates_native()
+
+            # ensure all attachment objects have a valid id
+            if 'images' in changes:
+                safe_imgs = []
+                for img_obj in changes['images']:
+                    if not img_obj.get('id'):
+                        exc = UserWarning(
+                            "all attachment objects require a"
+                            "valid attachment id")
+                        Registrar.register_warning(exc)
+                        continue
+                    safe_imgs += img_obj
+                changes['images'] = safe_imgs
+
             response_raw = client.upload_changes(pkey, changes)
             response_api_data = response_raw.json()
         except Exception as exc:
@@ -1970,6 +2004,14 @@ def upload_variation_changes_slave(parsers, results, settings, client,
             pkey = sync_update.slave_id
             parent_pkey = sync_update.new_s_object['parent_id']
             changes = sync_update.get_slave_updates_native()
+
+            if 'image' in changes:
+                if not changes['image'].get('id'):
+                    exc = UserWarning(
+                        "attachment object requires a valid attachment id")
+                    Registrar.register_warning(exc)
+                    del changes['image']
+
             response_raw = client.upload_changes(
                 pkey, changes, parent_pkey=parent_pkey)
             response_api_data = response_raw.json()
