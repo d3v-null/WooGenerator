@@ -35,7 +35,7 @@ These are the steps that generator uses to synchronize products:
 
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import io
 import itertools
@@ -1029,15 +1029,32 @@ def do_merge_images(matches, parsers, updates, settings):
         sync_update.update(sync_handles)
         updates.image.slaveless.append(sync_update)
 
-    for count, match in enumerate(matches.image.masterless):
-        assert match.has_no_master
-        s_object = match.s_object
+    # TODO: only delete duplicate images without attaches
+    # import pudb; pudb.set_trace()
 
-        sync_update = settings.syncupdate_class_img(None, s_object)
-        Registrar.register_message("will delete image: %d:\n%s" % (
-            count, s_object.identifier))
+    for count, match in enumerate(
+        matches.image.duplicate['file_basename']
+        # + matches.image.masterless
+    ):
+        if not match.s_len:
+            continue
+        deletes = []
+        for dup_count, s_object in enumerate(match.s_objects):
+            if s_object.attaches:
+                Registrar.register_message(
+                    "will not delete image with attaches: %d:\n%s\n%s" % (
+                        count, s_object.identifier, s_object.attaches
+                    ))
+                continue
 
-        updates.image.masterless.append(sync_update)
+            if not dup_count:
+                # keep at least 1 of the duplicates
+                continue
+            sync_update = settings.syncupdate_class_img(None, s_object)
+            Registrar.register_message("will delete image: %d:\n%s" % (
+                count, s_object.identifier))
+
+            updates.image.masterless.append(sync_update)
 
     return updates
 
@@ -1635,7 +1652,20 @@ def do_updates_images_master(updates, parsers, results, settings):
 
 
 def delete_images_slave(parsers, results, settings, client, delete_updates):
-    raise NotImplementedError()
+    """
+    It's not wise to delete images:
+        - They could be about to be attached to a product, and it would be
+            difficult to tell
+        - It could be used in a post without being attached
+    """
+    pass
+
+    # for update in delete_updates:
+    #     client.delete_item(
+    #         pkey=update.s_object.wpid
+    #     )
+    #
+    # raise NotImplementedError()
 
 
 def do_updates_images_slave(updates, parsers, results, settings):
@@ -1680,9 +1710,10 @@ def do_updates_images_slave(updates, parsers, results, settings):
         delete_updates += updates.image.masterless
     else:
         for update in updates.image.masterless:
-            deleted_item_api = update.get_slave_updates_native()
-            exc = UserWarning("{0} needs to be deleted: {1}".format(
-                endpoint_singular, deleted_item_api
+            exc = UserWarning("{} needs to be deleted: {} | {}".format(
+                endpoint_singular,
+                update.old_s_object.get('ID'),
+                update.old_s_object.get('source_url')
             ))
             Registrar.register_warning(exc)
 

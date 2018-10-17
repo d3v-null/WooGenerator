@@ -469,4 +469,6 @@ def process_images(settings, parsers):
         if not process_image_size(settings, parsers, img_data):
             continue
 
+    a = 1
+
     return parsers
