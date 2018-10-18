@@ -33,7 +33,7 @@ from wordpress import API
 from wordpress.helpers import UrlUtils
 
 from ..coldata import ColDataWpEntity, ColDataWpPost
-from ..utils import ProgressCounter, Registrar, SanitationUtils
+from ..utils import ProgressCounter, Registrar, SanitationUtils, SeqUtils
 from ..utils.clock import TimeUtils
 
 
@@ -521,7 +521,7 @@ class SyncClientRest(SyncClientAbstract):
             self.pagination_offset_key = kwargs.get('pagination_offset_key')
             self.total_pages_key = kwargs.get('total_pages_key')
             self.total_items_key = kwargs.get('total_items_key')
-            self.progress_counter = None
+            self.progress_counter = kwargs.get('progress_counter')
 
             endpoint_queries = UrlUtils.get_query_dict_singular(endpoint)
 
@@ -669,11 +669,12 @@ class SyncClientRest(SyncClientAbstract):
                     total_items,
                     items_plural='api_items',
                     verb_past='downloaded')
-            result_count = 0
-            if self.limit and self.next_page:
-                result_count = self.limit * self.next_page
+            # result_count = 0
+            # if self.limit and self.next_page:
+            #     result_count = self.limit * min(self.next_page - 1, 0)
             if Registrar.DEBUG_PROGRESS:
-                self.progress_counter.maybe_print_update(result_count)
+                self.progress_counter.increment_count(self.limit)
+                self.progress_counter.maybe_print_update()
 
             if Registrar.DEBUG_API:
                 Registrar.register_message(
@@ -811,6 +812,7 @@ class SyncClientRest(SyncClientAbstract):
 
     def upload_changes(self, pkey, data=None, **kwargs):
         service_endpoint = self.get_single_endpoint(pkey, **kwargs)
+        data = {}
         data = dict([(key, value) for key, value in data.items()])
         # print "service version: %s, data:%s" % (self.service.version, data)
         if self.page_nesting:
@@ -827,10 +829,8 @@ class SyncClientRest(SyncClientAbstract):
         response = self.service.get(service_endpoint)
         return self.process_response(response)
 
-    def get_iterator(self, endpoint=None):
-        """
-        Get an iterator to the pages in the API
-        """
+    def get_iterator(self, endpoint=None, **kwargs):
+        """Get an iterator to the pages in the API."""
         if not endpoint:
             endpoint = self.endpoint_plural
 
@@ -845,17 +845,26 @@ class SyncClientRest(SyncClientAbstract):
         if endpoint_queries:
             endpoint = UrlUtils.substitute_query(endpoint,
                                                  urlencode(endpoint_queries))
+
+        defaults = {
+            'pagination_limit_key': self.pagination_limit_key,
+            'pagination_number_key': self.pagination_number_key,
+            'pagination_offset_key': self.pagination_offset_key,
+            'total_pages_key': self.total_pages_key,
+            'total_items_key': self.total_items_key,
+        }
+
+        kwargs = SeqUtils.combine_ordered_dicts(
+            defaults, kwargs
+        )
+
         return self.ApiIterator(
             self.service,
             endpoint,
-            pagination_limit_key=self.pagination_limit_key,
-            pagination_number_key=self.pagination_number_key,
-            pagination_offset_key=self.pagination_offset_key,
-            total_pages_key=self.total_pages_key,
-            total_items_key=self.total_items_key,
+            **kwargs
         )
 
-    def get_page_generator(self, endpoint=None, page_key=None):
+    def get_page_generator(self, endpoint=None, page_key=None, **kwargs):
         """
         Get a generator for endpoint items.
         """
@@ -863,9 +872,10 @@ class SyncClientRest(SyncClientAbstract):
             endpoint = self.endpoint_plural
         if page_key is None:
             page_key = getattr(self, 'page_key', endpoint)
-        # import pudb; pudb.set_trace()
-        return itertools.chain((page[page_key] if self.page_nesting else page)
-                               for page in self.get_iterator(endpoint))
+        return itertools.chain(
+            (page[page_key] if self.page_nesting else page)
+            for page in self.get_iterator(endpoint, **kwargs)
+        )  # yapf: disable
 
     def create_item(self, data, **kwargs):
         """

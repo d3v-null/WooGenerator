@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 from ..coldata import (ColDataProductMeridian, ColDataProductVariationMeridian,
                        ColDataWcProdCategory)
+from ..utils.core import InvisibleProgressCounter
 from .core import SyncClientWC, SyncClientWCLegacy
 from .xero import SyncClientXero
 
@@ -37,7 +38,7 @@ class CatSyncClientMixin(object):
     coldata_class = ColDataWcProdCategory
     primary_key_handle = 'term_id'
 
-    def analyse_remote_categories(self, parser, **kwargs):
+    def analyse_remote_categories(self, parser):
         categories = []
         for page in self.get_page_generator():
             for page_item in page:
@@ -70,9 +71,9 @@ class VarSyncClientMixin(object):
         raise UserWarning(
             "concept of endpoint singular does not apply to var sync client")
 
-    def get_variations(self, parent_pkey):
+    def get_variations(self, parent_pkey, **kwargs):
         endpoint, _ = self.get_endpoint(parent_pkey=parent_pkey)
-        return self.get_page_generator(endpoint)
+        return self.get_page_generator(endpoint, **kwargs)
 
     def get_first_variation(self, parent_id):
         return self.get_variations(parent_id).next()[0]
@@ -95,8 +96,18 @@ class VarSyncClientMixin(object):
 
     def analyse_remote_variations(self, parser, **kwargs):
         parent_pkey = kwargs.pop('parent_pkey', None)
-        for page in self.get_variations(parent_pkey):
+        # Hijack progress counter
+        progress_counter = kwargs.pop('progress_counter', None)
+        kwargs['progress_counter'] = InvisibleProgressCounter()
+
+        import pudb; pudb.set_trace()
+        # TODO: fix progress prints for variations
+
+        for page in self.get_variations(parent_pkey, **kwargs):
             for page_item in page:
+                if progress_counter is not None:
+                    progress_counter.increment_count()
+                    progress_counter.maybe_print_update()
                 parser.process_api_variation_raw(
                     page_item, parent_id=parent_pkey)
 

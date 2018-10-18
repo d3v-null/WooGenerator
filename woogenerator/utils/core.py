@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function
+from builtins import super
 
 import itertools
 import math
@@ -135,8 +136,9 @@ class SeqUtils(object):
         if not dict_b:
             return dict_a
         response = OrderedDict(dict_a.items())
-        for key, value in dict_b.items():
-            response[key] = value
+        response.update(dict_b)
+        # for key, value in dict_b.items():
+        #     response[key] = value
         return response
 
     @classmethod
@@ -684,12 +686,17 @@ class ProgressCounter(object):
         self.last_print = time.time()
         self.first_print = self.last_print
         self.print_count = 0
+        self.current_count = 0
         self.items_plural = items_plural
         self.verb_past = verb_past
         # self.memory_tracker = tracker.SummaryTracker()
         self.maybe_print_update(0, force=True)
 
-    def maybe_print_update(self, count, force=False):
+    def maybe_print_update(self, count=None, force=False):
+        if count is None:
+            count = self.current_count
+        else:
+            self.current_count = count
         now = time.time()
         if force or now - self.last_print > self.print_threshold:
             # self.memory_tracker.print_diff()
@@ -704,7 +711,7 @@ class ProgressCounter(object):
                 time_elapsed = self.last_print - self.first_print
                 ratio = (float(self.total) / (count) - 1.0)
                 time_remaining = float(time_elapsed) * ratio
-                line += " | remaining: %4d seconds, %4d elapsed   " % (
+                line += " | remaining: %4d seconds, %4d elapsed           " % (
                     int(time_remaining), int(time_elapsed))
             if self.print_count > 0:
                 line = "\r%s\r" % line
@@ -713,6 +720,21 @@ class ProgressCounter(object):
             self.print_count += 1
         if count == self.total - 1:
             print("\n")
+
+    def increment_count(self, increment=1):
+        self.current_count += increment
+
+class InvisibleProgressCounter(ProgressCounter):
+    """
+    Fake progress counter that doesn't update anything
+    """
+    def __init__(self, *args, **kwargs):
+        if not args:
+            args = [0]
+        super().__init__(*args, **kwargs)
+
+    def maybe_print_update(self, *_, **__):
+        pass
 
 
 class UnicodeCsvDialectUtils(object):

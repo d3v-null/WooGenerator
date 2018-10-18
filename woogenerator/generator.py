@@ -301,6 +301,12 @@ def populate_slave_parsers(parsers, settings):
 
             var_client = slave_var_client_class(**slave_var_client_args)
 
+            progress_counter = ProgressCounter(
+                total=len(parsers.slave.variations),
+                items_plural='variations',
+                verb_past='analysed'
+            )
+
             for prod in parsers.slave.products.values():
                 if not getattr(prod, 'is_variable', None):
                     continue
@@ -308,7 +314,9 @@ def populate_slave_parsers(parsers, settings):
                 var_client.analyse_remote_variations(
                     parsers.slave,
                     parent_pkey=parent_id,
-                    data_path=settings.get_slave_var_path(parent_id))
+                    data_path=settings.get_slave_var_path(parent_id),
+                    progress_counter=progress_counter
+                )
 
     if settings.schema_is_woo and settings.do_images:
         Registrar.register_progress("analysing API image data")
