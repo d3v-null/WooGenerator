@@ -1,5 +1,8 @@
 # WooGenerator
 
+[![Known Vulnerabilities](https://snyk.io/test/github/derwentx/WooGenerator/badge.svg)](https://snyk.io/test/github/derwentx/WooGenerator)
+
+
 Generates WooCommerce friendly CSV files from a Google Drive spreadsheet of products
 
 ***!!! Warning !!!***
