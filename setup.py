@@ -76,6 +76,7 @@ setup(
     entry_points={  # Creates a console script entry point on install
         'console_scripts': [
             '{0}={0}.generator:main'.format(PKG_NAME),
+            '{0}_gui={0}.gui:main'.format(PKG_NAME),
         ],
     },
 )
