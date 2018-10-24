@@ -375,7 +375,7 @@ class ProductsForm(SyncForm):
             help_str="Would you like to attempt to automatically sync?",
             value=0,
             cmd_particles=[
-                '--skip-download-slave --skip-sync',
+                '--master-and-quit',
                 '--download-slave --do-sync --auto-create-new'
             ])
 
@@ -386,7 +386,7 @@ class ProductsForm(SyncForm):
             cmd_particles=[
                 ('--update-slave --auto-create-new --auto-delete-old '
                  '--do-problematic --ask-before-update'),
-                ('--skip-update-slave --do-report --report-duplicates'
+                ('--skip-update-slave --do-report --report-duplicates '
                  '--report-matching --do-mail --report-and-quit')
             ])
 
