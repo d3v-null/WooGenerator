@@ -38,7 +38,7 @@ class CatSyncClientMixin(object):
     coldata_class = ColDataWcProdCategory
     primary_key_handle = 'term_id'
 
-    def analyse_remote_categories(self, parser):
+    def analyse_remote_categories(self, parser, **kwargs):
         categories = []
         for page in self.get_page_generator():
             for page_item in page:
