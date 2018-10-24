@@ -370,6 +370,26 @@ class ProductsForm(SyncForm):
             value=0,
             cmd_particles=['--skip-images', '--do-images'])
 
+        self.auto_sync = self.add_simple_question(
+            name="Auto Upload",
+            help_str="Would you like to attempt to automatically sync?",
+            value=0,
+            cmd_particles=[
+                '--skip-download-slave --skip-sync',
+                '--download-slave --do-sync --auto-create-new'
+            ])
+
+        self.sync_dry_run = self.add_simple_question(
+            name="Dry Run",
+            help_str="Would you like preview the changes without making them?",
+            value=0,
+            cmd_particles=[
+                ('--update-slave --auto-create-new --auto-delete-old '
+                 '--do-problematic --ask-before-update'),
+                ('--skip-update-slave --do-report --report-duplicates'
+                 '--report-matching --do-mail --report-and-quit')
+            ])
+
     @overrides(npyscreen.proto_fm_screen_area.ScreenArea)
     def refresh(self):
         super(ProductsForm, self).refresh()
