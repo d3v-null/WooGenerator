@@ -1,0 +1,7 @@
+-r requirements.txt
+pytz==2018.5
+tabulate==0.7.7
+mock==2.0.0
+pytest==3.6.3
+pudb==2017.1.2
+tests==0.007
