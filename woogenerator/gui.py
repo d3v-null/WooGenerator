@@ -7,6 +7,7 @@ import logging
 import platform
 import sys
 import traceback
+import os
 from collections import OrderedDict, namedtuple
 from copy import deepcopy
 from pprint import pformat
@@ -549,12 +550,17 @@ class WelcomeForm(SyncForm):
 
 def main():
     """Main method for gui."""
+
     wg_app = WooGenerator()
     try:
-        wg_app.run()
+        wg_app.run(fork=False)
     except npyscreen.NotEnoughSpaceForWidget as exc:
         print("not enough space for widget, try resizing terminal.", exc)
         traceback.print_exception(*sys.exc_info())
+
+    # fix terminal freezes after running for a few seconds until traceback
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
     override_args = SeqUtils.filter_unique_true(sys.argv[1:] +
                                                 wg_app.command_args.split())
     print("cmd out value: %s <- %s" % (wg_app.command_script, override_args))
