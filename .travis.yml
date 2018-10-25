@@ -23,4 +23,4 @@ script:
 after_script:
     - coverage report -m
     - coverage xml
-    - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT --debug
+    - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
