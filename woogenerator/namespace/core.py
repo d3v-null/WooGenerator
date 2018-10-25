@@ -184,7 +184,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         if self.get('wc_api_timeout'):
             response['timeout'] = self.get('wc_api_timeout')
         if self.get('wp_creds_store'):
-            response['creds_store'] = self.get('wp_creds_store')
+            response['creds_store'] = self.get('wc_creds_store')
         return response
 
     @property

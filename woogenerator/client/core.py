@@ -489,6 +489,7 @@ class SyncClientRest(SyncClientAbstract):
     endpoint_singular = ''
     mandatory_params = ['consumer_key', 'consumer_secret', 'url']
     default_version = 'wp/v2'
+    default_oauth_3leg = True
     default_namespace = 'wp-json'
     meta_get_key = 'meta'
     meta_set_key = 'custom_meta'
@@ -710,6 +711,8 @@ class SyncClientRest(SyncClientAbstract):
             superconnect_params['api'] = self.default_namespace
         if 'version' not in superconnect_params:
             superconnect_params['version'] = self.default_version
+        if 'oauth1a_3leg' not in superconnect_params:
+            superconnect_params['oauth1a_3leg'] = self.default_oauth_3leg
         # if superconnect_params['api'] == 'wp-json':
         #     superconnect_params['oauth1a_3leg'] = True
 
@@ -1070,6 +1073,7 @@ class SyncClientWC(SyncClientRest):
     """
     default_version = 'wc/v2'
     default_namespace = 'wp-json'
+    default_oauth_3leg = False
     coldata_class = ColDataWpPost
     coldata_target = 'wc-wp-api-v2'
     coldata_target_write = 'wc-wp-api-v2-edit'
@@ -1115,6 +1119,7 @@ class SyncClientWCLegacy(SyncClientRest):
     pagination_offset_key = 'filter[offset]'
     meta_get_key = 'meta'
     meta_set_key = 'custom_meta'
+    default_oauth_3leg = False
     default_version = 'v3'
     default_namespace = 'wc-api'
     coldata_class = ColDataWpPost
@@ -1166,6 +1171,14 @@ class SyncClientWP(SyncClientRest):
     pagination_limit_key = 'per_page'
     pagination_number_key = 'page'
     pagination_offset_key = 'offset'
+
+class SyncClientWPLegacy(SyncClientWP):
+    coldata_target = 'wp-api-v1'
+    coldata_target_write = 'wp-api-v1-edit'
+    mandatory_params = [
+        'consumer_key', 'consumer_secret', 'url', 'callback'
+    ]
+    default_oauth_3leg = False
 
 
 class LocalNullTunnel(object):
