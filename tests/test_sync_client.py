@@ -40,6 +40,18 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
     settings_namespace_class = SettingsNamespaceProd
     argument_parser_class = ArgumentParserProd
 
+    def setUp(self):
+        super(TestSyncClientBasic, self).setUp()
+
+        creds_store = self.settings.slave_wp_api_params.get('creds_store')
+        if not creds_store:
+            return
+        creds_path = os.path.dirname(creds_store)
+        creds_path = os.path.expanduser(creds_path)
+        creds_path = os.path.expandvars(creds_path)
+        if not os.path.exists(creds_path):
+            os.mkdir(creds_path)
+
     @pytest.mark.skip("legacy not supported")
     def test_wp_v1_read_post_1(self):
         sync_client_class = SyncClientWPLegacy
@@ -63,12 +75,6 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
         sync_client_args = {
             'connect_params': self.settings.slave_wp_api_params
         }
-        creds_store = sync_client_args['connect_params']['creds_store']
-        creds_path = os.path.dirname(creds_store)
-        creds_path = os.path.expanduser(creds_path)
-        creds_path = os.path.expandvars(creds_path)
-        if not os.path.exists(creds_path):
-            os.mkdir(creds_path)
         sync_client_args['connect_params']['version'] = 'wp/v2'
         with sync_client_class(**sync_client_args) as client:
             first_post = client.service.get('posts/1').json()
