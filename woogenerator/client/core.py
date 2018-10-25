@@ -812,7 +812,8 @@ class SyncClientRest(SyncClientAbstract):
 
     def upload_changes(self, pkey, data=None, **kwargs):
         service_endpoint = self.get_single_endpoint(pkey, **kwargs)
-        data = {}
+        if data is None:
+            data = {}
         data = dict([(key, value) for key, value in data.items()])
         # print "service version: %s, data:%s" % (self.service.version, data)
         if self.page_nesting:
@@ -908,7 +909,7 @@ class SyncClientRest(SyncClientAbstract):
         try:
             response.json()
         except JSONDecodeError as exc:
-            raise UserWarning("Should be able to decode JSON: %s" % (repr(
+            raise UserWarning("Should be able to decode JSON: %s\n%s" % (repr(
                 response.text), exc))
         assert response.json(), "json should exist"
         assert not isinstance(
