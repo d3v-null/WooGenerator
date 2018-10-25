@@ -15,9 +15,14 @@ class ProdSyncClientMixin(object):
     # TODO: merge this with get_first_endpoint_item
     def get_first_variable_product(self):
         endpoint = "%s/%s" % (self.endpoint_plural, "?type=variable")
+        page_key = getattr(self, 'page_key', self.endpoint_singular)
+        variations_key = getattr(self, 'page_key', 'variations')
         for page in self.get_page_generator(endpoint):
+            if getattr(self, 'page_nesting', None):
+                page = page.get(page_key, {})
             for product in page:
-                return product
+                if product.get(variations_key):
+                    return product
         raise UserWarning("no variable products")
 
 
