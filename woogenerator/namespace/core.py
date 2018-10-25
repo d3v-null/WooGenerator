@@ -183,8 +183,10 @@ class SettingsNamespaceProto(argparse.Namespace):
             response['version'] = self.get('wc_api_version')
         if self.get('wc_api_timeout'):
             response['timeout'] = self.get('wc_api_timeout')
-        if self.get('wp_creds_store'):
+        if self.get('wc_creds_store'):
             response['creds_store'] = self.get('wc_creds_store')
+        if self.get('wc_api_basic_auth'):
+            response['basic_auth'] = self.get('wc_api_basic_auth')
         return response
 
     @property
