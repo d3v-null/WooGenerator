@@ -4,7 +4,8 @@ dill==0.2.8.2
 six==1.11.0
 unicodecsv==0.14.1
 exchangelib==1.11.4
-bleach==1.5.0
+bleach==2.1
+html5lib==1.0b10  # Until https://github.com/mozilla/bleach/issues/337 is fixed, can be removed afterwards
 kitchen==1.2.4
 simplejson==3.10.0
 npyscreen==4.10.5
@@ -20,7 +21,7 @@ tabulate==0.7.7
 piexif==1.0.12
 pudb==2017.1.2
 tzlocal==1.5.1
-paramiko==2.1.1
+paramiko==2.1.6
 Pillow==5.3.0
 google-api-python-client==1.7.4
 oauth2client
