@@ -1,0 +1,53 @@
+#Generator file info
+
+master-name: gdrive-test
+slave-name: woocommerce-test
+
+taxo-depth: 3
+item-depth: 2
+
+myo-schemas:
+    - MY
+
+woo-schemas:
+    - CA
+    - CB
+
+xero-schemas:
+    - XERO
+
+schema: CA
+
+local-work-dir: tests/sample_data
+
+wp-api-key: tYG1tAoqjBEM
+wp-api-secret: s91fvylVrqChwzzDbEJHEWyySYtAmlIsqqYdjka1KyVDdAyB
+wp-user: admin
+wp-pass: admin
+wp-callback: http://127.0.0.1:18080/wptest
+wp-api-namespace: wp-json
+wp-api-version: wp/v2
+wp-creds-store: ~/.credentials/wp-api-creds-test-local.json
+
+remote-bind-port: 3306
+db-host: localhost
+db-user: wptest
+db-pass: dryad-agent-flinch
+db-name: wptest
+db-charset: utf8mb4
+tbl-prefix: wp_
+
+wc-api-key: ck_659f6994ae88fed68897f9977298b0e19947979a
+wc-api-secret: cs_9421d39290f966172fef64ae18784a2dc7b20976
+wc-callback: http://127.0.0.1/oauth1_callback
+store-url: http://localhost:8083/
+wc-creds-store: ~/.credentials/wc-api-creds-test-local.json
+# To use legacy API
+# wc-api-namespace: wc-api
+# wc-api-version: v3
+# To use new API
+wc-api-namespace: wp-json
+wc-api-version: wc/v2
+
+wp-srv-tz: Australia/Perth
+gdrive-tz: Australia/Perth
