@@ -24,16 +24,16 @@ wp-api-key: tYG1tAoqjBEM
 wp-api-secret: s91fvylVrqChwzzDbEJHEWyySYtAmlIsqqYdjka1KyVDdAyB
 wp-user: admin
 wp-pass: admin
-wp-callback: http://127.0.0.1:18080/wptest
+wp-callback: http://127.0.0.1/oauth1_callback
 wp-api-namespace: wp-json
 wp-api-version: wp/v2
 wp-creds-store: ~/.credentials/wp-api-creds-test-local.json
 
-remote-bind-port: 3306
+remote-bind-port: 8082
 db-host: localhost
-db-user: wptest
-db-pass: dryad-agent-flinch
-db-name: wptest
+db-user: root
+db-pass:
+db-name: wordpress
 db-charset: utf8mb4
 tbl-prefix: wp_
 

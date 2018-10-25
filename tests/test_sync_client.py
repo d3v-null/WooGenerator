@@ -8,7 +8,7 @@ import pytest
 from context import TESTS_DATA_DIR, get_testdata, woogenerator
 from woogenerator.client.core import (SyncClientGDrive, SyncClientSqlWP,
                                       SyncClientWC, SyncClientWCLegacy,
-                                      SyncClientWP)
+                                      SyncClientWP, SyncClientWPLegacy)
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
 from woogenerator.coldata import ColDataWpPost, ColDataProductMeridian
@@ -24,6 +24,7 @@ from .abstract import AbstractWooGeneratorTestCase
 
 
 class AbstractSyncClientTestCase(AbstractWooGeneratorTestCase):
+    config_file = "generator_config_test_docker.yaml"
 
     def setUp(self):
         super(AbstractSyncClientTestCase, self).setUp()
@@ -35,18 +36,18 @@ class AbstractSyncClientTestCase(AbstractWooGeneratorTestCase):
             Registrar.DEBUG_PROGRESS = False
 
 class TestSyncClientBasic(AbstractSyncClientTestCase):
-    config_file = 'generator_config_test.yaml'
     settings_namespace_class = SettingsNamespaceProd
     argument_parser_class = ArgumentParserProd
 
-    @pytest.mark.local
+    @pytest.mark.skip("legacy not supported")
     def test_wp_v1_read_post_1(self):
-        sync_client_class = SyncClientWP
+        sync_client_class = SyncClientWPLegacy
         sync_client_args = {
             'connect_params': self.settings.slave_wp_api_params
         }
         sync_client_args['connect_params']['version'] = 'wp/v1'
         sync_client_args['connect_params']['api'] = 'wp-json'
+        sync_client_args['connect_params']['basic_auth'] = True
         with sync_client_class(**sync_client_args) as client:
             first_post = client.service.get('posts/1').json()
             if client.page_nesting:
@@ -89,10 +90,9 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
                 print('first post json: \n%s' % pformat(first_post_json))
 
 class TestSyncClientAccordance(AbstractSyncClientTestCase):
-    config_file = 'generator_config_test.yaml'
-    settings_namespace_class = SettingsNamespaceUser
+    settings_namespace_class = SettingsNamespaceProd
 
-    @pytest.mark.local
+    @pytest.mark.skip("sql deprecated")
     def test_sql_vs_wp_api_post(self):
         self.settings.download_slave = True
         self.coldata_class = ColDataWpPost
@@ -166,10 +166,9 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
                 wp_api_first_post_normalized[key]
             )
 class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
-    config_file = 'generator_config_test.yaml'
-    settings_namespace_class = SettingsNamespaceUser
+    settings_namespace_class = SettingsNamespaceProd
 
-    @pytest.mark.local
+    @pytest.mark.skip("sql deprecated")
     def test_sql_vs_wc_api_prod(self):
         self.settings.download_slave = True
         self.coldata_class = ColDataProductMeridian

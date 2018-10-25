@@ -23,8 +23,7 @@ from woogenerator.utils import Registrar, SanitationUtils, TimeUtils
 
 
 class TestProdSyncClient(AbstractSyncClientTestCase):
-    config_file = "generator_config_test_docker.yaml"
-    # config_file = "generator_config_test.yaml"
+    # config_file = "generator_config_test_docker.yaml"
     settings_namespace_class = SettingsNamespaceProd
     argument_parser_class = ArgumentParserProd
 
