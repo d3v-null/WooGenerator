@@ -1,4 +1,5 @@
 import logging
+import os
 import unittest
 from collections import OrderedDict
 from pprint import pformat
@@ -11,7 +12,7 @@ from woogenerator.client.core import (SyncClientGDrive, SyncClientSqlWP,
                                       SyncClientWP, SyncClientWPLegacy)
 from woogenerator.client.prod import ProdSyncClientWC
 from woogenerator.client.user import UsrSyncClientWP
-from woogenerator.coldata import ColDataWpPost, ColDataProductMeridian
+from woogenerator.coldata import ColDataProductMeridian, ColDataWpPost
 from woogenerator.conf.parser import ArgumentParserCommon, ArgumentParserProd
 from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
                                          SettingsNamespaceProto,
@@ -62,6 +63,12 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
         sync_client_args = {
             'connect_params': self.settings.slave_wp_api_params
         }
+        creds_store = sync_client_args['connect_params']['creds_store']
+        creds_path = os.path.dirname(creds_store)
+        creds_path = os.path.expanduser(creds_path)
+        creds_path = os.path.expandvars(creds_path)
+        if not os.path.exists(creds_path):
+            os.mkdir(creds_path)
         sync_client_args['connect_params']['version'] = 'wp/v2'
         with sync_client_class(**sync_client_args) as client:
             first_post = client.service.get('posts/1').json()
