@@ -105,9 +105,6 @@ class VarSyncClientMixin(object):
         progress_counter = kwargs.pop('progress_counter', None)
         kwargs['progress_counter'] = InvisibleProgressCounter()
 
-        import pudb; pudb.set_trace()
-        # TODO: fix progress prints for variations
-
         for page in self.get_variations(parent_pkey, **kwargs):
             for page_item in page:
                 if progress_counter is not None:
