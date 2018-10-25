@@ -6,9 +6,14 @@ python:
     - "2.7"
     # - "3.6"
 install:
+    # copy docker testing environment from wp-api-python
+    - curl -L https://raw.githubusercontent.com/derwentx/wp-api-python/master/docker-compose.yml
+    - docker-compose up -d
     - pip install -r requirements.txt
     - pip install coverage pytest
     - python setup.py install
+    # wait until docker is done setting up then run tests
+    - docker exec -it wpapipython_woocommerce_1 bash -c 'until [ -f .done ]; do sleep 1; done; echo "complete"'
 before_script:
     - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
     - chmod +x ./cc-test-reporter
