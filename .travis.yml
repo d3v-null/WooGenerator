@@ -13,7 +13,7 @@ install:
     - pip install coverage pytest
     - python setup.py install
     # wait until docker is done setting up then run tests
-    - docker exec -it wpapipython_woocommerce_1 bash -c 'until [ -f .done ]; do sleep 1; done; echo "complete"'
+    - docker exec -it woogenerator_woocommerce_1 bash -c 'until [ -f .done ]; do sleep 1; done; echo "complete"'
 before_script:
     - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
     - chmod +x ./cc-test-reporter
