@@ -443,6 +443,7 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--wc-api-secret', type=str)
         self.add_suppressed_argument('--wc-api-version', type=str)
         self.add_suppressed_argument('--wc-api-namespace', type=str)
+        self.add_suppressed_argument('--wc-api-basic-auth', type=bool)
         self.add_suppressed_argument('--wc-api-timeout', type=str, default=30)
         self.add_suppressed_argument('--wc-callback', type=str)
         self.add_suppressed_argument('--wc-creds-store', type=str)
