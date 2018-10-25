@@ -356,7 +356,13 @@ class ApiParseMixin(object):
         if self.save_api_data:
             row_data['api_data'] = api_data
         if 'type' not in row_data:
-            row_data['type'] = row_data.get('prod_type')
+            prod_type = row_data.get('prod_type')
+            if prod_type not in self.containers:
+                prod_type = 'simple'
+                warn = UserWarning("unfamiliar product type: %s" % prod_type)
+                self.register_warning(warn)
+            row_data['type'] = prod_type
+
         kwargs['row_data'] = row_data
 
         object_data = self.new_object(rowcount=self.rowcount, **kwargs)
