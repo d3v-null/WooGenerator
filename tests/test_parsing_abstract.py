@@ -9,9 +9,9 @@ class TestObjList(unittest.TestCase):
 class TestImportObject(unittest.TestCase):
     pass
     # def setUp(self):
-        # Masters
+        # Mains
 
-    # slaves
+    # subordinates
     # args = (OrderedDict([('Tans Per Week', ''),
     # ('MYOB Customer Card ID', ''),
     # ('GooglePlus Username', ''),

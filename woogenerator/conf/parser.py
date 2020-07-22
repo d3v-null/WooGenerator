@@ -191,32 +191,32 @@ class ArgumentParserCommon(ArgumentParserProto):
 
         group = download_group.add_mutually_exclusive_group()
         group.add_argument(
-            '--download-master',
-            help='download the master data',
+            '--download-main',
+            help='download the main data',
             action="store_true",
             default=False)
         group.add_argument(
-            '--skip-download-master',
-            help=('use the local master file'
-                  'instead of downloading the master data'),
+            '--skip-download-main',
+            help=('use the local main file'
+                  'instead of downloading the main data'),
             action="store_false",
-            dest='download_master')
+            dest='download_main')
         group = download_group.add_mutually_exclusive_group()
         group.add_argument(
-            '--download-slave',
-            help='download the slave data',
+            '--download-subordinate',
+            help='download the subordinate data',
             action="store_true")
         group.add_argument(
-            '--skip-download-slave',
-            help=('use the local slave file instead of downloading the slave '
+            '--skip-download-subordinate',
+            help=('use the local subordinate file instead of downloading the subordinate '
                   'data'),
             action="store_false",
-            dest='download_slave')
+            dest='download_subordinate')
         download_group.add_argument(
             '--schema', help='what schema to process the files as')
         download_group.add_argument(
             '--since-s',
-            help='filter out slave records edited before this date')
+            help='filter out subordinate records edited before this date')
 
     def add_processing_options(self, processing_group):
         """Add options pertaining to processing data."""
@@ -268,18 +268,18 @@ class ArgumentParserCommon(ArgumentParserProto):
             type=text_type,
             default=TimeUtils._local_tz.zone)
         processing_group.add_argument(
-            '--master-parse-limit',
-            help="limit number of items parsed by master parser",
+            '--main-parse-limit',
+            help="limit number of items parsed by main parser",
             type=int,
             default=0)
         processing_group.add_argument(
-            '--slave-parse-limit',
-            help="limit number of items parsed by slave parser",
+            '--subordinate-parse-limit',
+            help="limit number of items parsed by subordinate parser",
             type=int,
             default=0)
         processing_group.add_argument(
-            '--master-and-quit',
-            help="quit after exporting master parsers, don't process slave",
+            '--main-and-quit',
+            help="quit after exporting main parsers, don't process subordinate",
             action="store_true",
         )
         processing_group.add_argument(
@@ -294,15 +294,15 @@ class ArgumentParserCommon(ArgumentParserProto):
         )
         group = processing_group.add_mutually_exclusive_group()
         group.add_argument(
-            '--do-export-master',
-            help="Export master parsers to file",
+            '--do-export-main',
+            help="Export main parsers to file",
             default=True,
         )
         group.add_argument(
-            '--skip-export-master',
-            help="don't export master parsers to file",
+            '--skip-export-main',
+            help="don't export main parsers to file",
             action="store_false",
-            dest='do_export_master')
+            dest='do_export_main')
         processing_group.add_argument(
             '--save-api-data',
             help=('store data from the api so it can be replayed later '
@@ -325,14 +325,14 @@ class ArgumentParserCommon(ArgumentParserProto):
 
         group = update_group.add_mutually_exclusive_group()
         group.add_argument(
-            '--update-slave',
-            help='update the slave database',
+            '--update-subordinate',
+            help='update the subordinate database',
             action="store_true")
         group.add_argument(
-            '--skip-update-slave',
-            help='don\'t update the slave database',
+            '--skip-update-subordinate',
+            help='don\'t update the subordinate database',
             action="store_false",
-            dest='update_slave')
+            dest='update_subordinate')
 
         group = update_group.add_mutually_exclusive_group()
         group.add_argument(
@@ -457,17 +457,17 @@ class ArgumentParserCommon(ArgumentParserProto):
         self.add_suppressed_argument('--mail-recipients', type=str, nargs='*')
 
     def add_other_options(self):
-        self.add_suppressed_argument('--master-name')
-        self.add_suppressed_argument('--slave-name')
+        self.add_suppressed_argument('--main-name')
+        self.add_suppressed_argument('--subordinate-name')
         self.add_argument(
-            '--master-file', help='location of local master data file')
+            '--main-file', help='location of local main data file')
         self.add_argument(
-            '--slave-file', help='location of local slave data file')
+            '--subordinate-file', help='location of local subordinate data file')
         self.add_argument('--pickle-file', help='location of saved state file')
         self.add_argument(
             '--override-progress', help='override progress of saved state')
 
-        self.add_suppressed_argument('--master-dialect-suggestion')
+        self.add_suppressed_argument('--main-dialect-suggestion')
         self.add_suppressed_argument('--web-dir')
         self.add_suppressed_argument('--web-address')
         self.add_suppressed_argument('--web-browser')
@@ -671,10 +671,10 @@ class ArgumentParserProd(ArgumentParserCommon):
     def add_update_options(self, update_group):
         super(ArgumentParserProd, self).add_update_options(update_group)
         update_group.add_argument(
-            '--slave-limit', help='limit per page when using the slave api')
+            '--subordinate-limit', help='limit per page when using the subordinate api')
         update_group.add_argument(
-            '--slave-offset',
-            help='offset when using the slave api (for debugging)')
+            '--subordinate-offset',
+            help='offset when using the subordinate api (for debugging)')
 
     def add_report_options(self, report_group):
         super(ArgumentParserProd, self).add_report_options(report_group)
@@ -696,7 +696,7 @@ class ArgumentParserProd(ArgumentParserCommon):
         self.add_suppressed_argument('--myo-schemas', nargs='+')
         self.add_suppressed_argument('--xero-schemas', nargs='+')
         self.add_suppressed_argument('--woo-schemas', nargs='+')
-        self.add_suppressed_argument('--slave-cat-file')
+        self.add_suppressed_argument('--subordinate-cat-file')
 
     def add_client_options(self, client_group):
         super(ArgumentParserProd, self).add_client_options(client_group)
@@ -770,7 +770,7 @@ class ArgumentParserUser(ArgumentParserCommon):
             '--ignore-cards', help='list of cards to ignore')
         filter_group.add_argument(
             '--since-m',
-            help='filter out master records edited before this date')
+            help='filter out main records edited before this date')
 
     def add_processing_options(self, processing_group):
         super(ArgumentParserUser,
@@ -793,14 +793,14 @@ class ArgumentParserUser(ArgumentParserCommon):
         super(ArgumentParserUser, self).add_update_options(update_group)
         group = update_group.add_mutually_exclusive_group()
         group.add_argument(
-            '--update-master',
-            help='update the master database',
+            '--update-main',
+            help='update the main database',
             action="store_true")
         group.add_argument(
-            '--skip-update-master',
-            help='don\'t update the master database',
+            '--skip-update-main',
+            help='don\'t update the main database',
             action="store_false",
-            dest='update_master')
+            dest='update_main')
 
     def add_client_options(self, client_group):
         super(ArgumentParserUser, self).add_client_options(client_group)
@@ -821,9 +821,9 @@ class ArgumentParserUser(ArgumentParserCommon):
         self.add_suppressed_argument('--m-ssh-user', type=str)
         self.add_suppressed_argument('--m-ssh-pass', type=str)
         self.add_suppressed_argument(
-            '--m-ssh-host', help='location of master ssh server')
+            '--m-ssh-host', help='location of main ssh server')
         self.add_suppressed_argument(
-            '--m-ssh-port', type=int, help='master ssh port')
+            '--m-ssh-port', type=int, help='main ssh port')
         self.add_suppressed_argument('--remote-export-dir', type=str)
         self.add_suppressed_argument('--m-x-cmd', type=str)
         self.add_suppressed_argument('--m-i-cmd', type=str)

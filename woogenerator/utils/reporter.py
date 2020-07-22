@@ -59,8 +59,8 @@ class ReporterNamespace(argparse.Namespace):
 DUP_CSS = "\n".join([
     ".highlight_old {color: red !important; }"
     ".highlight_oldish {color: orange;}"
-    ".highlight_master {background: lightblue !important;}"
-    ".highlight_slave {background: lightpink !important;}"
+    ".highlight_main {background: lightblue !important;}"
+    ".highlight_subordinate {background: lightpink !important;}"
 ])
 
 
@@ -423,17 +423,17 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
                 }),
                 (reporter.Section.get_descr_fmt(fmt), {
                     'class':
-                    'highlight_master',
+                    'highlight_main',
                     'strong':
-                    settings.master_name,
+                    settings.main_name,
                     'description':
                     " records are highlighted with a light blue background"
                 }),
                 (reporter.Section.get_descr_fmt(fmt), {
                     'class':
-                    'highlight_slave',
+                    'highlight_subordinate',
                     'strong':
-                    settings.slave_name,
+                    settings.subordinate_name,
                     'description':
                     " records are highlighted with a light pink background"
                 }),
@@ -473,7 +473,7 @@ def do_duplicates_summary_group(reporter, matches, updates, parsers, settings):
 def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     group = reporter.Group('dup', 'Duplicate Results')
-    container = parsers.master.object_container.container
+    container = parsers.main.object_container.container
 
     dup_cols = OrderedDict(settings.basic_cols.items() + [
         # ('Create Date', {}),
@@ -496,7 +496,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
 
     def user_older_than(user_data, wp_time_obj):
         """Determine if user is older than a given wp_time object."""
-        if fn_obj_source_is(settings.master_name)(user_data):
+        if fn_obj_source_is(settings.main_name)(user_data):
             try:
                 user_time_obj = getattr(user_data, 'act_last_transaction')
             except AssertionError:
@@ -519,12 +519,12 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
         for match in duplicate_matchlist:
             if match.m_len <= 1:
                 continue
-                # only care about master duplicates at the moment
+                # only care about main duplicates at the moment
             duplicate_objects = list(match.m_objects)
             duplicates.add_conflictors(duplicate_objects, duplicate_type)
 
     address_duplicates = {}
-    for address, objects in parsers.master.addresses.items():
+    for address, objects in parsers.main.addresses.items():
         # print "analysing address %s " % address
         # for object_data in objects:
         # print " -> associated object: %s" % object_data
@@ -534,7 +534,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
             address_duplicates[address] = objects
             duplicates.add_conflictors(objects, "address", weighting=0.1)
 
-    for object_data in parsers.master.objects.values():
+    for object_data in parsers.main.objects.values():
         if fn_user_older_than_wp(settings['old_threshold'])(object_data):
             details = TimeUtils.wp_time_to_string(
                 object_data.act_last_transaction) or "UNKN"
@@ -546,10 +546,10 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
             duplicates.add_conflictor(object_data, "last_transaction_oldish",
                                       0.2, details)
 
-    highlight_rules_master_slave = [('highlight_master',
-                                     fn_obj_source_is(settings.master_name)),
-                                    ('highlight_slave',
-                                     fn_obj_source_is(settings.slave_name))]
+    highlight_rules_main_subordinate = [('highlight_main',
+                                     fn_obj_source_is(settings.main_name)),
+                                    ('highlight_subordinate',
+                                     fn_obj_source_is(settings.subordinate_name))]
 
     fn_usr_oldish = fn_user_older_than_wp(settings['oldish_threshold'])
     fn_usr_old = fn_user_older_than_wp(settings['old_threshold'])
@@ -558,7 +558,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
     highlight_rules_old = [('highlight_oldish', fn_usr_oldish),
                            ('highlight_old', fn_usr_old)]
 
-    highlight_rules_all = highlight_rules_master_slave + highlight_rules_old
+    highlight_rules_all = highlight_rules_main_subordinate + highlight_rules_old
 
     if Registrar.DEBUG_DUPLICATES:
         # print duplicates.tabulate({}, tablefmt='plain')
@@ -575,7 +575,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
                     'all duplicates',
                     title='All Duplicates',
                     description="%s records are involved in duplicates" %
-                    settings.master_name,
+                    settings.main_name,
                     data=render_all_duplicates,
                     length=len(duplicates)))
 
@@ -606,7 +606,7 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
                 title='Email Duplicates',
                 description=
                 "%s records match with multiple records in %s on email" %
-                (settings.slave_name, settings.master_name),
+                (settings.subordinate_name, settings.main_name),
                 data=render_email_duplicates,
                 length=len(matches.duplicate['email'])))
 
@@ -629,23 +629,23 @@ def do_duplicates_group(reporter, matches, updates, parsers, settings):
         group.add_section(
             reporter.Section(
                 'address_duplicates',
-                title='Duplicate %s Addresses' % settings.master_name.title(),
+                title='Duplicate %s Addresses' % settings.main_name.title(),
                 description='%s addresses that appear in multiple records' %
-                settings.master_name,
+                settings.main_name,
                 data=render_address_duplicates,
                 length=len(address_duplicates)))
 
     match_list_instructions = {
         'cardMatcher.duplicate_matches':
-        '%s records have multiple CARD IDs in %s' % (settings.slave_name,
-                                                     settings.master_name),
+        '%s records have multiple CARD IDs in %s' % (settings.subordinate_name,
+                                                     settings.main_name),
         'username_matcher.duplicate_matches':
-        '%s records have multiple USERNAMEs in %s' % (settings.slave_name,
-                                                      settings.master_name)
+        '%s records have multiple USERNAMEs in %s' % (settings.subordinate_name,
+                                                      settings.main_name)
     }
 
     def render_matchlist_data(fmt, match_list, matchlist_type):
-        if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
+        if 'mainless' in matchlist_type or 'subordinateless' in matchlist_type:
             data = match_list.merge().tabulate(tablefmt=fmt)
         else:
             data = match_list.tabulate(
@@ -714,14 +714,14 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
                 'Update Name',
                 'description':
                 (" - The primary keys of the records being synchronized "
-                 "({master_pkey} and {slave_pkey}) which should be unique "
+                 "({main_pkey} and {subordinate_pkey}) which should be unique "
                  "for any matched records.")
             }),
             (reporter.Section.get_descr_fmt(fmt), {
                 'strong':
                 'OLD',
                 'description':
-                (" - The {master_name} and {slave_name} records before the sync."
+                (" - The {main_name} and {subordinate_name} records before the sync."
                  )
             }),
             (reporter.Section.get_descr_fmt(fmt), {
@@ -755,10 +755,10 @@ def do_main_summary_group(reporter, matches, updates, parsers, settings):
             if 'description' in format_kwargs:
                 format_kwargs['description'] = format_kwargs[
                     'description'].format(
-                        master_name=settings.master_name,
-                        slave_name=settings.slave_name,
-                        master_pkey=settings.master_pkey,
-                        slave_pkey=settings.slave_pkey)
+                        main_name=settings.main_name,
+                        subordinate_name=settings.subordinate_name,
+                        main_pkey=settings.main_pkey,
+                        subordinate_pkey=settings.subordinate_pkey)
             response += reporter.format(format_spec, **format_kwargs)
         return response
 
@@ -795,10 +795,10 @@ def do_sanitizing_group(reporter, parsers, settings):
                         'Edited Address',
                         'Edited Alt Address',
                     ]).items()))
-    if parsers.master:
-        container = parsers.master.object_container.container
-    elif parsers.slave:
-        container = parsers.slave.object_container.container
+    if parsers.main:
+        container = parsers.main.object_container.container
+    elif parsers.subordinate:
+        container = parsers.subordinate.object_container.container
     else:
         return
 
@@ -808,7 +808,7 @@ def do_sanitizing_group(reporter, parsers, settings):
         users = container(register.values())
         return users.tabulate(cols=address_cols, tablefmt=fmt)
 
-    for source in ['master', 'slave']:
+    for source in ['main', 'subordinate']:
         parser = getattr(parsers, source)
         if not parser:
             continue
@@ -839,23 +839,23 @@ def do_sanitizing_group(reporter, parsers, settings):
                               parser.bad_address.values())
         report_path = settings.get('rep_san_%s_csv_path' % source)
         bad_users.export_items(report_path, csv_colnames)
-        reporter.add_csv_file('master_sanitation', report_path)
+        reporter.add_csv_file('main_sanitation', report_path)
 
     if group:
         reporter.add_group(group)
 
 
 def do_delta_group(reporter, matches, updates, parsers, settings):
-    if not (settings.do_sync and (updates.delta_master + updates.delta_slave)):
+    if not (settings.do_sync and (updates.delta_main + updates.delta_subordinate)):
         return
 
     group = reporter.Group('deltas', 'Field Changes')
 
-    container = parsers.master.object_container.container
+    container = parsers.main.object_container.container
 
     delta_lists = OrderedDict()
 
-    for source in ['master', 'slave']:
+    for source in ['main', 'subordinate']:
         source_delta_updates = getattr(updates, 'delta_%s' % source)
         if source_delta_updates:
             delta_lists[source] = container(
@@ -919,30 +919,30 @@ def do_matches_summary_group(reporter, matches, updates, parsers, settings):
             }),
             (reporter.Section.get_descr_fmt(fmt), {
                 'strong':
-                'Masterless Card Matches',
+                'Mainless Card Matches',
                 'description':
-                (" are instances where a record in {slave_name} is seen to "
-                 "have a {master_pkey} value that is that is not found in "
-                 "{master_name}. This could mean that the {master_name} "
+                (" are instances where a record in {subordinate_name} is seen to "
+                 "have a {main_pkey} value that is that is not found in "
+                 "{main_name}. This could mean that the {main_name} "
                  "record associated with that user has been deleted or badly "
                  "merged.")
             }),
             (reporter.Section.get_descr_fmt(fmt), {
                 'strong':
-                'Slaveless Username Matches',
+                'Subordinateless Username Matches',
                 'description':
-                (" are instances where a record in {master_name} has a "
-                 "username value that is not found in {slave_name}. This "
-                 "could be because the {slave_name} account was deleted.")
+                (" are instances where a record in {main_name} has a "
+                 "username value that is not found in {subordinate_name}. This "
+                 "could be because the {subordinate_name} account was deleted.")
             })
         ]:
             if 'description' in format_kwargs:
                 format_kwargs['description'] = format_kwargs[
                     'description'].format(
-                        master_name=settings.master_name,
-                        slave_name=settings.slave_name,
-                        master_pkey=settings.master_pkey,
-                        slave_pkey=settings.slave_pkey)
+                        main_name=settings.main_name,
+                        subordinate_name=settings.subordinate_name,
+                        main_pkey=settings.main_pkey,
+                        subordinate_pkey=settings.subordinate_pkey)
             response += reporter.format(format_spec, **format_kwargs)
         return response
 
@@ -961,7 +961,7 @@ def render_perfect_matches(fmt, matchlist):
 
 
 def render_matchlist_data(fmt, match_list, matchlist_type):
-    if 'masterless' in matchlist_type or 'slaveless' in matchlist_type:
+    if 'mainless' in matchlist_type or 'subordinateless' in matchlist_type:
         data = match_list.merge().tabulate(tablefmt=fmt)
     else:
         data = match_list.tabulate(tablefmt=fmt, )
@@ -976,38 +976,38 @@ def render_parselist_data(fmt, parse_list, parselist_type, container):
 
 
 match_list_instructions = {
-    'cardMatcher.masterless_matches':
-    '{slave_name} records do not have a corresponding CARD ID in {master_name} (deleted?)',
-    'username_matcher.slaveless_matches':
-    '{master_name} records have no USERNAMEs in {slave_name}',
+    'cardMatcher.mainless_matches':
+    '{subordinate_name} records do not have a corresponding CARD ID in {main_name} (deleted?)',
+    'username_matcher.subordinateless_matches':
+    '{main_name} records have no USERNAMEs in {subordinate_name}',
     'product_matcher.duplicate_matches':
-    '{master_name} records have ambiguous SKUs in {slave_name}',
-    'product_matcher.masterless_matches':
-    '{slave_name} records have no matching SKU in {master_name}',
-    'product_matcher.slaveless_matches':
-    '{master_name} records have no matching SKU in {slave_name}',
-    'variation_matcher.masterless_matches':
-    '{slave_name} variations have no match in {master_name}',
-    'variation_matcher.slaveless_matches':
-    '{master_name} variations have no match in {slave_name}',
-    'category_matcher.masterless_matches':
-    '{slave_name} categories have no match in {master_name}',
-    'category_matcher.slaveless_matches':
-    '{master_name} categories have no match in {slave_name}',
+    '{main_name} records have ambiguous SKUs in {subordinate_name}',
+    'product_matcher.mainless_matches':
+    '{subordinate_name} records have no matching SKU in {main_name}',
+    'product_matcher.subordinateless_matches':
+    '{main_name} records have no matching SKU in {subordinate_name}',
+    'variation_matcher.mainless_matches':
+    '{subordinate_name} variations have no match in {main_name}',
+    'variation_matcher.subordinateless_matches':
+    '{main_name} variations have no match in {subordinate_name}',
+    'category_matcher.mainless_matches':
+    '{subordinate_name} categories have no match in {main_name}',
+    'category_matcher.subordinateless_matches':
+    '{main_name} categories have no match in {subordinate_name}',
 }
 
 
 def do_matches_group(reporter, matches, updates, parsers, settings):
     group = reporter.Group('matching', 'Matching Results')
 
-    container = parsers.master.object_container.container
+    container = parsers.main.object_container.container
 
     group.add_section(
         reporter.Section(
             'perfect_matches',
             title='Perfect Matches',
             description="%s records match well with %s" %
-            (settings.slave_name, settings.master_name),
+            (settings.subordinate_name, settings.main_name),
             data=functools.partial(
                 render_perfect_matches,
                 matchlist=matches.globals,
@@ -1020,7 +1020,7 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
         description = match_list_instructions.get(matchlist_type,
                                                   matchlist_type)
         description.format(
-            master_name=settings.master_name, slave_name=settings.slave_name)
+            main_name=settings.main_name, subordinate_name=settings.subordinate_name)
         group.add_section(
             reporter.Section(
                 matchlist_type,
@@ -1033,10 +1033,10 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
                 length=len(match_list)))
 
     parse_list_instructions = {
-        "sa_parser.noemails": "{slave_name} records have invalid emails",
-        "ma_parser.noemails": "{master_name} records have invalid emails",
-        "ma_parser.nocards": "{master_name} records have no cards",
-        "sa_parser.nousernames": "{slave_name} records have no username",
+        "sa_parser.noemails": "{subordinate_name} records have invalid emails",
+        "ma_parser.noemails": "{main_name} records have invalid emails",
+        "ma_parser.nocards": "{main_name} records have no cards",
+        "sa_parser.nousernames": "{subordinate_name} records have no username",
     }
 
     for parselist_type, parse_list in parsers.anomalous.items():
@@ -1045,7 +1045,7 @@ def do_matches_group(reporter, matches, updates, parsers, settings):
         description = parse_list_instructions.get(parselist_type,
                                                   parselist_type)
         description.format(
-            master_name=settings.master_name, slave_name=settings.slave_name)
+            main_name=settings.main_name, subordinate_name=settings.subordinate_name)
         group.add_section(
             reporter.Section(
                 parselist_type,
@@ -1070,7 +1070,7 @@ def do_variation_matches_group(reporter, matches, updates, parsers, settings):
             'perfect_variation_matches',
             title='Perfect Variation Matches',
             description="%s variations match well with %s" %
-            (settings.slave_name, settings.master_name),
+            (settings.subordinate_name, settings.main_name),
             data=functools.partial(
                 render_perfect_matches,
                 matchlist=matches.variation.globals,
@@ -1083,7 +1083,7 @@ def do_variation_matches_group(reporter, matches, updates, parsers, settings):
         description = match_list_instructions.get(matchlist_type,
                                                   matchlist_type)
         description.format(
-            master_name=settings.master_name, slave_name=settings.slave_name)
+            main_name=settings.main_name, subordinate_name=settings.subordinate_name)
         group.add_section(
             reporter.Section(
                 matchlist_type,
@@ -1104,7 +1104,7 @@ def do_category_matches_group(reporter, matches, updates, parsers, settings):
             'perfect_category_matches',
             title='Perfect Category Matches',
             description="%s categorys match well with %s" %
-            (settings.slave_name, settings.master_name),
+            (settings.subordinate_name, settings.main_name),
             data=functools.partial(
                 render_perfect_matches,
                 matchlist=matches.category.globals,
@@ -1117,7 +1117,7 @@ def do_category_matches_group(reporter, matches, updates, parsers, settings):
         description = match_list_instructions.get(matchlist_type,
                                                   matchlist_type)
         description.format(
-            master_name=settings.master_name, slave_name=settings.slave_name)
+            main_name=settings.main_name, subordinate_name=settings.subordinate_name)
         group.add_section(
             reporter.Section(
                 matchlist_type,
@@ -1145,12 +1145,12 @@ def do_sync_group(reporter, matches, updates, parsers, settings):
     target_update_list_meta = []
     if isinstance(settings, SettingsNamespaceUser):
         target_update_list_meta += [
-            (updates.master, settings.master_name + "_updates",
-             settings.master_name + " items will be updated"),
+            (updates.main, settings.main_name + "_updates",
+             settings.main_name + " items will be updated"),
         ]
     target_update_list_meta += [
-        (updates.slave, settings.slave_name + "_updates",
-         settings.slave_name + " items will be updated"),
+        (updates.subordinate, settings.subordinate_name + "_updates",
+         settings.subordinate_name + " items will be updated"),
         (updates.problematic, "problematic_updates",
          "items can't be automatically merged because they are too dissimilar")
     ]
@@ -1177,12 +1177,12 @@ def do_img_sync_group(reporter, matches, updates, parsers, settings):
     group = reporter.Group('img_sync', 'Image Syncing Results')
 
     target_update_list_meta = [
-        (updates.image.slave, settings.slave_name + "_img_updates",
-         settings.slave_name + " images will be updated"),
-        (updates.image.slaveless, settings.slave_name + "_new_imgs",
-         settings.slave_name + " images will be created"),
-        (updates.image.masterless, settings.slave_name + "_del_imgs",
-         settings.slave_name + " images will be deleted"),
+        (updates.image.subordinate, settings.subordinate_name + "_img_updates",
+         settings.subordinate_name + " images will be updated"),
+        (updates.image.subordinateless, settings.subordinate_name + "_new_imgs",
+         settings.subordinate_name + " images will be created"),
+        (updates.image.mainless, settings.subordinate_name + "_del_imgs",
+         settings.subordinate_name + " images will be deleted"),
         (updates.image.problematic, "problematic_img_updates",
          "imgs can't be merged because they are too dissimilar"),
     ]
@@ -1209,12 +1209,12 @@ def do_cat_sync_gruop(reporter, matches, updates, parsers, settings):
     group = reporter.Group('category_sync', 'Category Syncing Results')
 
     target_update_list_meta = [
-        (updates.category.slave, settings.slave_name + "_cat_updates",
-         settings.slave_name + " categoties will be updated"),
-        (updates.category.slaveless, settings.slave_name + "_new_cats",
-         settings.slave_name + " categoties will be created"),
-        (updates.category.masterless, settings.slave_name + "_del_cats",
-         settings.slave_name + " categoties will be deleted"),
+        (updates.category.subordinate, settings.subordinate_name + "_cat_updates",
+         settings.subordinate_name + " categoties will be updated"),
+        (updates.category.subordinateless, settings.subordinate_name + "_new_cats",
+         settings.subordinate_name + " categoties will be created"),
+        (updates.category.mainless, settings.subordinate_name + "_del_cats",
+         settings.subordinate_name + " categoties will be deleted"),
         (updates.category.problematic, "problematic_cat_updates",
          "cats can't be merged because they are too dissimilar"),
     ]
@@ -1241,8 +1241,8 @@ def do_var_sync_group(reporter, matches, updates, parsers, settings):
     group = reporter.Group('variation_sync', 'Variation Syncing Results')
 
     target_update_list_meta = [
-        (updates.variation.slave, settings.slave_name + "_variation_updates",
-         settings.slave_name + " variations will be updated"),
+        (updates.variation.subordinate, settings.subordinate_name + "_variation_updates",
+         settings.subordinate_name + " variations will be updated"),
         (updates.variation.problematic, "problematic_variation_updates",
          "variations can't be merged because they are too dissimilar"),
     ]
@@ -1297,17 +1297,17 @@ def do_post_summary_group(reporter, results, settings):
                         'strong': "Successes:",
                         'description': " %s" % len(results.successes)
                     }), )
-            if results.fails_master:
+            if results.fails_main:
                 response_components.append(
                     (reporter.Section.get_descr_fmt(fmt), {
-                        'strong': "Master Fails:",
-                        'description': " %s" % len(results.fails_master)
+                        'strong': "Main Fails:",
+                        'description': " %s" % len(results.fails_main)
                     }), )
-            if results.fails_slave:
+            if results.fails_subordinate:
                 response_components.append(
                     (reporter.Section.get_descr_fmt(fmt), {
-                        'strong': "Slave Fails:",
-                        'description': " %s" % len(results.fails_slave)
+                        'strong': "Subordinate Fails:",
+                        'description': " %s" % len(results.fails_subordinate)
                     }), )
         else:
             response_components.append((reporter.Section.get_descr_fmt(fmt), {
@@ -1334,31 +1334,31 @@ def do_failures_group(reporter, results, settings):
         for update, exc in fails:
             fail_row = OrderedDict([
                 ('update', update),
-                ('master',
+                ('main',
                  SanitationUtils.coerce_unicode(update.new_m_object)),
-                ('slave', SanitationUtils.coerce_unicode(update.new_s_object)),
+                ('subordinate', SanitationUtils.coerce_unicode(update.new_s_object)),
             ])
-            master_updates = update.get_master_updates()
-            slave_updates = update.get_slave_updates()
+            main_updates = update.get_main_updates()
+            subordinate_updates = update.get_subordinate_updates()
             if fmt:
                 fail_row.update([
-                    ('master_changes',
+                    ('main_changes',
                      tabulate.tabulate(
-                         master_updates.items(),
+                         main_updates.items(),
                          headers=['Key', 'Value'],
                          tablefmt=fmt)),
-                    ('slave_changes',
+                    ('subordinate_changes',
                      tabulate.tabulate(
-                         slave_updates.items(),
+                         subordinate_updates.items(),
                          headers=['Key', 'Value'],
                          tablefmt=fmt)),
                 ])
             else:
                 fail_row.update([
-                    ('master_changes',
-                     SanitationUtils.coerce_unicode(master_updates)),
-                    ('slave_changes',
-                     SanitationUtils.coerce_unicode(slave_updates)),
+                    ('main_changes',
+                     SanitationUtils.coerce_unicode(main_updates)),
+                    ('subordinate_changes',
+                     SanitationUtils.coerce_unicode(subordinate_updates)),
                 ])
             fail_row.update([('exception', repr(exc))])
             # print("Fail row:\n%s\n" % pformat(fail_row))
@@ -1369,14 +1369,14 @@ def do_failures_group(reporter, results, settings):
         fail_table = get_fail_table(fmt, fails)
         return tabulate.tabulate(fail_table, tablefmt=fmt, headers=headers)
 
-    for source in ['master', 'slave']:
+    for source in ['main', 'subordinate']:
         source_failures = getattr(results, 'fails_%s' % source)
         if not source_failures:
             continue
         # TODO: Write failure HTML report here
 
         cols = [
-            'update', 'master', 'slave', 'master_changes', 'slave_changes',
+            'update', 'main', 'subordinate', 'main_changes', 'subordinate_changes',
             'exception'
         ]
         headers = OrderedDict([(col, col.title()) for col in cols])

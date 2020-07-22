@@ -20,8 +20,8 @@ class TestFieldGroupPost(unittest.TestCase):
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False
         Registrar.DEBUG_MESSAGE = False
-        Registrar.master_name = "ACT"
-        Registrar.slave_name = "WP"
+        Registrar.main_name = "ACT"
+        Registrar.subordinate_name = "WP"
         FieldGroup.perform_post = True
         FieldGroup.enforce_mandatory_keys = False
 
@@ -1682,34 +1682,34 @@ class TestRoleGroupNoPost(TestFieldGroupNoPost, TestRoleGroupCommon):
         )
 
     def test_update_from(self):
-        master = RoleGroup(
+        main = RoleGroup(
             schema=None,
             role='WN',
             direct_brand='VuTan Wholesale'
         )
-        slave = RoleGroup(
+        subordinate = RoleGroup(
             schema='TT',
             role='WN'
         )
-        self.assertEqual(slave.schema, 'TT')
-        self.assertEqual(slave.direct_brand, None)
-        self.assertEqual(slave.role, 'WN')
+        self.assertEqual(subordinate.schema, 'TT')
+        self.assertEqual(subordinate.direct_brand, None)
+        self.assertEqual(subordinate.role, 'WN')
 
-        slave_copy = copy(slave)
-        self.assertFalse(master.perform_post)
-        self.assertFalse(slave.perform_post)
-        self.assertFalse(slave_copy.perform_post)
+        subordinate_copy = copy(subordinate)
+        self.assertFalse(main.perform_post)
+        self.assertFalse(subordinate.perform_post)
+        self.assertFalse(subordinate_copy.perform_post)
 
-        slave_copy.update_from(master, ['Role', 'Direct Brand'])
-        self.assertEqual(slave.schema, 'TT')
-        self.assertEqual(slave.direct_brand, None)
-        self.assertEqual(slave.role, 'WN')
-        self.assertEqual(slave_copy.schema, 'TT')
-        self.assertEqual(slave_copy.direct_brand, 'VuTan Wholesale')
-        self.assertEqual(slave_copy.role, 'RN')
-        self.assertFalse(master.perform_post)
-        self.assertFalse(slave.perform_post)
-        self.assertTrue(slave_copy.perform_post)
+        subordinate_copy.update_from(main, ['Role', 'Direct Brand'])
+        self.assertEqual(subordinate.schema, 'TT')
+        self.assertEqual(subordinate.direct_brand, None)
+        self.assertEqual(subordinate.role, 'WN')
+        self.assertEqual(subordinate_copy.schema, 'TT')
+        self.assertEqual(subordinate_copy.direct_brand, 'VuTan Wholesale')
+        self.assertEqual(subordinate_copy.role, 'RN')
+        self.assertFalse(main.perform_post)
+        self.assertFalse(subordinate.perform_post)
+        self.assertTrue(subordinate_copy.perform_post)
 
 if __name__ == '__main__':
     unittest.main()

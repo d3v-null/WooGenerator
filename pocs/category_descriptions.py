@@ -123,7 +123,7 @@ Tanbience
 
     return settings
 
-def populate_master_parsers(settings):
+def populate_main_parsers(settings):
     coldata_class = ColDataWoo
 
     settings.product_parser_args.update(**{
@@ -220,7 +220,7 @@ def main(override_args=None, settings=None):
         'taxo_depth': settings.taxo_depth,
     }
 
-    parsers = populate_master_parsers(settings)
+    parsers = populate_main_parsers(settings)
 
 
 if __name__ == '__main__':

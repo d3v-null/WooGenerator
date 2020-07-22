@@ -46,14 +46,14 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
 
     @property
     def m_x_name(self):
-        """Name used for master export."""
-        return "%s_x%s_%s.csv" % (self.master_name, self.file_suffix,
+        """Name used for main export."""
+        return "%s_x%s_%s.csv" % (self.main_name, self.file_suffix,
                                   self.import_name)
 
     @property
     def s_x_name(self):
-        """Name used for slave export."""
-        return "%s_x%s_%s.csv" % (self.slave_name, self.file_suffix,
+        """Name used for subordinate export."""
+        return "%s_x%s_%s.csv" % (self.subordinate_name, self.file_suffix,
                                   self.import_name)
 
     @property
@@ -62,38 +62,38 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return ColDataUser
 
     @property
-    def master_path(self):
-        """Get path which the master data is downloaded to and read from."""
-        if hasattr(self, 'master_file') and getattr(self, 'master_file'):
-            return getattr(self, 'master_file')
-        response = '%s%s-%s.csv' % (self.file_prefix, 'master',
+    def main_path(self):
+        """Get path which the main data is downloaded to and read from."""
+        if hasattr(self, 'main_file') and getattr(self, 'main_file'):
+            return getattr(self, 'main_file')
+        response = '%s%s-%s.csv' % (self.file_prefix, 'main',
                                     self.import_name)
         response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
-    def slave_path(self):
-        """Get path which the slave data is downloaded to and read from."""
-        if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
-            return getattr(self, 'slave_file')
-        response = '%s%s-%s.csv' % (self.file_prefix, 'slave',
+    def subordinate_path(self):
+        """Get path which the subordinate data is downloaded to and read from."""
+        if hasattr(self, 'subordinate_file') and getattr(self, 'subordinate_file'):
+            return getattr(self, 'subordinate_file')
+        response = '%s%s-%s.csv' % (self.file_prefix, 'subordinate',
                                     self.import_name)
         response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
-    def master_parser_class(self):
-        """Class used to parse master data."""
+    def main_parser_class(self):
+        """Class used to parse main data."""
         return CsvParseUser
 
     @property
-    def master_parser_args(self):
-        """Arguments used to create the master parser."""
+    def main_parser_args(self):
+        """Arguments used to create the main parser."""
         response = {
             'cols': self.coldata_class.get_act_import_cols(),
             'defaults': self.coldata_class.get_defaults(),
             'contact_schema': 'act',
-            'source': self.master_name,
+            'source': self.main_name,
             # 'schema':self.schema
         }
         for key, settings_key in [
@@ -104,23 +104,23 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def master_download_client_class(self):
-        """Get class which is used to download and parse master data."""
+    def main_download_client_class(self):
+        """Get class which is used to download and parse main data."""
         response = self.local_client_class
-        if self.download_master:
+        if self.download_main:
             response = UsrSyncClientSshAct
         return response
 
     @property
-    def master_upload_client_class(self):
-        """Get class which is used to download and parse master data."""
+    def main_upload_client_class(self):
+        """Get class which is used to download and parse main data."""
         response = self.local_client_class
-        if self['update_master']:
+        if self['update_main']:
             response = UsrSyncClientSshAct
         return response
 
     @property
-    def master_connect_params(self):
+    def main_connect_params(self):
         response = {}
         for key, settings_key in [
             ('hostname', 'm_ssh_host'),
@@ -137,7 +137,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return ";".join(self.coldata_class.get_act_import_cols())
 
     @property
-    def master_db_params(self):
+    def main_db_params(self):
         response = {
             'fields': self.act_fields,
         }
@@ -165,54 +165,54 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def master_download_client_args(self):
-        """Return arguments used by the client to analyse master data."""
+    def main_download_client_args(self):
+        """Return arguments used by the client to analyse main data."""
         response = {
-            'encoding': self.get('master_encoding', 'utf8'),
-            'dialect_suggestion': self.get('master_dialect_suggestion',
+            'encoding': self.get('main_encoding', 'utf8'),
+            'dialect_suggestion': self.get('main_dialect_suggestion',
                                            'ActOut')
         }
-        if self.master_download_client_class == UsrSyncClientSshAct:
+        if self.main_download_client_class == UsrSyncClientSshAct:
             response.update({
-                'connect_params': self.master_connect_params,
-                'db_params': self.master_db_params,
+                'connect_params': self.main_connect_params,
+                'db_params': self.main_db_params,
                 'fs_params': self.fs_params,
             })
-        for key, settings_key in [('limit', 'master_parse_limit')]:
+        for key, settings_key in [('limit', 'main_parse_limit')]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
         return response
 
     @property
-    def master_upload_client_args(self):
-        """Return arguments used by the client to analyse master data."""
+    def main_upload_client_args(self):
+        """Return arguments used by the client to analyse main data."""
         response = {
-            'encoding': self.get('master_encoding', 'utf8'),
-            'dialect_suggestion': self.get('master_dialect_suggestion',
+            'encoding': self.get('main_encoding', 'utf8'),
+            'dialect_suggestion': self.get('main_dialect_suggestion',
                                            'ActOut')
         }
-        if self.master_upload_client_class == UsrSyncClientSshAct:
+        if self.main_upload_client_class == UsrSyncClientSshAct:
             response.update({
-                'connect_params': self.master_connect_params,
-                'db_params': self.master_db_params,
+                'connect_params': self.main_connect_params,
+                'db_params': self.main_db_params,
                 'fs_params': self.fs_params,
             })
-        for key, settings_key in [('limit', 'master_parse_limit')]:
+        for key, settings_key in [('limit', 'main_parse_limit')]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
         return response
 
     @property
-    def slave_parser_class(self):
-        """Class used to parse master data."""
+    def subordinate_parser_class(self):
+        """Class used to parse main data."""
         return CsvParseUser
 
     @property
-    def slave_parser_args(self):
+    def subordinate_parser_args(self):
         response = {
             'cols': self.coldata_class.get_wp_import_cols(),
             'defaults': self.coldata_class.get_defaults(),
-            'source': self.slave_name,
+            'source': self.subordinate_name,
             'schema': self.schema
         }
         for key, settings_key in [
@@ -223,14 +223,14 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_download_client_class(self):
+    def subordinate_download_client_class(self):
         response = self.local_client_class
-        if self.get('download_slave'):
+        if self.get('download_subordinate'):
             response = UsrSyncClientSqlWP
         return response
 
     @property
-    def slave_connect_params(self):
+    def subordinate_connect_params(self):
         response = {
             'ssh_address_or_host': (self['ssh_host'], self['ssh_port']),
             'ssh_password':
@@ -243,7 +243,7 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_db_params(self):
+    def subordinate_db_params(self):
         response = {
             'host': self['db_host'],
             'user': self['db_user'],
@@ -256,35 +256,35 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_download_client_args(self):
+    def subordinate_download_client_args(self):
         response = {
-            'encoding': self.get('slave_encoding', 'utf8'),
-            'dialect_suggestion': self.get('slave_dialect_suggestion',
+            'encoding': self.get('subordinate_encoding', 'utf8'),
+            'dialect_suggestion': self.get('subordinate_dialect_suggestion',
                                            'ActOut')
         }
-        if self.get('download_slave'):
+        if self.get('download_subordinate'):
             response.update({
-                'connect_params': self['slave_connect_params'],
-                'db_params': self['slave_db_params'],
+                'connect_params': self['subordinate_connect_params'],
+                'db_params': self['subordinate_db_params'],
                 'filter_items': self.get('filter_items')
             })
-        for key, settings_key in [('limit', 'slave_parse_limit')]:
+        for key, settings_key in [('limit', 'subordinate_parse_limit')]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
         return response
 
     @property
-    def slave_upload_client_class(self):
+    def subordinate_upload_client_class(self):
         response = self.local_client_class
-        if self.get('update_slave'):
+        if self.get('update_subordinate'):
             response = UsrSyncClientWP
         return response
 
     @property
-    def slave_upload_client_args(self):
+    def subordinate_upload_client_args(self):
         response = {}
-        if self.get('update_slave'):
-            response = {'connect_params': self.slave_wp_api_params}
+        if self.get('update_subordinate'):
+            response = {'connect_params': self.subordinate_wp_api_params}
         return response
 
     def init_settings(self, override_args=None):
@@ -292,9 +292,9 @@ class SettingsNamespaceUser(SettingsNamespaceProto):
         FieldGroup.do_post = self.do_post
 
     @property
-    def master_pkey(self):
+    def main_pkey(self):
         return "MYOB Card ID"
 
     @property
-    def slave_pkey(self):
+    def subordinate_pkey(self):
         return "Wordpress ID"

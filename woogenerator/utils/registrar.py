@@ -45,8 +45,8 @@ class Registrar(object):
     DEBUG_UTILS = False
     DEBUG_VARS = False
     DEBUG_WOO = False
-    master_name = None
-    slave_name = None
+    main_name = None
+    subordinate_name = None
     strict = False
 
     @classmethod

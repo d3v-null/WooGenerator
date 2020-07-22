@@ -45,8 +45,8 @@ def main(settings):
 
         # mandatory
         # settings.merge_mode = config.get('merge_mode', 'sync')
-        # settings.master_name = config.get('master_name', 'MASTER')
-        # settings.slave_name = config.get('slave_name', 'SLAVE')
+        # settings.main_name = config.get('main_name', 'MASTER')
+        # settings.subordinate_name = config.get('subordinate_name', 'SLAVE')
         # settings.default_last_sync = config.get('default_last_sync')
         settings.ssh_user = config.get('ssh_user')
         settings.ssh_pass = config.get('ssh_pass')
@@ -68,7 +68,7 @@ def main(settings):
                             "changes_report%s.html" % file_suffix)
 
     #########################################
-    # Download / Generate Slave Parser Object
+    # Download / Generate Subordinate Parser Object
     #########################################
 
     # settings.col_data = ColDataUser()

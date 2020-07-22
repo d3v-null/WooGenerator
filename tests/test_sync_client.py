@@ -43,7 +43,7 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
     def setUp(self):
         super(TestSyncClientBasic, self).setUp()
 
-        creds_store = self.settings.slave_wp_api_params.get('creds_store')
+        creds_store = self.settings.subordinate_wp_api_params.get('creds_store')
         if not creds_store:
             return
         creds_path = os.path.dirname(creds_store)
@@ -56,7 +56,7 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
     def test_wp_v1_read_post_1(self):
         sync_client_class = SyncClientWPLegacy
         sync_client_args = {
-            'connect_params': self.settings.slave_wp_api_params
+            'connect_params': self.settings.subordinate_wp_api_params
         }
         sync_client_args['connect_params']['version'] = 'wp/v1'
         sync_client_args['connect_params']['api'] = 'wp-json'
@@ -73,7 +73,7 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
     def test_wp_v2_read_post_1(self):
         sync_client_class = SyncClientWP
         sync_client_args = {
-            'connect_params': self.settings.slave_wp_api_params
+            'connect_params': self.settings.subordinate_wp_api_params
         }
         sync_client_args['connect_params']['version'] = 'wp/v2'
         with sync_client_class(**sync_client_args) as client:
@@ -88,7 +88,7 @@ class TestSyncClientBasic(AbstractSyncClientTestCase):
     def test_wp_read_first_post(self):
         sync_client_class = SyncClientWP
         sync_client_args = {
-            'connect_params': self.settings.slave_wp_api_params
+            'connect_params': self.settings.subordinate_wp_api_params
         }
         with sync_client_class(**sync_client_args) as client:
             post_pager = client.get_iterator('posts')
@@ -107,10 +107,10 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
 
     @pytest.mark.skip("sql deprecated")
     def test_sql_vs_wp_api_post(self):
-        self.settings.download_slave = True
+        self.settings.download_subordinate = True
         self.coldata_class = ColDataWpPost
         client_class = SyncClientSqlWP
-        client_args = self.settings.slave_download_client_args
+        client_args = self.settings.subordinate_download_client_args
 
         with client_class(**client_args) as client:
             rows = client.get_rows(None, limit=1)
@@ -134,7 +134,7 @@ class TestSyncClientAccordance(AbstractSyncClientTestCase):
 
         client_class = SyncClientWP
         client_args = {
-            'connect_params': self.settings.slave_wp_api_params
+            'connect_params': self.settings.subordinate_wp_api_params
         }
         with client_class(**client_args) as client:
             client.endpoint_singular = 'post'
@@ -183,12 +183,12 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
 
     @pytest.mark.skip("sql deprecated")
     def test_sql_vs_wc_api_prod(self):
-        self.settings.download_slave = True
+        self.settings.download_subordinate = True
         self.coldata_class = ColDataProductMeridian
 
         client_class = ProdSyncClientWC
         client_args = {
-            'connect_params': self.settings.slave_wc_api_params
+            'connect_params': self.settings.subordinate_wc_api_params
         }
         with client_class(**client_args) as client:
             wc_api_first_prod_raw = client.get_first_endpoint_item()
@@ -204,7 +204,7 @@ class TestSyncClientAccordanceProd(AbstractSyncClientTestCase):
             wc_api_first_prod_id = wc_api_first_prod_raw['id']
 
         client_class = SyncClientSqlWP
-        client_args = self.settings.slave_download_client_args
+        client_args = self.settings.subordinate_download_client_args
 
         with client_class(**client_args) as client:
             client.coldata_class = ColDataProductMeridian
@@ -337,7 +337,7 @@ class TestSyncClientDestructive(AbstractSyncClientTestCase):
             # print "GID", client.get_gm_modtime(self.settings.g_drive_params['gen_gid'])
 
     def test_prod_sync_client_wc_read(self):
-        api_params = self.settings.slave_wc_api_params
+        api_params = self.settings.subordinate_wc_api_params
         api_params.update(timeout=1)
         with ProdSyncClientWC(api_params) as client:
             # print client.service.get('products').text
@@ -356,7 +356,7 @@ class TestSyncClientDestructive(AbstractSyncClientTestCase):
 
     @unittest.skip('out of scope')
     def test_usr_sync_client_wp_read(self):
-        with UsrSyncClientWP(self.settings.slave_wp_api_params) as client:
+        with UsrSyncClientWP(self.settings.subordinate_wp_api_params) as client:
             # print client.service.get('users').text
             pages = list(client.get_iterator('users'))
             self.assertTrue(pages)

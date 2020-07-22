@@ -16,7 +16,7 @@ class TestCSVParseWoo(TestCase):
     def setUp(self):
         import_name = TimeUtils.get_ms_timestamp()
 
-        self.master_parser_args = {
+        self.main_parser_args = {
             'import_name': import_name,
             'cols': ColDataProductMeridian.get_import_cols(),
             'defaults': ColDataProductMeridian.get_defaults(),
@@ -25,9 +25,9 @@ class TestCSVParseWoo(TestCase):
             'schema': 'CA'
         }
 
-        # print("PPA: %s" % self.master_parser_args)
+        # print("PPA: %s" % self.main_parser_args)
 
-        # self.master_parser_args = {
+        # self.main_parser_args = {
         #     'taxo_depth': 3,
         #     'cols': [
         #         'WNR', 'RNR', 'DNR', 'weight', 'length', 'width', 'height',
@@ -50,7 +50,7 @@ class TestCSVParseWoo(TestCase):
 
         self.gen_path = os.path.join(
             TESTS_DATA_DIR,
-            "generator_master_dummy.csv"
+            "generator_main_dummy.csv"
         )
 
         self.analysis_kwargs = {
@@ -60,7 +60,7 @@ class TestCSVParseWoo(TestCase):
             'limit': 10
         }
 
-        for var in ['self.master_parser_args']:
+        for var in ['self.main_parser_args']:
             pass
             # print var, eval(var)
 
@@ -86,7 +86,7 @@ class TestCSVParseWoo(TestCase):
         CsvParseTT.do_dyns = False
 
     def test_csv_parse_tt(self):
-        product_parser = CsvParseTT(**self.master_parser_args)
+        product_parser = CsvParseTT(**self.main_parser_args)
 
         product_parser.analyse_file(
             **self.analysis_kwargs

@@ -97,18 +97,18 @@ def populate_filter_settings(settings):
         Registrar.register_message("filter_items: %s" % settings.filter_items)
 
 
-def populate_slave_parsers(parsers, settings):
-    """Populate the parsers for data from the slave database."""
-    parsers.slave = settings.slave_parser_class(**settings.slave_parser_args)
+def populate_subordinate_parsers(parsers, settings):
+    """Populate the parsers for data from the subordinate database."""
+    parsers.subordinate = settings.subordinate_parser_class(**settings.subordinate_parser_args)
 
-    if settings['download_slave']:
+    if settings['download_subordinate']:
         for host_key in [
                 'ssh_address_or_host',
                 'remote_bind_address'
         ]:
             try:
                 sshtunnel.check_address(
-                    settings.slave_connect_params.get(host_key))
+                    settings.subordinate_connect_params.get(host_key))
             except AttributeError:
                 Registrar.register_error("invalid host: %s -> %s" %
                                          (host_key, settings.get(host_key)))
@@ -118,36 +118,36 @@ def populate_slave_parsers(parsers, settings):
         if Registrar.DEBUG_CLIENT:
             Registrar.register_message(
                 "SSHTunnelForwarderParams: %s\nPyMySqlconnect_params: %s" % (
-                    settings.slave_connect_params,
-                    settings.slave_db_params
+                    settings.subordinate_connect_params,
+                    settings.subordinate_db_params
                 )
             )
 
     if Registrar.DEBUG_PARSER:
         Registrar.register_message(
-            "client_args: %s" % settings.slave_download_client_args
+            "client_args: %s" % settings.subordinate_download_client_args
         )
 
-    Registrar.register_progress("analysing slave user data")
+    Registrar.register_progress("analysing subordinate user data")
 
-    slave_client_class = settings.slave_download_client_class
-    slave_client_args = settings.slave_download_client_args
+    subordinate_client_class = settings.subordinate_download_client_class
+    subordinate_client_args = settings.subordinate_download_client_args
 
-    with slave_client_class(**slave_client_args) as client:
-        client.analyse_remote(parsers.slave, data_path=settings.slave_path)
+    with subordinate_client_class(**subordinate_client_args) as client:
+        client.analyse_remote(parsers.subordinate, data_path=settings.subordinate_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
-            "slave parser: \n%s" %
-            SanitationUtils.coerce_unicode(parsers.slave.tabulate())
+            "subordinate parser: \n%s" %
+            SanitationUtils.coerce_unicode(parsers.subordinate.tabulate())
         )
 
     return parsers
 
 
-def export_slave_parser(parsers, settings):
-    """Export slave parser to disk."""
-    slave_items = parsers.slave.get_obj_list()
+def export_subordinate_parser(parsers, settings):
+    """Export subordinate parser to disk."""
+    subordinate_items = parsers.subordinate.get_obj_list()
     col_names = settings.coldata_class.get_wp_import_col_names()
     exclude_cols = settings.get('exclude_cols')
     if exclude_cols:
@@ -160,21 +160,21 @@ def export_slave_parser(parsers, settings):
             if col not in col_names:
                 col_names[col] = col
 
-    if slave_items:
-        slave_items.export_items(
-            settings.slave_path,
+    if subordinate_items:
+        subordinate_items.export_items(
+            settings.subordinate_path,
             col_names
         )
 
 
-def populate_master_parsers(parsers, settings):
-    """Populate the parsers for data from the slave database."""
+def populate_main_parsers(parsers, settings):
+    """Populate the parsers for data from the subordinate database."""
     things_to_check = []
-    if settings['download_master']:
+    if settings['download_main']:
         things_to_check.extend(
-            ['master_connect_params', 'master_db_params', 'fs_params'])
+            ['main_connect_params', 'main_db_params', 'fs_params'])
     else:
-        things_to_check.extend(['master_path'])
+        things_to_check.extend(['main_path'])
     for thing in things_to_check:
         Registrar.register_message(
             "%s: %s" % (thing, getattr(settings, thing))
@@ -182,42 +182,42 @@ def populate_master_parsers(parsers, settings):
         assert getattr(settings, thing), "settings must specify %s" % thing
 
     Registrar.register_message(
-        "master_parser_args:\n%s" %
+        "main_parser_args:\n%s" %
         pformat(
-            settings.master_parser_args))
+            settings.main_parser_args))
 
-    parsers.master = settings.master_parser_class(
-        **settings.master_parser_args
+    parsers.main = settings.main_parser_class(
+        **settings.main_parser_args
     )
 
-    Registrar.register_progress("analysing master user data")
+    Registrar.register_progress("analysing main user data")
 
-    master_client_class = settings.master_download_client_class
-    master_client_args = settings.master_download_client_args
-    with master_client_class(**master_client_args) as client:
-        client.analyse_remote(parsers.master, data_path=settings.master_path)
+    main_client_class = settings.main_download_client_class
+    main_client_args = settings.main_download_client_args
+    with main_client_class(**main_client_args) as client:
+        client.analyse_remote(parsers.main, data_path=settings.main_path)
 
     if Registrar.DEBUG_UPDATE and settings.do_filter:
         Registrar.register_message(
-            "master parser: \n%s" %
-            SanitationUtils.coerce_unicode(parsers.master.tabulate())
+            "main parser: \n%s" %
+            SanitationUtils.coerce_unicode(parsers.main.tabulate())
         )
 
     return parsers
 
 
-def export_master_parser(parsers, settings):
+def export_main_parser(parsers, settings):
     """Export the Masater parser to disk."""
-    master_items = parsers.master.get_obj_list()
-    if master_items:
-        master_items.export_items(
+    main_items = parsers.main.get_obj_list()
+    if main_items:
+        main_items.export_items(
             os.path.join(settings.in_dir_full, settings.m_x_name),
             settings.coldata_class.get_act_import_col_names()
         )
 
 
 def do_match(parsers, settings):
-    """For every item in slave, find its counterpart in master."""
+    """For every item in subordinate, find its counterpart in main."""
 
     matches = MatchNamespace()
     matches.conflict['email'] = ConflictingMatchList(
@@ -228,14 +228,14 @@ def do_match(parsers, settings):
 
     Registrar.register_progress("Processing matches")
 
-    parsers.deny_anomalous('sa_parser.nousernames', parsers.slave.nousernames)
+    parsers.deny_anomalous('sa_parser.nousernames', parsers.subordinate.nousernames)
 
     username_matcher = UsernameMatcher()
-    username_matcher.process_registers(parsers.slave.usernames,
-                                       parsers.master.usernames)
+    username_matcher.process_registers(parsers.subordinate.usernames,
+                                       parsers.main.usernames)
 
     matches.deny_anomalous(
-        'usernameMatcher.slaveless_matches', username_matcher.slaveless_matches)
+        'usernameMatcher.subordinateless_matches', username_matcher.subordinateless_matches)
     matches.deny_anomalous(
         'usernameMatcher.duplicate_matches', username_matcher.duplicate_matches)
 
@@ -255,21 +255,21 @@ def do_match(parsers, settings):
 
     # Registrar.register_progress("processing cards")
 
-    # for every card in slave not already matched, check that it exists in
-    # master
+    # for every card in subordinate not already matched, check that it exists in
+    # main
 
-    parsers.deny_anomalous('ma_parser.nocards', parsers.master.nocards)
+    parsers.deny_anomalous('ma_parser.nocards', parsers.main.nocards)
 
     card_matcher = CardMatcher(
         matches.globals.s_indices, matches.globals.m_indices
     )
-    card_matcher.process_registers(parsers.slave.cards, parsers.master.cards)
+    card_matcher.process_registers(parsers.subordinate.cards, parsers.main.cards)
 
     matches.deny_anomalous(
         'cardMatcher.duplicate_matches', card_matcher.duplicate_matches
     )
     matches.deny_anomalous(
-        'cardMatcher.masterless_matches', card_matcher.masterless_matches
+        'cardMatcher.mainless_matches', card_matcher.mainless_matches
     )
 
     matches.duplicate['card'] = card_matcher.duplicate_matches
@@ -287,22 +287,22 @@ def do_match(parsers, settings):
             "card duplicates: %s" % len(card_matcher.duplicate_matches)
         )
 
-    # #for every email in slave, check that it exists in master
+    # #for every email in subordinate, check that it exists in main
 
     # Registrar.register_progress("processing emails")
 
-    parsers.deny_anomalous("sa_parser.noemails", parsers.slave.noemails)
+    parsers.deny_anomalous("sa_parser.noemails", parsers.subordinate.noemails)
 
     email_matcher = NocardEmailMatcher(
         matches.globals.s_indices, matches.globals.m_indices
     )
 
     email_matcher.process_registers(
-        parsers.slave.nocards,
-        parsers.master.emails)
+        parsers.subordinate.nocards,
+        parsers.main.emails)
 
-    matches.masterless.add_matches(email_matcher.masterless_matches)
-    matches.slaveless.add_matches(email_matcher.slaveless_matches)
+    matches.mainless.add_matches(email_matcher.mainless_matches)
+    matches.subordinateless.add_matches(email_matcher.subordinateless_matches)
     matches.globals.add_matches(email_matcher.pure_matches)
     matches.duplicate['email'] = email_matcher.duplicate_matches
 
@@ -366,21 +366,21 @@ def do_merge(matches, parsers, settings):
         #     SanitationUtils.safe_print( syncUpdate.tabulate(tablefmt = 'simple'))
 
         if sync_update.m_updated and sync_update.m_deltas:
-            insort(updates.delta_master, sync_update)
+            insort(updates.delta_main, sync_update)
 
         if sync_update.s_updated and sync_update.s_deltas:
-            insort(updates.delta_slave, sync_update)
+            insort(updates.delta_subordinate, sync_update)
 
         if not sync_update:
             continue
 
         if sync_update.s_updated:
-            sync_slave_updates = sync_update.get_slave_updates()
-            new_email = sync_slave_updates.get('E-mail', None)
+            sync_subordinate_updates = sync_update.get_subordinate_updates()
+            new_email = sync_subordinate_updates.get('E-mail', None)
             new_email = SanitationUtils.normalize_val(new_email)
-            if new_email and new_email in parsers.slave.emails:
+            if new_email and new_email in parsers.subordinate.emails:
                 m_objects = [m_object]
-                s_objects = [s_object] + parsers.slave.emails[new_email]
+                s_objects = [s_object] + parsers.subordinate.emails[new_email]
                 SanitationUtils.safe_print("duplicate emails",
                                            m_objects, s_objects)
                 try:
@@ -399,12 +399,12 @@ def do_merge(matches, parsers, settings):
                     insort(updates.problematic, sync_update)
                     continue
             elif sync_update.m_updated and not sync_update.s_updated:
-                insort(updates.nonstatic_master, sync_update)
+                insort(updates.nonstatic_main, sync_update)
                 if sync_update.s_mod:
                     insort(updates.problematic, sync_update)
                     continue
             elif sync_update.s_updated and not sync_update.m_updated:
-                insort(updates.nonstatic_slave, sync_update)
+                insort(updates.nonstatic_subordinate, sync_update)
                 if sync_update.s_mod:
                     insort(updates.problematic, sync_update)
                     continue
@@ -412,12 +412,12 @@ def do_merge(matches, parsers, settings):
         if sync_update.s_updated or sync_update.m_updated:
             insort(updates.static, sync_update)
             if sync_update.m_updated and sync_update.s_updated:
-                insort(updates.master, sync_update)
-                insort(updates.slave, sync_update)
+                insort(updates.main, sync_update)
+                insort(updates.subordinate, sync_update)
             if sync_update.m_updated and not sync_update.s_updated:
-                insort(updates.master, sync_update)
+                insort(updates.main, sync_update)
             if sync_update.s_updated and not sync_update.m_updated:
-                insort(updates.slave, sync_update)
+                insort(updates.subordinate, sync_update)
 
     Registrar.register_progress("COMPLETED MERGE")
     return updates
@@ -521,12 +521,12 @@ def unpickle_state(settings_pickle):
 def handle_failed_update(update, results, exc, settings, source=None):
     """Handle a failed update."""
     fail = (update, exc)
-    if source == settings.master_name:
-        pkey = update.master_id
-        results.fails_master.append(fail)
-    elif source == settings.slave_name:
-        pkey = update.slave_id
-        results.fails_slave.append(fail)
+    if source == settings.main_name:
+        pkey = update.main_id
+        results.fails_main.append(fail)
+    elif source == settings.subordinate_name:
+        pkey = update.subordinate_id
+        results.fails_subordinate.append(fail)
     else:
         pkey = ''
     Registrar.register_error(
@@ -560,7 +560,7 @@ def do_updates(updates, settings):
     results = ResultsNamespace()
 
     if not all_updates or not (
-            settings.update_master or settings.update_slave):
+            settings.update_main or settings.update_subordinate):
         return results
 
     Registrar.register_progress("UPDATING %d RECORDS" % len(all_updates))
@@ -584,14 +584,14 @@ def do_updates(updates, settings):
     if Registrar.DEBUG_PROGRESS:
         update_progress_counter = ProgressCounter(len(all_updates))
 
-    slave_client_args = settings.slave_upload_client_args
-    slave_client_class = settings.slave_upload_client_class
-    master_client_args = settings.master_upload_client_args
-    master_client_class = settings.master_upload_client_class
+    subordinate_client_args = settings.subordinate_upload_client_args
+    subordinate_client_class = settings.subordinate_upload_client_class
+    main_client_args = settings.main_upload_client_args
+    main_client_class = settings.main_upload_client_class
 
     with \
-            master_client_class(**master_client_args) as master_client, \
-            slave_client_class(**slave_client_args) as slave_client:
+            main_client_class(**main_client_args) as main_client, \
+            subordinate_client_class(**subordinate_client_args) as subordinate_client:
         for count, update in enumerate(all_updates):
             if Registrar.DEBUG_PROGRESS:
                 update_progress_counter.maybe_print_update(count)
@@ -601,21 +601,21 @@ def do_updates(updates, settings):
                     SanitationUtils.coerce_unicode(update.tabulate())
                 )
             update_was_performed = False
-            if settings['update_master'] and update.m_updated:
+            if settings['update_main'] and update.m_updated:
                 try:
-                    update.update_master(master_client)
+                    update.update_main(main_client)
                     update_was_performed = True
                 except Exception as exc:
                     handle_failed_update(
-                        update, results, exc, settings, source=settings.master_name
+                        update, results, exc, settings, source=settings.main_name
                     )
-            if settings['update_slave'] and update.s_updated:
+            if settings['update_subordinate'] and update.s_updated:
                 try:
-                    update.update_slave(slave_client)
+                    update.update_subordinate(subordinate_client)
                     update_was_performed = True
                 except Exception as exc:
                     handle_failed_update(
-                        update, results, exc, settings, source=settings.slave_name
+                        update, results, exc, settings, source=settings.subordinate_name
                     )
             if update_was_performed:
                 results.successes.append(update)
@@ -651,12 +651,12 @@ def main(override_args=None, settings=None):
     populate_filter_settings(settings)
 
     parsers = ParserNamespace()
-    parsers = populate_slave_parsers(parsers, settings)
-    if settings['download_slave'] or settings['do_filter']:
-        export_slave_parser(parsers, settings)
-    parsers = populate_master_parsers(parsers, settings)
-    if settings['download_master'] or settings['do_filter']:
-        export_master_parser(parsers, settings)
+    parsers = populate_subordinate_parsers(parsers, settings)
+    if settings['download_subordinate'] or settings['do_filter']:
+        export_subordinate_parser(parsers, settings)
+    parsers = populate_main_parsers(parsers, settings)
+    if settings['download_main'] or settings['do_filter']:
+        export_main_parser(parsers, settings)
 
     # pickle_state(None, None, parsers, settings, 'sync')
 
@@ -701,7 +701,7 @@ def do_summary(settings, reporters=None, results=None,
                status=1, reason="Uknown"):
     Registrar.register_progress("Doing summary for %s" % settings.import_name)
 
-    if status or results.fails_master or results.fails_slave:
+    if status or results.fails_main or results.fails_subordinate:
         summary_text = u"Sync failed with status %s (%s)" % (reason, status)
     else:
         summary_text = u"Sync succeeded"

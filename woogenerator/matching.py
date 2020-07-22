@@ -13,7 +13,7 @@ from .utils import InheritenceUtils, Registrar, SanitationUtils, SeqUtils
 
 
 class Match(object):
-    """A list of master objects and slave objects that match in sosme way."""
+    """A list of main objects and subordinate objects that match in sosme way."""
 
     def __init__(self, m_objects=None, s_objects=None):
         if m_objects is None:
@@ -28,14 +28,14 @@ class Match(object):
     @property
     def m_objects(self):
         """
-        return a list of master objects associated with match
+        return a list of main objects associated with match
         """
         return self._m_objects
 
     @property
     def m_object(self):
         """
-        return the singular master object associated with match
+        return the singular main object associated with match
 
         Raises:
             AssertionError: if m_objects is not singular
@@ -48,14 +48,14 @@ class Match(object):
     @property
     def s_objects(self):
         """
-        return a list of slave objects associated with match
+        return a list of subordinate objects associated with match
         """
         return self._s_objects
 
     @property
     def s_object(self):
         """
-        return the singular slave object associated with match
+        return the singular subordinate object associated with match
 
         Raises:
             AssertionError: if s_objects is not singular
@@ -68,35 +68,35 @@ class Match(object):
     @property
     def s_len(self):
         """
-        return the number of slave objects in the match
+        return the number of subordinate objects in the match
         """
         return len(self._s_objects)
 
     @property
     def m_len(self):
         """
-        return the number of master objects in the match
+        return the number of main objects in the match
         """
         return len(self._m_objects)
 
     @property
     def is_singular(self):
         """
-        return true if there is less than one master and slave in the match
+        return true if there is less than one main and subordinate in the match
         """
         return self.m_len <= 1 and self.s_len <= 1
 
     @property
-    def has_no_master(self):
+    def has_no_main(self):
         """
-        return true if the match is masterless
+        return true if the match is mainless
         """
         return self.m_len == 0
 
     @property
-    def has_no_slave(self):
+    def has_no_subordinate(self):
         """
-        return true if the match is slaveless
+        return true if the match is subordinateless
         """
         return self.s_len == 0
 
@@ -106,19 +106,19 @@ class Match(object):
         return the match type of the match
         """
         if self.is_singular:
-            if self.has_no_master:
-                if not self.has_no_slave:
-                    return 'masterless'
+            if self.has_no_main:
+                if not self.has_no_subordinate:
+                    return 'mainless'
                 return 'empty'
-            elif self.has_no_slave:
-                return 'slaveless'
+            elif self.has_no_subordinate:
+                return 'subordinateless'
             return 'pure'
         return 'duplicate'
 
     @property
     def gcs(self):
         """
-        Return the Greatest Common Subset of classes of the master and slave
+        Return the Greatest Common Subset of classes of the main and subordinate
         objects in the match
         """
         if self.m_len or self.s_len:
@@ -127,14 +127,14 @@ class Match(object):
 
     def add_s_object(self, s_object):
         """
-        add a slave object to the match
+        add a subordinate object to the match
         """
         if s_object not in self.s_objects:
             self.s_objects.append(s_object)
 
     def add_m_object(self, m_object):
         """
-        add a master object to the match
+        add a main object to the match
         """
         if m_object not in self.m_objects:
             self.m_objects.append(m_object)
@@ -303,14 +303,14 @@ class MatchList(list):
     @property
     def s_indices(self):
         """
-        Return the list of slave indices in all of the matches
+        Return the list of subordinate indices in all of the matches
         """
         return self._s_indices
 
     @property
     def m_indices(self):
         """
-        Return the list of master indices in all of the matches
+        Return the list of main indices in all of the matches
         """
         return self._m_indices
 
@@ -338,7 +338,7 @@ class MatchList(list):
                 ), "all s_indices should be equal: %s" % match_s_indices
             self.s_indices.append(match_s_indices[0])
         for m_object in match.m_objects:
-            # Registrar.register_message('indexing master %s with %s : %s' \
+            # Registrar.register_message('indexing main %s with %s : %s' \
             # % (s_object, repr(self._index_fn), s_index))
             m_index = self._index_fn(m_object)
             assert \
@@ -435,8 +435,8 @@ class AbstractMatcher(Registrar):
         self._matches = {
             'all': MatchList(index_fn=self.index_fn),
             'pure': MatchList(index_fn=self.index_fn),
-            'slaveless': MatchList(index_fn=self.index_fn),
-            'masterless': MatchList(index_fn=self.index_fn),
+            'subordinateless': MatchList(index_fn=self.index_fn),
+            'mainless': MatchList(index_fn=self.index_fn),
             'duplicate': MatchList(index_fn=self.index_fn)
         }
 
@@ -447,25 +447,25 @@ class AbstractMatcher(Registrar):
 
     @property
     def pure_matches(self):
-        """return all matches that contain no more than one slave or master."""
+        """return all matches that contain no more than one subordinate or main."""
         return self._matches['pure']
 
     @property
-    def slaveless_matches(self):
-        """return all matches that contain no slaves."""
-        return self._matches['slaveless']
+    def subordinateless_matches(self):
+        """return all matches that contain no subordinates."""
+        return self._matches['subordinateless']
 
     @property
-    def masterless_matches(self):
-        """return all matches that contain no masters."""
-        return self._matches['masterless']
+    def mainless_matches(self):
+        """return all matches that contain no mains."""
+        return self._matches['mainless']
 
     @property
     def duplicate_matches(self):
-        """return all matches that contain more than one master or slave."""
+        """return all matches that contain more than one main or subordinate."""
         return self._matches['duplicate']
 
-    # sa_register is in nonsingular form. regkey => [slaveObjects]
+    # sa_register is in nonsingular form. regkey => [subordinateObjects]
     def process_registers_nonsingular(self, sa_register, ma_register):
         """
         Groups items in both registers by the result of applying the index function when
@@ -520,7 +520,7 @@ class AbstractMatcher(Registrar):
             self.process_match(ms_values[0], ms_values[1])
 
     def process_registers_singular_ns(self, sa_register, ma_register):
-        """Master is nonsingular, slave is singular."""
+        """Main is nonsingular, subordinate is singular."""
         ms_indexed = OrderedDict()
         for reg_values in ma_register.values():
             for reg_value in reg_values:
@@ -539,7 +539,7 @@ class AbstractMatcher(Registrar):
             self.process_match(ms_values[0], ms_values[1])
 
     def process_registers_ns_singular(self, sa_register, ma_register):
-        """Master is singular, slave is nonsingular."""
+        """Main is singular, subordinate is nonsingular."""
 
         ms_indexed = OrderedDict()
         for reg_value in ma_register.values():
@@ -586,20 +586,20 @@ class AbstractMatcher(Registrar):
     # ))
 
     def m_filter(self, objects):
-        """perform the master filter on the objects."""
+        """perform the main filter on the objects."""
         if self.m_filter_fn:
             return filter(self.m_filter_fn, objects)
         return objects
 
     def s_filter(self, objects):
-        """perform the slave filter on the objects."""
+        """perform the subordinate filter on the objects."""
         if self.f_filter_fn:
             return filter(self.f_filter_fn, objects)
         return objects
 
     def process_match(self, ma_objects, sa_objects):
         """
-        Process a list of master and slave objects as if they were from a match
+        Process a list of main and subordinate objects as if they were from a match
         """
         # print "processing match %s | %s" % (repr(ma_objects),
         # repr(sa_objects))
@@ -629,12 +629,12 @@ class AbstractMatcher(Registrar):
         repr_str += "pure matches: (%d) \n" % len(self.pure_matches)
         for match in self.pure_matches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "masterless matches: (%d) \n" % len(
-            self.masterless_matches)
-        for match in self.masterless_matches:
+        repr_str += "mainless matches: (%d) \n" % len(
+            self.mainless_matches)
+        for match in self.mainless_matches:
             repr_str += " -> " + repr(match) + "\n"
-        repr_str += "slaveless matches:(%d) \n" % len(self.slaveless_matches)
-        for match in self.slaveless_matches:
+        repr_str += "subordinateless matches:(%d) \n" % len(self.subordinateless_matches)
+        for match in self.subordinateless_matches:
             repr_str += " -> " + repr(match) + "\n"
         repr_str += "duplicate matches:(%d) \n" % len(self.duplicate_matches)
         for match in self.duplicate_matches:

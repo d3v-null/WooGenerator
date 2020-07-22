@@ -23,7 +23,7 @@ from .utils import (FileUtils, JSONPathUtils, MimeUtils, PHPUtils,
 # TODO: move into own folder
 
 """
-Get rid of stuff like slave_override, since it should be able to work both ways.
+Get rid of stuff like subordinate_override, since it should be able to work both ways.
 get rid of attributes like category, product, variation, that's covered by class now.
 YAML Import and export of schema
 data is not read from file until it is accessed?
@@ -1404,20 +1404,20 @@ class ColDataAbstract(ColDataLegacy):
         return data
 
     @classmethod
-    def get_sync_handles(cls, master_target=None, slave_target=None):
-        master_paths = cls.get_handles_property_defaults('path', master_target)
-        slave_paths =  cls.get_handles_property_defaults('path', slave_target)
-        master_writes = cls.get_handles_property_defaults('write', master_target)
-        slave_writes = cls.get_handles_property_defaults('write', slave_target)
+    def get_sync_handles(cls, main_target=None, subordinate_target=None):
+        main_paths = cls.get_handles_property_defaults('path', main_target)
+        subordinate_paths =  cls.get_handles_property_defaults('path', subordinate_target)
+        main_writes = cls.get_handles_property_defaults('write', main_target)
+        subordinate_writes = cls.get_handles_property_defaults('write', subordinate_target)
         sync_handles = OrderedDict()
         for handle in cls.data.keys():
-            master_path = master_paths.get(handle)
-            master_write = master_writes.get(handle)
-            slave_path = slave_paths.get(handle)
-            slave_write = slave_writes.get(handle)
-            if not (master_path and slave_path):
+            main_path = main_paths.get(handle)
+            main_write = main_writes.get(handle)
+            subordinate_path = subordinate_paths.get(handle)
+            subordinate_write = subordinate_writes.get(handle)
+            if not (main_path and subordinate_path):
                 continue
-            if not (master_write or slave_write):
+            if not (main_write or subordinate_write):
                 continue
             sync_handles[handle] = cls.data[handle]
         return sync_handles

@@ -10,8 +10,8 @@
 # from woogenerator.conf.parser import ArgumentParserUser
 # from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
 #                                  do_summary, do_updates,
-#                                  populate_master_parsers,
-#                                  populate_slave_parsers)
+#                                  populate_main_parsers,
+#                                  populate_subordinate_parsers)
 # from woogenerator.namespace.user import SettingsNamespaceUser
 # from woogenerator.namespace.core import (MatchNamespace, ParserNamespace,
 #                                          UpdateNamespace)
@@ -62,11 +62,11 @@
 #         self.updates = UpdateNamespace()
 #         self.settings.local_work_dir = TESTS_DATA_DIR
 #         self.settings.local_live_config = None
-#         self.settings.master_dialect_suggestion = "ActOut"
-#         self.settings.download_master = False
-#         self.settings.download_slave = False
-#         self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_dummy.csv")
-#         self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_dummy.csv")
+#         self.settings.main_dialect_suggestion = "ActOut"
+#         self.settings.download_main = False
+#         self.settings.download_subordinate = False
+#         self.settings.main_file = os.path.join(TESTS_DATA_DIR, "merger_main_dummy.csv")
+#         self.settings.subordinate_file = os.path.join(TESTS_DATA_DIR, "merger_subordinate_dummy.csv")
 #         self.settings.testmode = True
 #         self.settings.do_sync = True
 #         self.settings.report_duplicates = True
@@ -76,10 +76,10 @@
 #         self.settings.ask_before_update = False
 #         self.override_args = ""
 #
-#         self.parsers = populate_master_parsers(
+#         self.parsers = populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         self.parsers = populate_slave_parsers(
+#         self.parsers = populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #
@@ -102,15 +102,15 @@
 #         self.reporters = do_report(
 #             self.matches, self.updates, self.parsers, self.settings
 #         )
-#         self.settings.update_master = True
-#         self.settings.update_slave = True
+#         self.settings.update_main = True
+#         self.settings.update_subordinate = True
 #         with mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'main_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ), \
 #         mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'subordinate_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ):
