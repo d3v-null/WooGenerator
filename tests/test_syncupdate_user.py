@@ -239,19 +239,19 @@
 #             Registrar.register_message("created usr_sd4. socials: %s" % repr(self.usr_sd4.socials))
 #
 #     def test_m_name_col_update(self):
-#         master_object = self.user_mn1
+#         main_object = self.user_mn1
 #         self.assertEqual(
-#             str(master_object.name), 'Derwent Smith'
+#             str(main_object.name), 'Derwent Smith'
 #         )
-#         slave_object = self.usr_sn1
+#         subordinate_object = self.usr_sn1
 #         self.assertEqual(
-#             str(slave_object.name), 'Abe Jackson'
+#             str(subordinate_object.name), 'Abe Jackson'
 #         )
-#         sync_update = SyncUpdateUsr(master_object, slave_object)
+#         sync_update = SyncUpdateUsr(main_object, subordinate_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #         self.assertFalse(
 #             sync_update.values_similar(
-#                 'Name', master_object.name, slave_object.name
+#                 'Name', main_object.name, subordinate_object.name
 #             )
 #         )
 #         self.assertGreater(sync_update.s_time, sync_update.m_time)
@@ -271,21 +271,21 @@
 #             )
 #             self.assertEqual(
 #                 name_sync_params.get('subject'),
-#                 sync_update.slave_name
+#                 sync_update.subordinate_name
 #             )
 #         except AssertionError as exc:
 #             self.fail_syncupdate_assertion(exc, sync_update)
 #
 #     def test_s_name_col_update(self):
-#         master_object = self.user_mn2
+#         main_object = self.user_mn2
 #         self.assertEqual(
-#             str(master_object.name), 'Derwent Smith'
+#             str(main_object.name), 'Derwent Smith'
 #         )
-#         slave_object = self.usr_sn2
+#         subordinate_object = self.usr_sn2
 #         self.assertEqual(
-#             str(slave_object.name), 'Abe Jackson'
+#             str(subordinate_object.name), 'Abe Jackson'
 #         )
-#         sync_update = SyncUpdateUsr(master_object, slave_object)
+#         sync_update = SyncUpdateUsr(main_object, subordinate_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #         self.assertGreater(sync_update.m_time, sync_update.s_time)
 #         self.assertGreater(
@@ -303,7 +303,7 @@
 #                 str(name_sync_params.get('old_value')), 'Derwent Smith'
 #             )
 #             self.assertEqual(
-#                 name_sync_params.get('subject'), sync_update.master_name
+#                 name_sync_params.get('subject'), sync_update.main_name
 #             )
 #         except AssertionError as exc:
 #             self.fail_syncupdate_assertion(exc, sync_update)
@@ -313,22 +313,22 @@
 #         "tests assume role being synced"
 #     )
 #     def test_m_deltas(self):
-#         master_object = self.usr_md1
-#         self.assertEqual(master_object.role.role, 'WN')
-#         self.assertEqual(master_object.role.direct_brand, 'TechnoTan Wholesale')
-#         slave_object = self.usr_sd1
-#         self.assertEqual(slave_object.role.role, 'RN')
-#         self.assertEqual(slave_object.role.direct_brand, None)
-#         sync_update = SyncUpdateUsr(master_object, slave_object)
+#         main_object = self.usr_md1
+#         self.assertEqual(main_object.role.role, 'WN')
+#         self.assertEqual(main_object.role.direct_brand, 'TechnoTan Wholesale')
+#         subordinate_object = self.usr_sd1
+#         self.assertEqual(subordinate_object.role.role, 'RN')
+#         self.assertEqual(subordinate_object.role.direct_brand, None)
+#         sync_update = SyncUpdateUsr(main_object, subordinate_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #         # sync_update.m_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.s_time, sync_update.m_time)
 #             self.assertFalse(sync_update.s_deltas)
 #             self.assertTrue(sync_update.m_deltas)
-#             master_updates = sync_update.get_master_updates()
-#             self.assertIn('Role', master_updates)
-#             self.assertEqual(master_updates['Role'], 'RN')
+#             main_updates = sync_update.get_main_updates()
+#             self.assertIn('Role', main_updates)
+#             self.assertEqual(main_updates['Role'], 'RN')
 #             self.assertEqual(
 #                 sync_update.new_m_object.get(ColDataUser.delta_col('Role Info')).role,
 #                 'WN'
@@ -341,23 +341,23 @@
 #         "tests assume role being synced"
 #     )
 #     def test_s_deltas(self):
-#         master_object = self.usr_md2
-#         slave_object = self.usr_sd2
-#         self.assertEqual(master_object.role.role, 'RN')
-#         self.assertEqual(slave_object.role.role, 'WN')
+#         main_object = self.usr_md2
+#         subordinate_object = self.usr_sd2
+#         self.assertEqual(main_object.role.role, 'RN')
+#         self.assertEqual(subordinate_object.role.role, 'WN')
 #
 #         # Registrar.DEBUG_MESSAGE = True
 #         # Registrar.DEBUG_UPDATE = True
 #
-#         sync_update = SyncUpdateUsr(master_object, slave_object)
+#         sync_update = SyncUpdateUsr(main_object, subordinate_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #
 #         # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.m_time, sync_update.s_time)
-#             slave_updates = sync_update.get_slave_updates()
-#             self.assertIn('Role', slave_updates)
-#             self.assertEqual(slave_updates['Role'], 'RN')
+#             subordinate_updates = sync_update.get_subordinate_updates()
+#             self.assertIn('Role', subordinate_updates)
+#             self.assertEqual(subordinate_updates['Role'], 'RN')
 #             self.assertFalse(sync_update.m_deltas)
 #             self.assertTrue(sync_update.s_deltas)
 #             self.assertEqual(sync_update.new_s_object.get('Role'), 'RN')
@@ -368,22 +368,22 @@
 #         except AssertionError as exc:
 #             self.fail_syncupdate_assertion(exc, sync_update)
 #
-#         master_object = self.usr_md2a
+#         main_object = self.usr_md2a
 #         self.assertEqual(
-#             master_object.role.role, 'WN'
+#             main_object.role.role, 'WN'
 #         )
-#         slave_object = self.usr_sd2a
+#         subordinate_object = self.usr_sd2a
 #         self.assertEqual(
-#             slave_object.role.role, 'RN'
+#             subordinate_object.role.role, 'RN'
 #         )
-#         sync_update = SyncUpdateUsr(master_object, slave_object)
+#         sync_update = SyncUpdateUsr(main_object, subordinate_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #         try:
 #             # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #             self.assertGreater(sync_update.m_time, sync_update.s_time)
-#             slave_updates = sync_update.get_slave_updates()
-#             self.assertIn('Role', slave_updates)
-#             self.assertEqual(slave_updates['Role'], 'WN')
+#             subordinate_updates = sync_update.get_subordinate_updates()
+#             self.assertIn('Role', subordinate_updates)
+#             self.assertEqual(subordinate_updates['Role'], 'WN')
 #
 #             self.assertFalse(sync_update.m_deltas)
 #             self.assertTrue(sync_update.s_deltas)
@@ -395,24 +395,24 @@
 #         except AssertionError as exc:
 #             self.fail_syncupdate_assertion(exc, sync_update)
 #
-#     @unittest.skip("no longer deletes slave roles since master will always reflect")
+#     @unittest.skip("no longer deletes subordinate roles since main will always reflect")
 #     def test_m_deltas_b(self):
-#         master_object = self.usr_md3
-#         slave_object = self.usr_sd2
-#         self.assertEqual(master_object.role.role, None)
-#         self.assertEqual(slave_object.role.role, 'WN')
+#         main_object = self.usr_md3
+#         subordinate_object = self.usr_sd2
+#         self.assertEqual(main_object.role.role, None)
+#         self.assertEqual(subordinate_object.role.role, 'WN')
 #         self.assertEqual(
-#             type(master_object['Social Media']),
+#             type(main_object['Social Media']),
 #             SocialMediaFields
 #         )
-#         sync_update = SyncUpdateUsr(master_object, slave_object)
+#         sync_update = SyncUpdateUsr(main_object, subordinate_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #         # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.m_time, sync_update.s_time)
-#             slave_updates = sync_update.get_slave_updates()
-#             self.assertIn('Role', slave_updates)
-#             self.assertEqual(slave_updates['Role'], None)
+#             subordinate_updates = sync_update.get_subordinate_updates()
+#             self.assertIn('Role', subordinate_updates)
+#             self.assertEqual(subordinate_updates['Role'], None)
 #             self.assertFalse(sync_update.m_deltas)
 #             self.assertTrue(sync_update.s_deltas)
 #             # self.assertFalse(sync_update.new_m_object) # no longer true with reflection
@@ -425,22 +425,22 @@
 #         "tests assume role being synced"
 #     )
 #     def test_s_deltas_b(self):
-#         master_object = self.usr_md1
-#         slave_object = self.usr_sd3
-#         self.assertEqual(master_object.role.role, 'WN')
-#         self.assertEqual(master_object.role.direct_brand, 'TechnoTan Wholesale')
-#         self.assertEqual(slave_object.role.role, None)
-#         self.assertEqual(slave_object.role.direct_brand, None)
-#         sync_update = SyncUpdateUsr(master_object, slave_object)
+#         main_object = self.usr_md1
+#         subordinate_object = self.usr_sd3
+#         self.assertEqual(main_object.role.role, 'WN')
+#         self.assertEqual(main_object.role.direct_brand, 'TechnoTan Wholesale')
+#         self.assertEqual(subordinate_object.role.role, None)
+#         self.assertEqual(subordinate_object.role.direct_brand, None)
+#         sync_update = SyncUpdateUsr(main_object, subordinate_object)
 #         sync_update.update(ColDataUser.get_sync_cols())
 #         # sync_update.s_deltas(ColDataUser.get_delta_cols_native())
 #         try:
 #             self.assertGreater(sync_update.s_time, sync_update.m_time)
 #             # Registrar.DEBUG_TRACE = True
-#             master_updates = sync_update.get_master_updates()
+#             main_updates = sync_update.get_main_updates()
 #
-#             self.assertIn('Role', master_updates)
-#             self.assertEqual(master_updates['Role'], 'RN')
+#             self.assertIn('Role', main_updates)
+#             self.assertEqual(main_updates['Role'], 'RN')
 #             self.assertEqual(
 #                 sync_update.new_m_object.get(ColDataUser.delta_col('Role Info')).role,
 #                 'WN'
@@ -448,9 +448,9 @@
 #             self.assertEqual(
 #                 sync_update.new_m_object.role.role, 'RN'
 #             )
-#             # slave_updates = sync_update.get_slave_updates()
-#             # self.assertIn('Role', slave_updates)
-#             # self.assertEqual(slave_updates['Role'], 'RN')
+#             # subordinate_updates = sync_update.get_subordinate_updates()
+#             # self.assertIn('Role', subordinate_updates)
+#             # self.assertEqual(subordinate_updates['Role'], 'RN')
 #             # self.assertEqual(
 #             #     sync_update.new_s_object.get(ColDataUser.delta_col('Role Info')).role,
 #             #     ''
@@ -607,10 +607,10 @@
 #         # Registrar.DEBUG_TRACE = True
 #         # Registrar.DEBUG_UPDATE = True
 #         # Registrar.DEBUG_MESSAGE = True
-#         slave_updates_native = sync_update.get_slave_updates_native()
-#         slave_meta_updates = slave_updates_native.get('meta', {})
-#         self.assertEqual(slave_meta_updates.get('mobile_number'), '0414298163')
-#         self.assertEqual(slave_meta_updates.get('billing_phone'), '0410695383')
+#         subordinate_updates_native = sync_update.get_subordinate_updates_native()
+#         subordinate_meta_updates = subordinate_updates_native.get('meta', {})
+#         self.assertEqual(subordinate_meta_updates.get('mobile_number'), '0414298163')
+#         self.assertEqual(subordinate_meta_updates.get('billing_phone'), '0410695383')
 #
 #     def test_sync_email_native(self):
 #         usr_m = ImportUser(
@@ -659,7 +659,7 @@
 #
 #         self.assertEqual(sync_update.new_s_object.email, '')
 #
-#         native_updates = sync_update.get_slave_updates_native()
+#         native_updates = sync_update.get_subordinate_updates_native()
 #
 #         self.assertFalse('email' in native_updates)
 #

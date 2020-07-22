@@ -48,7 +48,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         self.img_raw_dir = getattr(self, 'img_raw_dir', None)
         self.img_raw_extra_dir = getattr(self, 'img_raw_extra_dir', None)
         self.img_cmp_dir = getattr(self, 'img_cmp_dir', None)
-        self.do_export_master = getattr(self, 'do_export_master', True)
+        self.do_export_main = getattr(self, 'do_export_main', True)
         self.do_save_api_data = getattr(self, 'do_save_api_data', None)
         super(SettingsNamespaceProd, self).__init__(*args, **kwargs)
 
@@ -171,21 +171,21 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def master_path(self):
-        """Get path which the master data is downloaded to and read from."""
-        if hasattr(self, 'master_file') and getattr(self, 'master_file'):
-            return getattr(self, 'master_file')
-        response = '%s%s-%s%s.csv' % (self.file_prefix, 'master',
+    def main_path(self):
+        """Get path which the main data is downloaded to and read from."""
+        if hasattr(self, 'main_file') and getattr(self, 'main_file'):
+            return getattr(self, 'main_file')
+        response = '%s%s-%s%s.csv' % (self.file_prefix, 'main',
                                       self.import_name, self.file_suffix)
         response = os.path.join(self.in_dir_full, response)
         return response
 
     @property
-    def slave_path(self):
-        """Get path which the slave data is downloaded to and read from."""
-        if hasattr(self, 'slave_file') and getattr(self, 'slave_file'):
-            return getattr(self, 'slave_file')
-        response = '%s%s' % (self.file_prefix, 'slave')
+    def subordinate_path(self):
+        """Get path which the subordinate data is downloaded to and read from."""
+        if hasattr(self, 'subordinate_file') and getattr(self, 'subordinate_file'):
+            return getattr(self, 'subordinate_file')
+        response = '%s%s' % (self.file_prefix, 'subordinate')
         if self.schema_is_woo:
             response += '_woo_api'
             if self.get('wc_api_namespace'):
@@ -226,21 +226,21 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def myo_path(self):
-        """Get path which the master myob csv data is stored."""
+        """Get path which the main myob csv data is stored."""
         response = "%s%s-%s%s.csv" % (self.file_prefix, 'myob',
                                       self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def xero_path(self):
-        """Get path which the flattened master xero csv data is stored."""
-        response = "%s%s-%s%s.csv" % (self.file_prefix, 'master_xero',
+        """Get path which the flattened main xero csv data is stored."""
+        response = "%s%s-%s%s.csv" % (self.file_prefix, 'main_xero',
                                       self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def fla_path(self):
-        """Get path which the flattened master csv data is stored."""
+        """Get path which the flattened main csv data is stored."""
         if self.schema_is_myo:
             return self.myo_path
         if self.schema_is_xero:
@@ -251,14 +251,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def flv_path(self):
-        """Get path which the flattened master variation csv data is stored."""
+        """Get path which the flattened main variation csv data is stored."""
         response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened-variations',
                                       self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
     def flu_path(self):
-        """Get path which the flattened master updated csv data is stored."""
+        """Get path which the flattened main updated csv data is stored."""
         response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened-updated',
                                       self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
@@ -273,7 +273,7 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def fls_path(self):
-        """Get path of flattened master specials csv data."""
+        """Get path of flattened main specials csv data."""
         # don't need import name
         response = "%s%s-%s%s.csv" % (self.file_prefix, 'flattened',
                                       self.current_special_id,
@@ -291,17 +291,17 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
 
     @property
     def cat_path(self):
-        """Get path of flattened master categories csv data."""
+        """Get path of flattened main categories csv data."""
         response = "%s%s-%s%s.csv" % (self.file_prefix, 'categories',
                                       self.import_name, self.file_suffix)
         return os.path.join(self.out_dir_full, response)
 
     @property
-    def slave_cat_path(self):
-        """Get path which the slave woo api category json data is cached."""
-        if hasattr(self, 'slave_cat_file') and getattr(self, 'slave_cat_file'):
-            return getattr(self, 'slave_cat_file')
-        response = '%s%s' % (self.file_prefix, 'slave_cat')
+    def subordinate_cat_path(self):
+        """Get path which the subordinate woo api category json data is cached."""
+        if hasattr(self, 'subordinate_cat_file') and getattr(self, 'subordinate_cat_file'):
+            return getattr(self, 'subordinate_cat_file')
+        response = '%s%s' % (self.file_prefix, 'subordinate_cat')
         if self.schema_is_woo:
             response += '_woo_api'
             if self.get('wc_api_namespace'):
@@ -312,22 +312,22 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return os.path.join(self.in_dir_full, response)
 
     @property
-    def slave_img_path(self):
-        """Get path which the slave wp api image json data is cached."""
-        if hasattr(self, 'slave_img_file') and getattr(self, 'slave_img_file'):
-            return getattr(self, 'slave_img_file')
-        response = '%s%s' % (self.file_prefix, 'slave_img')
+    def subordinate_img_path(self):
+        """Get path which the subordinate wp api image json data is cached."""
+        if hasattr(self, 'subordinate_img_file') and getattr(self, 'subordinate_img_file'):
+            return getattr(self, 'subordinate_img_file')
+        response = '%s%s' % (self.file_prefix, 'subordinate_img')
         if self.variant:
             response = "-".join([response, self.variant])
         response += "-" + self.import_name + '.json'
         return os.path.join(self.in_dir_full, response)
 
-    def get_slave_var_path(self, parent_id=None):
-        """Get path which the slave wp api variation json data is cached."""
-        key = 'slave_var_file_%s' % parent_id
+    def get_subordinate_var_path(self, parent_id=None):
+        """Get path which the subordinate wp api variation json data is cached."""
+        key = 'subordinate_var_file_%s' % parent_id
         if hasattr(self, key) and getattr(self, key):
             return getattr(self, key)
-        response = '%s%s' % (self.file_prefix, 'slave_var')
+        response = '%s%s' % (self.file_prefix, 'subordinate_var')
         if self.variant:
             response = "-".join([response, self.variant])
         if parent_id:
@@ -336,10 +336,10 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return os.path.join(self.in_dir_full, response)
 
     @property
-    def rep_delta_slave_csv_path(self):
-        """Get path which the delta slave csv report is stored."""
+    def rep_delta_subordinate_csv_path(self):
+        """Get path which the delta subordinate csv report is stored."""
         response = "%s%s_%s-%s.csv" % (self.file_prefix, 'delta_report',
-                                       self.slave_name, self.import_name)
+                                       self.subordinate_name, self.import_name)
         return os.path.join(self.out_dir_full, response)
 
     @property
@@ -490,8 +490,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return set(['post_status', 'menu_order', 'meta', 'file_name'])
 
     @property
-    def master_parser_class(self):
-        """Class used to parse master data."""
+    def main_parser_class(self):
+        """Class used to parse main data."""
         if self.schema_is_myo:
             return CsvParseMyo
         if self.schema_is_xero:
@@ -510,8 +510,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
              self.woo_schemas + self.myo_schemas + self.xero_schemas))
 
     @property
-    def master_parser_args(self):
-        """Arguments used to create the master parser."""
+    def main_parser_args(self):
+        """Arguments used to create the main parser."""
         response = {
             'import_name': self.import_name,
             'cols': self.coldata_class.get_col_data_native('read').keys(),
@@ -535,18 +535,18 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def master_download_client_class(self):
-        """Get class which is used to download and parse master data."""
+    def main_download_client_class(self):
+        """Get class which is used to download and parse main data."""
         response = self.local_client_class
-        if self.download_master:
+        if self.download_main:
             response = SyncClientGDrive
         return response
 
     @property
-    def master_upload_client_class(self):
-        """Get class which is used to download and parse master data."""
+    def main_upload_client_class(self):
+        """Get class which is used to download and parse main data."""
         response = self.local_client_class
-        if self['update_master']:
+        if self['update_main']:
             response = SyncClientGDrive
         return response
 
@@ -565,28 +565,28 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
-        if not self.download_master:
+        if not self.download_main:
             response['skip_download'] = True
         return response
 
     @property
-    def master_download_client_args(self):
-        """Return arguments used by the client to analyse master data."""
+    def main_download_client_args(self):
+        """Return arguments used by the client to analyse main data."""
         response = {}
-        if self.master_download_client_class == SyncClientGDrive:
+        if self.main_download_client_class == SyncClientGDrive:
             response.update({'gdrive_params': self.g_drive_params})
         else:
-            response.update({'encoding': self.get('master_encoding', 'utf8')})
+            response.update({'encoding': self.get('main_encoding', 'utf8')})
         for key, settings_key in [
-            ('dialect_suggestion', 'master_dialect_suggestion'),
-            ('limit', 'master_parse_limit'),
+            ('dialect_suggestion', 'main_dialect_suggestion'),
+            ('limit', 'main_parse_limit'),
         ]:
             if hasattr(self, settings_key):
                 response[key] = getattr(self, settings_key)
         return response
 
     @property
-    def slave_parser_class(self):
+    def subordinate_parser_class(self):
         if self.schema_is_xero:
             response = ApiParseXero
         elif self.wc_api_is_legacy:
@@ -596,23 +596,23 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_parser_args(self):
+    def subordinate_parser_args(self):
         response = {
             'cols': self.coldata_class.get_col_data_native('read').keys(),
             'defaults': self.coldata_class.get_col_values_native('default'),
-            'source': self.slave_name,
+            'source': self.subordinate_name,
             'schema': self.schema,
             'import_name': self.import_name,
             'item_depth': self.item_depth,
             'taxo_depth': self.taxo_depth,
-            'limit': self.slave_parse_limit,
+            'limit': self.subordinate_parse_limit,
         }
         return response
 
     @property
-    def slave_download_client_class(self):
+    def subordinate_download_client_class(self):
         response = self.local_client_class
-        if self['download_slave']:
+        if self['download_subordinate']:
             if self.schema_is_woo:
                 if self.wc_api_is_legacy:
                     response = ProdSyncClientWCLegacy
@@ -623,20 +623,20 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_download_client_args(self):
+    def subordinate_download_client_args(self):
         response = {}
-        if self['download_slave']:
+        if self['download_subordinate']:
             if self.schema_is_woo:
-                response['connect_params'] = copy(self.slave_wc_api_params)
-                response['connect_params']['limit'] = self.slave_parse_limit
+                response['connect_params'] = copy(self.subordinate_wc_api_params)
+                response['connect_params']['limit'] = self.subordinate_parse_limit
             elif self.schema_is_xero:
-                response['connect_params'] = self.slave_xero_api_params
+                response['connect_params'] = self.subordinate_xero_api_params
         return response
 
     @property
-    def slave_upload_client_class(self):
+    def subordinate_upload_client_class(self):
         response = self.local_client_class
-        if self['update_slave']:
+        if self['update_subordinate']:
             if self.wc_api_is_legacy:
                 response = ProdSyncClientWCLegacy
             else:
@@ -644,14 +644,14 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_upload_client_args(self):
-        response = {'connect_params': self.slave_wc_api_params}
+    def subordinate_upload_client_args(self):
+        response = {'connect_params': self.subordinate_wc_api_params}
         return response
 
     @property
-    def slave_cat_sync_client_class(self):
+    def subordinate_cat_sync_client_class(self):
         response = self.local_client_class
-        if self.download_slave:
+        if self.download_subordinate:
             if self.wc_api_is_legacy:
                 response = CatSyncClientWCLegacy
             else:
@@ -659,24 +659,24 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_cat_sync_client_args(self):
-        return {'connect_params': self.slave_wc_api_params}
+    def subordinate_cat_sync_client_args(self):
+        return {'connect_params': self.subordinate_wc_api_params}
 
     @property
-    def slave_img_sync_client_class(self):
+    def subordinate_img_sync_client_class(self):
         response = self.local_client_class
-        if self.download_slave:
+        if self.download_subordinate:
             response = ImgSyncClientWP
         return response
 
     @property
-    def slave_img_sync_client_args(self):
-        return {'connect_params': self.slave_wp_api_params}
+    def subordinate_img_sync_client_args(self):
+        return {'connect_params': self.subordinate_wp_api_params}
 
     @property
-    def slave_var_sync_client_class(self):
+    def subordinate_var_sync_client_class(self):
         response = self.local_client_class
-        if self.download_slave:
+        if self.download_subordinate:
             if self.wc_api_is_legacy:
                 response = VarSyncClientWCLegacy
             else:
@@ -684,8 +684,8 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         return response
 
     @property
-    def slave_var_sync_client_args(self):
-        return {'connect_params': self.slave_wc_api_params}
+    def subordinate_var_sync_client_args(self):
+        return {'connect_params': self.subordinate_wc_api_params}
 
     @property
     def syncupdate_class_prod(self):
@@ -763,11 +763,11 @@ class SettingsNamespaceProd(SettingsNamespaceProto):
         ApiParseWoo.save_api_data = self.save_api_data
 
     @property
-    def master_pkey(self):
+    def main_pkey(self):
         return "rowcount"
 
     @property
-    def slave_pkey(self):
+    def subordinate_pkey(self):
         response = "Wordpress ID"
         if self.schema_is_myo:
             response = 'codesum'

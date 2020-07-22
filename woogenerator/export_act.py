@@ -17,25 +17,25 @@ from .namespace.user import SettingsNamespaceUser
 from .utils import Registrar
 
 
-def download_master(settings):
-    """Populate the parsers for data from the slave database."""
+def download_main(settings):
+    """Populate the parsers for data from the subordinate database."""
 
     Registrar.register_message(
-        "master_parser_args:\n%s" %
-        pformat(settings.master_parser_args)
+        "main_parser_args:\n%s" %
+        pformat(settings.main_parser_args)
     )
 
-    Registrar.register_progress("analysing master user data")
+    Registrar.register_progress("analysing main user data")
 
-    master_client_class = settings.master_download_client_class
-    master_client_args = settings.master_download_client_args
-    with master_client_class(**master_client_args) as client:
+    main_client_class = settings.main_download_client_class
+    main_client_args = settings.main_download_client_args
+    with main_client_class(**main_client_args) as client:
         client.export_remote(
-            data_path=settings.master_path,
+            data_path=settings.main_path,
             since=settings.since_m
         )
         Registrar.register_message(
-            "exported ACT data to %s" % settings.master_path
+            "exported ACT data to %s" % settings.main_path
         )
 
 
@@ -44,10 +44,10 @@ def main(override_args=None, settings=None):
     if not settings:
         settings = SettingsNamespaceUser()
     settings.init_settings(override_args)
-    settings.download_master = True
+    settings.download_main = True
     settings.init_dirs()
 
-    download_master(settings)
+    download_main(settings)
 
 
 def catch_main(override_args=None):

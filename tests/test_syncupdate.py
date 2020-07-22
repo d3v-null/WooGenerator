@@ -31,12 +31,12 @@ class TestSyncUpdateAbstract(unittest.TestCase):
         # with open(yaml_path) as stream:
         #     config = yaml.load(stream)
         #     merge_mode = config.get('merge-mode', 'sync')
-        #     master_name = config.get('master-name', 'MASTER')
-        #     slave_name = config.get('slave-name', 'SLAVE')
+        #     main_name = config.get('main-name', 'MASTER')
+        #     subordinate_name = config.get('subordinate-name', 'SLAVE')
         #     default_last_sync = config.get('default-last-sync')
         #
         # SyncUpdateUsr.set_globals(
-        #     master_name, slave_name, merge_mode, default_last_sync)
+        #     main_name, subordinate_name, merge_mode, default_last_sync)
 
         Registrar.DEBUG_ERROR = False
         Registrar.DEBUG_WARN = False

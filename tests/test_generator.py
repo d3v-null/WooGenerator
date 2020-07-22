@@ -25,16 +25,16 @@ from woogenerator.generator import (do_match_categories, do_match_images,
                                     do_merge_categories, do_merge_images,
                                     do_merge_prod, do_merge_var, do_report,
                                     do_report_categories, do_report_images,
-                                    do_updates_categories_master,
-                                    do_updates_categories_slave,
-                                    do_updates_images_master,
-                                    do_updates_images_slave,
-                                    do_updates_prod_master,
-                                    do_updates_prod_slave,
-                                    do_updates_var_master,
-                                    do_updates_var_slave, export_master_parser,
-                                    populate_master_parsers,
-                                    populate_slave_parsers)
+                                    do_updates_categories_main,
+                                    do_updates_categories_subordinate,
+                                    do_updates_images_main,
+                                    do_updates_images_subordinate,
+                                    do_updates_prod_main,
+                                    do_updates_prod_subordinate,
+                                    do_updates_var_main,
+                                    do_updates_var_subordinate, export_main_parser,
+                                    populate_main_parsers,
+                                    populate_subordinate_parsers)
 from woogenerator.images import process_images
 from woogenerator.matching import ProductMatcher
 from woogenerator.namespace.core import MatchNamespace, UpdateNamespace
@@ -56,19 +56,19 @@ class AbstractParserSyncManagerTestCase(AbstractSyncManagerTestCase):
 
     House common utility functions.
     """
-    def populate_master_parsers(self):
-        if self.parsers.master:
+    def populate_main_parsers(self):
+        if self.parsers.main:
             return
         if self.debug:
-            print("regenerating master")
-        populate_master_parsers(self.parsers, self.settings)
+            print("regenerating main")
+        populate_main_parsers(self.parsers, self.settings)
 
-    def populate_slave_parsers(self):
-        if self.parsers.slave:
+    def populate_subordinate_parsers(self):
+        if self.parsers.subordinate:
             return
         if self.debug:
-            print("regenerating slave")
-        populate_slave_parsers(self.parsers, self.settings)
+            print("regenerating subordinate")
+        populate_subordinate_parsers(self.parsers, self.settings)
 
 class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
@@ -76,11 +76,11 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
     def setUp(self):
         super(TestGeneratorDummySpecials, self).setUp()
-        self.settings.master_dialect_suggestion = "SublimeCsvTable"
-        self.settings.download_master = False
-        self.settings.download_slave = False
-        self.settings.master_file = os.path.join(
-            TESTS_DATA_DIR, "generator_master_dummy.csv"
+        self.settings.main_dialect_suggestion = "SublimeCsvTable"
+        self.settings.download_main = False
+        self.settings.download_subordinate = False
+        self.settings.main_file = os.path.join(
+            TESTS_DATA_DIR, "generator_main_dummy.csv"
         )
         self.settings.specials_file = os.path.join(
             TESTS_DATA_DIR, "generator_specials_dummy.csv"
@@ -95,7 +95,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         self.settings.do_images = True
         self.settings.report_matching = True
         self.settings.auto_create_new = True
-        self.settings.update_slave = False
+        self.settings.update_subordinate = False
         self.settings.do_problematic = True
         self.settings.do_report = True
         self.settings.do_remeta_images = False
@@ -105,21 +105,21 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         self.settings.ask_before_update = False
         self.settings.skip_unattached_images = True
         if self.settings.wc_api_is_legacy:
-            self.settings.slave_file = os.path.join(
-                TESTS_DATA_DIR, "prod_slave_woo_api_dummy_legacy.json"
+            self.settings.subordinate_file = os.path.join(
+                TESTS_DATA_DIR, "prod_subordinate_woo_api_dummy_legacy.json"
             )
-            self.settings.slave_cat_file = os.path.join(
-                TESTS_DATA_DIR, "prod_slave_categories_woo_api_dummy_legacy.json"
+            self.settings.subordinate_cat_file = os.path.join(
+                TESTS_DATA_DIR, "prod_subordinate_categories_woo_api_dummy_legacy.json"
             )
         else:
-            self.settings.slave_file = os.path.join(
-                TESTS_DATA_DIR, "prod_slave_woo_api_dummy_wp-json.json"
+            self.settings.subordinate_file = os.path.join(
+                TESTS_DATA_DIR, "prod_subordinate_woo_api_dummy_wp-json.json"
             )
-            self.settings.slave_cat_file = os.path.join(
-                TESTS_DATA_DIR, "prod_slave_cat_woo_api_dummy_wp-json.json"
+            self.settings.subordinate_cat_file = os.path.join(
+                TESTS_DATA_DIR, "prod_subordinate_cat_woo_api_dummy_wp-json.json"
             )
-            self.settings.slave_img_file = os.path.join(
-                TESTS_DATA_DIR, "prod_slave_img_woo_api_dummy_wp-json.json"
+            self.settings.subordinate_img_file = os.path.join(
+                TESTS_DATA_DIR, "prod_subordinate_img_woo_api_dummy_wp-json.json"
             )
         self.settings.img_raw_dir = os.path.join(
             TESTS_DATA_DIR, 'imgs_raw'
@@ -160,16 +160,16 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         self.assertFalse(self.settings.do_remeta_images)
         self.assertTrue(self.settings.skip_unattached_images)
         self.assertTrue(self.settings.do_problematic)
-        self.assertFalse(self.settings.download_master)
-        self.assertFalse(self.settings.download_slave)
-        self.assertEqual(self.settings.master_name, "gdrive-test")
-        self.assertEqual(self.settings.slave_name, "woocommerce-test")
+        self.assertFalse(self.settings.download_main)
+        self.assertFalse(self.settings.download_subordinate)
+        self.assertEqual(self.settings.main_name, "gdrive-test")
+        self.assertEqual(self.settings.subordinate_name, "woocommerce-test")
         self.assertEqual(self.settings.merge_mode, "sync")
         self.assertEqual(self.settings.specials_mode, "all_future")
         self.assertEqual(self.settings.schema, "CA")
-        self.assertEqual(self.settings.download_master, False)
+        self.assertEqual(self.settings.download_main, False)
         self.assertEqual(
-            self.settings.master_download_client_args["dialect_suggestion"],
+            self.settings.main_download_client_args["dialect_suggestion"],
             "SublimeCsvTable")
         self.assertEqual(self.settings.spec_gid, None)
 
@@ -245,21 +245,21 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             )
 
     @pytest.mark.first
-    def test_dummy_populate_master_parsers(self):
-        self.populate_master_parsers()
+    def test_dummy_populate_main_parsers(self):
+        self.populate_main_parsers()
 
         #number of objects:
-        self.assertEqual(len(self.parsers.master.objects.values()), 165)
-        self.assertEqual(len(self.parsers.master.items.values()), 144)
+        self.assertEqual(len(self.parsers.main.objects.values()), 165)
+        self.assertEqual(len(self.parsers.main.items.values()), 144)
 
-        self.assertIn('modified_gmt', self.parsers.master.defaults)
+        self.assertIn('modified_gmt', self.parsers.main.defaults)
         self.assertEqual(
-            type(self.parsers.master.defaults['modified_gmt']),
+            type(self.parsers.main.defaults['modified_gmt']),
             datetime
         )
 
-        prod_container = self.parsers.master.product_container.container
-        prod_list = prod_container(self.parsers.master.products.values())
+        prod_container = self.parsers.main.product_container.container
+        prod_list = prod_container(self.parsers.main.products.values())
         if self.debug:
             print("%d products:" % len(prod_list))
             print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
@@ -374,10 +374,10 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         )
 
         if self.debug:
-            print("parser tree:\n%s" % self.parsers.master.to_str_tree())
+            print("parser tree:\n%s" % self.parsers.main.to_str_tree())
 
-        cat_container = self.parsers.master.category_container.container
-        cat_list = cat_container(self.parsers.master.categories.values())
+        cat_container = self.parsers.main.category_container.container
+        cat_list = cat_container(self.parsers.main.categories.values())
 
         if self.debug:
             print(SanitationUtils.coerce_bytes(
@@ -435,11 +435,11 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             last_cat_attachment_id
         )
 
-        prod_a_spec_cat = self.parsers.master.find_category({
-            self.parsers.master.category_container.title_key: 'Product A Specials'
+        prod_a_spec_cat = self.parsers.main.find_category({
+            self.parsers.main.category_container.title_key: 'Product A Specials'
         })
         self.assertEqual(
-            prod_a_spec_cat[self.parsers.master.category_container.codesum_key],
+            prod_a_spec_cat[self.parsers.main.category_container.codesum_key],
             'SPA'
         )
 
@@ -461,26 +461,26 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 )
             )
 
-    def test_dummy_export_master_parsers(self):
-        self.populate_master_parsers()
-        export_master_parser(self.settings, self.parsers)
+    def test_dummy_export_main_parsers(self):
+        self.populate_main_parsers()
+        export_main_parser(self.settings, self.parsers)
 
     @pytest.mark.first
-    def test_dummy_populate_slave_parsers(self):
-        # self.populate_master_parsers()
-        self.populate_slave_parsers()
+    def test_dummy_populate_subordinate_parsers(self):
+        # self.populate_main_parsers()
+        self.populate_subordinate_parsers()
         if self.debug:
-            print("slave objects: %s" % len(self.parsers.slave.objects.values()))
-            print("slave items: %s" % len(self.parsers.slave.items.values()))
-            print("slave products: %s" % len(self.parsers.slave.products.values()))
-            print("slave categories: %s" % len(self.parsers.slave.categories.values()))
+            print("subordinate objects: %s" % len(self.parsers.subordinate.objects.values()))
+            print("subordinate items: %s" % len(self.parsers.subordinate.items.values()))
+            print("subordinate products: %s" % len(self.parsers.subordinate.products.values()))
+            print("subordinate categories: %s" % len(self.parsers.subordinate.categories.values()))
 
         if self.debug:
-            print("parser tree:\n%s" % self.parsers.slave.to_str_tree())
+            print("parser tree:\n%s" % self.parsers.subordinate.to_str_tree())
 
-        self.assertEqual(len(self.parsers.slave.products), 48)
-        prod_container = self.parsers.slave.product_container.container
-        prod_list = prod_container(self.parsers.slave.products.values())
+        self.assertEqual(len(self.parsers.subordinate.products), 48)
+        prod_container = self.parsers.subordinate.product_container.container
+        prod_list = prod_container(self.parsers.subordinate.products.values())
         first_prod = prod_list[0]
         if self.debug:
             print("first_prod.dict %s" % pformat(dict(first_prod)))
@@ -511,7 +511,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         if self.settings.do_specials:
             timezone = TimeUtils._wp_srv_tz
             test_dict.update({
-                # Note: the slave data was generated in the wrong timezone
+                # Note: the subordinate data was generated in the wrong timezone
                 'WNF': "2016-06-14 01:00:00",
                 'WNT': "3000-07-01 07:00:00",
                 # 'WNF': u'1465837200',
@@ -545,8 +545,8 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             ])
         )
 
-        cat_container = self.parsers.slave.category_container.container
-        cat_list = cat_container(self.parsers.slave.categories.values())
+        cat_container = self.parsers.subordinate.category_container.container
+        cat_list = cat_container(self.parsers.subordinate.categories.values())
         if self.debug:
             print(SanitationUtils.coerce_bytes(
                 cat_list.tabulate(tablefmt='simple')
@@ -580,8 +580,8 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         )
         self.assertEqual(second_cat.menu_order, 0)
 
-        img_container = self.parsers.slave.attachment_container.container
-        img_list = img_container(self.parsers.slave.attachments.values())
+        img_container = self.parsers.subordinate.attachment_container.container
+        img_list = img_container(self.parsers.subordinate.attachments.values())
         if self.debug:
             print(SanitationUtils.coerce_bytes(
                 img_list.tabulate(tablefmt='simple')
@@ -654,19 +654,19 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
     # @unittest.skip("takes too long")
     @pytest.mark.slow
-    def test_dummy_process_images_master(self):
+    def test_dummy_process_images_main(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
+        self.populate_main_parsers()
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
-        self.populate_slave_parsers()
+        self.populate_subordinate_parsers()
 
         if self.debug:
-            self.print_images_summary(self.parsers.master.attachments.values())
+            self.print_images_summary(self.parsers.main.attachments.values())
 
         # test resizing
-        prod_container = self.parsers.master.product_container.container
-        prod_list = prod_container(self.parsers.master.products.values())
+        prod_container = self.parsers.main.product_container.container
+        prod_list = prod_container(self.parsers.main.products.values())
         resized_images = 0
         for prod in prod_list:
             for img_data in prod.to_dict().get('attachment_objects'):
@@ -678,15 +678,15 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         self.assertTrue(resized_images)
 
     @pytest.mark.slow
-    def test_dummy_images_slave(self):
+    def test_dummy_images_subordinate(self):
         self.settings.do_remeta_images = False
         self.settings.do_resize_images = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.debug:
-            self.print_images_summary(self.parsers.slave.attachments.values())
-            for img_data in self.parsers.slave.attachments.values():
+            self.print_images_summary(self.parsers.subordinate.attachments.values())
+            for img_data in self.parsers.subordinate.attachments.values():
                 print(
                     img_data.file_name,
                     [attach.index for attach in img_data.attaches.objects]
@@ -694,8 +694,8 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
     @pytest.mark.slow
     def test_dummy_do_match_images(self):
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
         if self.settings.do_images:
             self.setup_temp_img_dir()
             process_images(self.settings, self.parsers)
@@ -711,20 +711,20 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
         self.assertEqual(len(self.matches.image.valid), 51)
         first_match = self.matches.image.valid[0]
-        first_master = first_match.m_object
-        first_slave = first_match.s_object
+        first_main = first_match.m_object
+        first_subordinate = first_match.s_object
         if self.debug:
-            print('pformat@first_master:\n%s' % pformat(first_master.to_dict()))
-            print('pformat@first_slave:\n%s' % pformat(first_slave.to_dict()))
-            master_keys = set(dict(first_master).keys())
-            slave_keys = set(dict(first_slave).keys())
-            intersect_keys = master_keys.intersection(slave_keys)
+            print('pformat@first_main:\n%s' % pformat(first_main.to_dict()))
+            print('pformat@first_subordinate:\n%s' % pformat(first_subordinate.to_dict()))
+            main_keys = set(dict(first_main).keys())
+            subordinate_keys = set(dict(first_subordinate).keys())
+            intersect_keys = main_keys.intersection(subordinate_keys)
             print("intersect_keys:\n")
             for key in intersect_keys:
                 out = ("%20s | %50s | %50s" % (
                     SanitationUtils.coerce_ascii(key),
-                    SanitationUtils.coerce_ascii(first_master[key])[:50],
-                    SanitationUtils.coerce_ascii(first_slave[key])[:50]
+                    SanitationUtils.coerce_ascii(first_main[key])[:50],
+                    SanitationUtils.coerce_ascii(first_subordinate[key])[:50]
                 ))
                 print(SanitationUtils.coerce_ascii(out))
 
@@ -732,30 +732,30 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             'file_name': 'ACA.jpg',
             'title': 'Product A > Company A Product A',
         }.items():
-            self.assertEqual(getattr(first_master, attr), value)
+            self.assertEqual(getattr(first_main, attr), value)
         for attr, value in {
             'file_name': 'ACA.jpg',
             'title': 'Solution > TechnoTan Solution',
             'slug': 'solution-technotan-solution',
             'api_id': 24879
         }.items():
-            self.assertEqual(getattr(first_slave, attr), value)
+            self.assertEqual(getattr(first_subordinate, attr), value)
 
         # last_match = self.matches.image.valid[-1]
-        # last_master = last_match.m_object
-        # last_slave = last_match.s_object
+        # last_main = last_match.m_object
+        # last_subordinate = last_match.s_object
         # if self.debug:
-        #     print('pformat@last_master:\n%s' % pformat(last_master.to_dict()))
-        #     print('pformat@last_slave:\n%s' % pformat(last_slave.to_dict()))
-        #     master_keys = set(dict(last_master).keys())
-        #     slave_keys = set(dict(last_slave).keys())
-        #     intersect_keys = master_keys.intersection(slave_keys)
+        #     print('pformat@last_main:\n%s' % pformat(last_main.to_dict()))
+        #     print('pformat@last_subordinate:\n%s' % pformat(last_subordinate.to_dict()))
+        #     main_keys = set(dict(last_main).keys())
+        #     subordinate_keys = set(dict(last_subordinate).keys())
+        #     intersect_keys = main_keys.intersection(subordinate_keys)
         #     print("intersect_keys:\n")
         #     for key in intersect_keys:
         #         out = ("%20s | %50s | %50s" % (
         #             SanitationUtils.coerce_ascii(key),
-        #             SanitationUtils.coerce_ascii(last_master[key])[:50],
-        #             SanitationUtils.coerce_ascii(last_slave[key])[:50]
+        #             SanitationUtils.coerce_ascii(last_main[key])[:50],
+        #             SanitationUtils.coerce_ascii(last_subordinate[key])[:50]
         #         ))
         #         print(SanitationUtils.coerce_ascii(out))
         #
@@ -769,14 +769,14 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         #     'file_name': 'ACARB-S.jpg',
         #     'title': 'Range B - Extra Dark - 100ml Sample',
         # }.items():
-        #     self.assertEqual(getattr(last_master, attr), value)
+        #     self.assertEqual(getattr(last_main, attr), value)
         # for attr, value in {
         #     'file_name': 'ACARB-S.jpg',
         #     'title': 'Range B - Extra Dark - 100ml Sample 1',
         #     'slug': 'range-b-extra-dark-100ml-sample-1',
         #     'api_id': 24817
         # }.items():
-        #     self.assertEqual(getattr(last_slave, attr), value)
+        #     self.assertEqual(getattr(last_subordinate, attr), value)
 
     def test_do_match_cat_name(self):
         """
@@ -792,12 +792,12 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         """
         self.settings.schema = "VT"
         self.settings.woo_schemas = ["VT"]
-        self.parsers.master = self.settings.master_parser_class(
-            **self.settings.master_parser_args
+        self.parsers.main = self.settings.main_parser_class(
+            **self.settings.main_parser_args
         )
 
         # Manually insert only relevant items
-        self.parsers.master.indices = OrderedDict([
+        self.parsers.main.indices = OrderedDict([
             ('post_status', 54), ('height', 48), ('width', 47),
             ('stock_status', 50), ('weight', 45), ('Images', 51),
             ('length', 46), ('Xero Description', 53), ('CVC', 44),
@@ -810,7 +810,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             ('stock', 49), ('VT', 12)
         ])
 
-        self.parsers.master.analyse_rows([
+        self.parsers.main.analyse_rows([
             [
                 u'Tan Care', u'', u'', u'', u'', u'C', u'', u'', u'', u'', u'',
                 u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u'',
@@ -857,13 +857,13 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             ]
         ])
 
-        self.assertTrue(len(self.parsers.master.categories) > 0)
+        self.assertTrue(len(self.parsers.main.categories) > 0)
 
-        self.parsers.slave = self.settings.slave_parser_class(
-            **self.settings.slave_parser_args
+        self.parsers.subordinate = self.settings.subordinate_parser_class(
+            **self.settings.subordinate_parser_args
         )
 
-        self.parsers.slave.process_api_categories_gen([
+        self.parsers.subordinate.process_api_categories_gen([
             OrderedDict([
                 ('display', u'default'), ('HTML Description', u'Tan Care'),
                 ('slug', u'tan-care'), ('title', 'Tan Care'), ('ID', 54),
@@ -882,7 +882,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             ])
         ])
 
-        self.assertTrue(len(self.parsers.slave.categories) > 0)
+        self.assertTrue(len(self.parsers.subordinate.categories) > 0)
 
         do_match_categories(
             self.parsers, self.matches, self.settings
@@ -892,9 +892,9 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         for index in ['Tan Care', 'Pre Tan']:
             self.assertTrue(index in self.matches.category.globals.m_indices)
 
-        self.parsers.slave.clear_transients()
+        self.parsers.subordinate.clear_transients()
 
-        self.parsers.slave.process_api_categories_gen([
+        self.parsers.subordinate.process_api_categories_gen([
             OrderedDict([
                 ('display', u'default'), ('HTML Description', u'Tan Care'),
                 ('slug', u'tan-care'), ('cat_name', 'Tan Care'), ('ID', 54),
@@ -923,12 +923,12 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
     def test_do_match_cat_ambiguous_title(self):
         self.settings.schema = "VT"
         self.settings.woo_schemas = ["VT"]
-        self.parsers.master = self.settings.master_parser_class(
-            **self.settings.master_parser_args
+        self.parsers.main = self.settings.main_parser_class(
+            **self.settings.main_parser_args
         )
 
         # Manually insert only relevant items
-        self.parsers.master.indices = OrderedDict([
+        self.parsers.main.indices = OrderedDict([
             ('post_status', 54), ('height', 48), ('width', 47),
             ('stock_status', 50), ('weight', 45), ('Images', 51),
             ('length', 46), ('Xero Description', 53), ('CVC', 44),
@@ -941,7 +941,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             ('stock', 49), ('VT', 12)
         ])
 
-        self.parsers.master.analyse_rows([
+        self.parsers.main.analyse_rows([
             # rowcount = 3
             [
                 u'Solution', u'', u'', u'', u'', u'S', u'', u'', u'', u'', u'',
@@ -991,13 +991,13 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             ],
         ])
 
-        self.assertTrue(len(self.parsers.master.categories) > 0)
+        self.assertTrue(len(self.parsers.main.categories) > 0)
 
-        self.parsers.slave = self.settings.slave_parser_class(
-            **self.settings.slave_parser_args
+        self.parsers.subordinate = self.settings.subordinate_parser_class(
+            **self.settings.subordinate_parser_args
         )
 
-        self.parsers.slave.process_api_categories_gen([
+        self.parsers.subordinate.process_api_categories_gen([
             OrderedDict([
                 ('display', u'default'), ('HTML Description', u'Solution'),
                 ('cat_name', 'Solution'), ('slug', u'solution'),
@@ -1019,8 +1019,8 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
     @pytest.mark.slow
     def test_dummy_do_match_cat_img(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -1030,10 +1030,10 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_images_master(
+            do_updates_images_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_images_slave_mocked()
+            self.do_updates_images_subordinate_mocked()
 
         if self.settings.do_categories:
             do_match_categories(
@@ -1046,36 +1046,36 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
         self.assertEqual(len(self.matches.category.globals), 9)
         first_match = self.matches.category.valid[2]
-        first_master = first_match.m_object
-        first_slave = first_match.s_object
+        first_main = first_match.m_object
+        first_subordinate = first_match.s_object
         if self.debug:
-            print('pformat@first_master:\n%s' % pformat(first_master.to_dict()))
-            print('pformat@first_slave:\n%s' % pformat(first_slave.to_dict()))
-            master_keys = set(dict(first_master).keys())
-            slave_keys = set(dict(first_slave).keys())
-            intersect_keys = master_keys.intersection(slave_keys)
+            print('pformat@first_main:\n%s' % pformat(first_main.to_dict()))
+            print('pformat@first_subordinate:\n%s' % pformat(first_subordinate.to_dict()))
+            main_keys = set(dict(first_main).keys())
+            subordinate_keys = set(dict(first_subordinate).keys())
+            intersect_keys = main_keys.intersection(subordinate_keys)
             print("intersect_keys:\n")
             for key in intersect_keys:
                 print("%20s | %50s | %50s" % (
-                    str(key), str(first_master[key])[:50], str(first_slave[key])[:50]
+                    str(key), str(first_main[key])[:50], str(first_subordinate[key])[:50]
                 ))
 
         for match in self.matches.category.globals:
             self.assertEqual(match.m_object.title, match.s_object.title)
 
-        last_slaveless_match = self.matches.category.slaveless[-1]
-        last_slaveless_master = last_slaveless_match.m_object
+        last_subordinateless_match = self.matches.category.subordinateless[-1]
+        last_subordinateless_main = last_subordinateless_match.m_object
         if self.debug:
             print(
-                'pformat@last_slaveless_master.to_dict:\n%s' % \
-                pformat(last_slaveless_master.to_dict())
+                'pformat@last_subordinateless_main.to_dict:\n%s' % \
+                pformat(last_subordinateless_main.to_dict())
             )
         # This ensures that specials categories correctly match with existing
         self.assertTrue(
-            last_slaveless_master.row
+            last_subordinateless_main.row
         )
         self.assertEqual(
-            last_slaveless_master.to_dict().get('attachment_object').file_name,
+            last_subordinateless_main.to_dict().get('attachment_object').file_name,
             'ACA.jpg'
         )
 
@@ -1090,8 +1090,8 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         self.settings.do_resize_images = True
         self.settings.do_remeta_images = False
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -1105,13 +1105,13 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         if self.debug:
             print("img sync handles: %s" % self.settings.sync_handles_img)
             self.print_updates_summary(self.updates.image)
-            for update in self.updates.image.slave:
+            for update in self.updates.image.subordinate:
                 print(update.tabulate())
-        self.assertEqual(len(self.updates.image.slave), 51)
+        self.assertEqual(len(self.updates.image.subordinate), 51)
         self.assertEqual(len(self.updates.image.problematic), 0)
         if self.debug:
-            print("slave updates:")
-            for sync_update in self.updates.image.slave:
+            print("subordinate updates:")
+            for sync_update in self.updates.image.subordinate:
                 print(sync_update.tabulate())
         # sync_update = self.updates.image.problematic[0]
         # try:
@@ -1121,58 +1121,58 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         # except AssertionError as exc:
         #     self.fail_syncupdate_assertion(exc, sync_update)
 
-        sync_update = self.updates.image.slave.get_by_ids("-1|ACA.jpg", 24879)
+        sync_update = self.updates.image.subordinate.get_by_ids("-1|ACA.jpg", 24879)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            master_desc = (
+            main_desc = (
                 "Company A have developed a range of unique blends in 16 "
                 "shades to suit all use cases. All Company A's products "
                 "are created using the finest naturally derived botanical "
                 "and certified organic ingredients."
             )
-            slave_desc = (
+            subordinate_desc = (
                 "TechnoTan have developed a range of unique blends in 16 "
                 "shades to suit all skin types. All TechnoTan's tanning solutions "
                 "are created using the finest naturally derived botanical "
                 "and certified organic ingredients."
             )
-            master_title = 'Product A > Company A Product A'
-            slave_title = 'Solution > TechnoTan Solution'
+            main_title = 'Product A > Company A Product A'
+            subordinate_title = 'Solution > TechnoTan Solution'
 
             self.assertEqual(
                 sync_update.old_m_object_core['title'],
-                master_title
+                main_title
             )
             self.assertEqual(
                 sync_update.old_s_object_core['title'],
-                slave_title
+                subordinate_title
             )
             self.assertEqual(
                 sync_update.new_s_object_core['title'],
-                master_title
+                main_title
             )
             self.assertEqual(
                 sync_update.old_m_object_core['post_excerpt'],
-                master_desc
+                main_desc
             )
             self.assertEqual(
                 SanitationUtils.normalize_unicode(sync_update.old_s_object_core['post_excerpt']),
-                slave_desc
+                subordinate_desc
             )
             self.assertEqual(
                 sync_update.new_s_object_core['post_excerpt'],
-                master_desc
+                main_desc
             )
             self.assertFalse(sync_update.old_s_object_core['alt_text'])
             self.assertEqual(
                 sync_update.new_s_object_core['alt_text'],
-                master_title
+                main_title
             )
             self.assertFalse(sync_update.old_s_object_core['post_content'])
             self.assertEqual(
                 sync_update.new_s_object_core['post_content'],
-                master_desc
+                main_desc
             )
             self.assertTrue(
                 sync_update.m_time
@@ -1182,46 +1182,46 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
-        self.assertEqual(len(self.updates.image.master), 51)
+        self.assertEqual(len(self.updates.image.main), 51)
         if self.debug:
-            print("master updates:")
-            for sync_update in self.updates.image.master:
+            print("main updates:")
+            for sync_update in self.updates.image.main:
                 print(sync_update.tabulate())
-        # sync_update = self.updates.image.master[0]
-        sync_update = self.updates.image.master.get_by_ids("-1|ACA.jpg", 24879)
+        # sync_update = self.updates.image.main[0]
+        sync_update = self.updates.image.main.get_by_ids("-1|ACA.jpg", 24879)
         try:
             if self.debug:
                 self.print_update(sync_update)
-            master_slug = ''
-            slave_slug = 'solution-technotan-solution'
+            main_slug = ''
+            subordinate_slug = 'solution-technotan-solution'
             self.assertEqual(
                 sync_update.old_m_object_core['slug'],
-                master_slug
+                main_slug
             )
             self.assertEqual(
                 sync_update.old_s_object_core['slug'],
-                slave_slug
+                subordinate_slug
             )
             self.assertEqual(
                 sync_update.new_m_object_core['slug'],
-                slave_slug
+                subordinate_slug
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
         if self.debug:
-            print("slaveless objects")
-            for update in self.updates.image.slaveless:
-                slave_gen_object = update.old_m_object_gen
-                print(slave_gen_object)
+            print("subordinateless objects")
+            for update in self.updates.image.subordinateless:
+                subordinate_gen_object = update.old_m_object_gen
+                print(subordinate_gen_object)
 
-        self.assertEqual(len(self.updates.image.slaveless), 2)
-        # sync_update = self.updates.image.slaveless[0]
-        sync_update = self.updates.image.slaveless.get_by_ids("14|ACARA-CCL.png", "")
+        self.assertEqual(len(self.updates.image.subordinateless), 2)
+        # sync_update = self.updates.image.subordinateless[0]
+        sync_update = self.updates.image.subordinateless.get_by_ids("14|ACARA-CCL.png", "")
         try:
             if self.debug:
                 self.print_update(sync_update)
-            slave_gen_object = sync_update.old_m_object_gen
+            subordinate_gen_object = sync_update.old_m_object_gen
             title = 'Range A - Style 2 - 1Litre'
             content = (
                 "Company A have developed a range of unique blends in 16 shades to "
@@ -1229,24 +1229,24 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 "finest naturally derived botanical and certified organic ingredients."
             )
             self.assertEqual(
-                self.parsers.master.attachment_container.get_title(slave_gen_object),
+                self.parsers.main.attachment_container.get_title(subordinate_gen_object),
                 title
             )
             self.assertEqual(
-                self.parsers.master.attachment_container.get_alt_text(slave_gen_object),
+                self.parsers.main.attachment_container.get_alt_text(subordinate_gen_object),
                 title
             )
             self.assertEqual(
-                self.parsers.master.attachment_container.get_description(slave_gen_object),
+                self.parsers.main.attachment_container.get_description(subordinate_gen_object),
                 content
             )
             self.assertEqual(
-                self.parsers.master.attachment_container.get_caption(slave_gen_object),
+                self.parsers.main.attachment_container.get_caption(subordinate_gen_object),
                 content
             )
             self.assertEqual(
                 FileUtils.get_path_basename(
-                    self.parsers.master.attachment_container.get_file_path(slave_gen_object),
+                    self.parsers.main.attachment_container.get_file_path(subordinate_gen_object),
                 ),
                 "ACARA-CCL.png"
             )
@@ -1256,11 +1256,11 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    def do_updates_images_slave_mocked(self):
+    def do_updates_images_subordinate_mocked(self):
         with mock.patch(
             MockUtils.get_mock_name(
                 self.settings.__class__,
-                'slave_img_sync_client_class'
+                'subordinate_img_sync_client_class'
             ),
             new_callable=mock.PropertyMock,
             return_value=self.settings.null_client_class
@@ -1329,17 +1329,17 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             new_callable=mock.PropertyMock,
             return_value='id'
         ):
-            self.settings.update_slave = True
-            do_updates_images_slave(
+            self.settings.update_subordinate = True
+            do_updates_images_subordinate(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.settings.update_slave = False
+            self.settings.update_subordinate = False
 
     @pytest.mark.slow
-    def test_dummy_do_updates_images_slave(self):
+    def test_dummy_do_updates_images_subordinate(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -1349,10 +1349,10 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_images_master(
+            do_updates_images_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_images_slave_mocked()
+            self.do_updates_images_subordinate_mocked()
 
         if self.debug:
             print('image update results: %s' % self.results.image)
@@ -1429,8 +1429,8 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
     @pytest.mark.first
     def test_dummy_do_merge_categories_only(self):
         self.settings.do_images = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -1441,47 +1441,47 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
 
         if self.debug:
             self.print_updates_summary(self.updates.category)
-        self.assertEqual(len(self.updates.category.master), 9)
-        # sync_update = self.updates.category.master[1]
-        sync_update = self.updates.category.master.get_by_ids(4, 316)
+        self.assertEqual(len(self.updates.category.main), 9)
+        # sync_update = self.updates.category.main[1]
+        sync_update = self.updates.category.main.get_by_ids(4, 316)
         try:
             if self.debug:
                 self.print_update(sync_update)
 
-            updates_native = sync_update.get_slave_updates_native()
+            updates_native = sync_update.get_subordinate_updates_native()
 
-            master_desc = (
+            main_desc = (
                 "Company A have developed a range of unique blends in 16 "
                 "shades to suit all use cases. All Company A's products "
                 "are created using the finest naturally derived botanical "
                 "and certified organic ingredients."
             )
-            slave_desc = "Company A have developed stuff"
+            subordinate_desc = "Company A have developed stuff"
             self.assertEqual(
                 sync_update.old_m_object['descsum'],
-                master_desc
+                main_desc
             )
             self.assertEqual(
                 sync_update.old_s_object['descsum'],
-                slave_desc
+                subordinate_desc
             )
             self.assertEqual(
                 sync_update.new_s_object['descsum'],
-                master_desc
+                main_desc
             )
             self.assertIn(
-                ('description', master_desc),
+                ('description', main_desc),
                 updates_native.items()
             )
 
-            master_title = "Company A Product A"
+            main_title = "Company A Product A"
             self.assertEqual(
                 sync_update.old_m_object['title'],
-                master_title
+                main_title
             )
             self.assertEqual(
                 sync_update.old_s_object['title'],
-                master_title
+                main_title
             )
             self.assertNotIn(
                 'name',
@@ -1491,55 +1491,55 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             self.fail_syncupdate_assertion(exc, sync_update)
 
         if self.debug:
-            print("slaveless objects")
-            for update in self.updates.category.slaveless:
-                slave_gen_object = update.old_m_object_gen
-                print(slave_gen_object)
+            print("subordinateless objects")
+            for update in self.updates.category.subordinateless:
+                subordinate_gen_object = update.old_m_object_gen
+                print(subordinate_gen_object)
 
         self.assertEqual(
             set([
-                self.parsers.slave.category_container.get_title(gen_data.old_m_object_gen)
-                for gen_data in self.updates.category.slaveless
+                self.parsers.subordinate.category_container.get_title(gen_data.old_m_object_gen)
+                for gen_data in self.updates.category.subordinateless
             ]),
             set(['Specials', 'Product A Specials'])
         )
 
-        # sync_update = self.updates.category.slaveless[-1]
-        sync_update = self.updates.category.slaveless.get_by_ids(167, '')
+        # sync_update = self.updates.category.subordinateless[-1]
+        sync_update = self.updates.category.subordinateless.get_by_ids(167, '')
         try:
             if self.debug:
                 self.print_update(sync_update)
-            master_title = "Product A Specials"
-            master_desc = master_title
+            main_title = "Product A Specials"
+            main_desc = main_title
             self.assertEqual(
                 sync_update.old_m_object_core['title'],
-                master_title
+                main_title
             )
             self.assertEqual(
                 sync_update.new_s_object_core['title'],
-                master_title
+                main_title
             )
             self.assertEqual(
                 sync_update.old_m_object_core['description'],
-                master_desc
+                main_desc
             )
             self.assertEqual(
                 sync_update.new_s_object_core['description'],
-                master_desc
+                main_desc
             )
             self.assertEqual(
                 bool(self.settings.do_images),
                 'image' in sync_update.new_s_object_core,
-                "images should be excluded from new slave objects if do_images disabled, contrapositive is true"
+                "images should be excluded from new subordinate objects if do_images disabled, contrapositive is true"
             )
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    def do_updates_categories_slave_mocked(self):
+    def do_updates_categories_subordinate_mocked(self):
         with mock.patch(
             MockUtils.get_mock_name(
                 self.settings.__class__,
-                'slave_cat_sync_client_class'
+                'subordinate_cat_sync_client_class'
             ),
             new_callable=mock.PropertyMock,
             return_value=self.settings.null_client_class
@@ -1592,17 +1592,17 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             new_callable=mock.PropertyMock,
             return_value='term_id'
         ):
-            self.settings.update_slave = True
-            do_updates_categories_slave(
+            self.settings.update_subordinate = True
+            do_updates_categories_subordinate(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.settings.update_slave = False
+            self.settings.update_subordinate = False
 
     @pytest.mark.last
-    def test_dummy_do_updates_categories_slave_only(self):
+    def test_dummy_do_updates_categories_subordinate_only(self):
         self.settings.do_images = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -1610,10 +1610,10 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_categories_master(
+            do_updates_categories_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_categories_slave_mocked()
+            self.do_updates_categories_subordinate_mocked()
 
         if self.debug:
             print('category update results: %s' % self.results.category)
@@ -1627,7 +1627,7 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             len(self.results.category.new.successes),
             2
         )
-        index_fn = self.parsers.master.category_indexer
+        index_fn = self.parsers.main.category_indexer
         sync_update = self.results.category.new.successes.pop(0)
         # sync_update = self.results.category.new.successes.get_by_ids(166, 100000)
         try:
@@ -1644,10 +1644,10 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 new_s_object_gen.wpid,
                 100000
             )
-            master_index = index_fn(sync_update.old_m_object)
-            original_master = self.parsers.master.categories[master_index]
+            main_index = index_fn(sync_update.old_m_object)
+            original_main = self.parsers.main.categories[main_index]
             self.assertEqual(
-                original_master.wpid,
+                original_main.wpid,
                 100000
             )
         except AssertionError as exc:
@@ -1669,14 +1669,14 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                 new_s_object_gen.wpid,
                 100001
             )
-            master_index = index_fn(sync_update.old_m_object)
-            original_master = self.parsers.master.categories[master_index]
+            main_index = index_fn(sync_update.old_m_object)
+            original_main = self.parsers.main.categories[main_index]
             self.assertEqual(
-                original_master.wpid,
+                original_main.wpid,
                 100001
             )
             self.assertEqual(
-                original_master.parent.wpid,
+                original_main.parent.wpid,
                 100000
             )
         except AssertionError as exc:
@@ -1685,8 +1685,8 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
     @pytest.mark.slow
     def test_dummy_do_merge_cat_img(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -1696,10 +1696,10 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_images_master(
+            do_updates_images_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_images_slave_mocked()
+            self.do_updates_images_subordinate_mocked()
 
         if self.settings.do_categories:
             do_match_categories(
@@ -1729,28 +1729,28 @@ class TestGeneratorDummySpecials(AbstractParserSyncManagerTestCase):
                         key,
                         new_s_core_img
                     )
-            if sync_update.get_slave_updates().get('image'):
-                slave_updates_core_img = sync_update.get_slave_updates().get('image')
+            if sync_update.get_subordinate_updates().get('image'):
+                subordinate_updates_core_img = sync_update.get_subordinate_updates().get('image')
                 for key in expected_sub_img_handles:
                     self.assertIn(
                         key,
-                        slave_updates_core_img
+                        subordinate_updates_core_img
                     )
                 for key in unexpected_sub_img_handles:
                     self.assertNotIn(
                         key,
-                        slave_updates_core_img
+                        subordinate_updates_core_img
                     )
-                slave_updates_native_img = sync_update.get_slave_updates_native().get('image')
+                subordinate_updates_native_img = sync_update.get_subordinate_updates_native().get('image')
                 for key in expected_sub_img_cols:
                     self.assertIn(
                         key,
-                        slave_updates_native_img
+                        subordinate_updates_native_img
                     )
 
-        self.assertEqual(len(self.updates.category.master), 9)
+        self.assertEqual(len(self.updates.category.main), 9)
 
-        for sync_update in self.updates.category.master:
+        for sync_update in self.updates.category.main:
             try:
                 sync_update_cat_rudiments_test(sync_update)
             except AssertionError as exc:
@@ -1865,13 +1865,13 @@ slug            merging       gdrive-test         product-a-company-a-product-a 
 display         merging       gdrive-test         default                               0         0
 passes:
 -
-Column    Reason     Master               Slave                  M TIME    S TIME  EXTRA
+Column    Reason     Main               Subordinate                  M TIME    S TIME  EXTRA
 --------  ---------  -------------------  -------------------  --------  --------  -------
 title     identical  Company A Product A  Company A Product A         0         0
 probbos:
 
         """
-        sync_update = self.updates.category.master.get_by_ids(4, 316)
+        sync_update = self.updates.category.main.get_by_ids(4, 316)
 
         try:
             if self.debug:
@@ -1912,17 +1912,17 @@ probbos:
                     pformat(sync_update.sync_warnings_core.items())
                 )
                 print(
-                    "slave img updates native: \n%s" % \
-                    pformat(sync_update.get_slave_updates_native())
+                    "subordinate img updates native: \n%s" % \
+                    pformat(sync_update.get_subordinate_updates_native())
                 )
             self.assertTrue(
                 sync_update.sync_warnings_core.get('image')
             )
             self.assertTrue(
-                sync_update.get_slave_updates_native().get('image')
+                sync_update.get_subordinate_updates_native().get('image')
             )
             self.assertTrue(
-                sync_update.get_slave_updates_native().get('image').get('id'),
+                sync_update.get_subordinate_updates_native().get('image').get('id'),
                 100002
             )
 
@@ -1932,8 +1932,8 @@ probbos:
         # TODO: this
         if self.debug:
             import pudb; pudb.set_trace()
-        self.assertEqual(len(self.updates.category.slave), 9)
-        for sync_update in self.updates.category.slave:
+        self.assertEqual(len(self.updates.category.subordinate), 9)
+        for sync_update in self.updates.category.subordinate:
             try:
                 sync_update_cat_rudiments_test(sync_update)
             except AssertionError as exc:
@@ -1967,7 +1967,7 @@ woocommerce-test CHANGES
  317  Company A have developed a range of unique blends in 16 shades to suit all use cases. All Company A's products are created using the finest naturally derived botanical and certified organic ingredients.  OrderedDict([('src', u'/var/folders/sx/43gc_nmj43dcwbw15n3pwm440000gn/T/tmpGiIcYKgenerator_dummy_process_images_img/imgs_cmp/images-CA/ACARA.jpg'), ('id', 100003), ('title', u'Product A > Company A Product A > Range A')])
 PASSES (1)
 -
-Column    Reason     Master    Slave      M TIME    S TIME  EXTRA
+Column    Reason     Main    Subordinate      M TIME    S TIME  EXTRA
 --------  ---------  --------  -------  --------  --------  -------
 title     identical  Range A   Range A         0         0
 
@@ -1977,7 +1977,7 @@ taxos                              descsum                                      
 ACA|r:8|w:317|Company A Product A  Company A have developed a range of unique blends  Range A          316   317  product-a-company-a-product-a-range-a
 r:3|a:317|Range A                  Company A have developed a range of unique blends  Range A          316   317  product-a-company-a-product-a-range-a
         """
-        sync_update = self.updates.category.slave.get_by_ids(8,317)
+        sync_update = self.updates.category.subordinate.get_by_ids(8,317)
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -2005,19 +2005,19 @@ r:3|a:317|Range A                  Company A have developed a range of unique bl
                 sync_update.sync_warnings_core.get('image')
             )
             self.assertTrue(
-                sync_update.get_slave_updates_native().get('image')
+                sync_update.get_subordinate_updates_native().get('image')
             )
             self.assertTrue(
-                sync_update.get_slave_updates_native().get('image').get('id'),
+                sync_update.get_subordinate_updates_native().get('image').get('id'),
                 100003
             )
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-        self.assertEqual(len(self.updates.category.slaveless), 2)
+        self.assertEqual(len(self.updates.category.subordinateless), 2)
 
-        for sync_update in self.updates.category.slaveless:
+        for sync_update in self.updates.category.subordinateless:
             try:
                 sync_update_cat_rudiments_test(sync_update)
             except AssertionError as exc:
@@ -2093,7 +2093,7 @@ menu_order   inserting  woocommerce-test         167                            
 image        inserting  woocommerce-test         OrderedDict([('modified_gmt', datetime.datetime(20         0         0
 passes:
 -
-Column          Reason     Master    Slave      M TIME    S TIME  EXTRA
+Column          Reason     Main    Subordinate      M TIME    S TIME  EXTRA
 --------------  ---------  --------  -------  --------  --------  -------
 term_parent_id  identical                            0         0
 term_id         identical                            0         0
@@ -2102,7 +2102,7 @@ display         identical                            0         0
 probbos:
 
         """
-        sync_update = self.updates.category.slaveless.get_by_ids(167, '')
+        sync_update = self.updates.category.subordinateless.get_by_ids(167, '')
 
         try:
             if self.debug:
@@ -2123,11 +2123,11 @@ probbos:
     """
 python -m woogenerator.generator \
       --schema=CA --local-work-dir 'tests/sample_data' --local-test-config 'generator_config_test.yaml' \
-      --skip-download-master --master-file "tests/sample_data/generator_master_dummy.csv" \
-      --master-dialect-suggestion "SublimeCsvTable" \
-      --download-slave --schema "CA" \
+      --skip-download-main --main-file "tests/sample_data/generator_main_dummy.csv" \
+      --main-dialect-suggestion "SublimeCsvTable" \
+      --download-subordinate --schema "CA" \
       --do-specials --specials-file 'tests/sample_data/generator_specials_dummy.csv' \
-      --do-sync --update-slave --do-problematic --auto-create-new \
+      --do-sync --update-subordinate --do-problematic --auto-create-new \
       --do-categories --skip-variations --skip-attributes \
       --do-images --do-resize-images --skip-delete-images --skip-remeta-images --img-raw-dir "tests/sample_data/imgs_raw" \
       --wp-srv-offset 36000 \
@@ -2137,8 +2137,8 @@ python -m woogenerator.generator \
     @pytest.mark.slow
     def test_dummy_do_match_prod_cat_img(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -2148,10 +2148,10 @@ python -m woogenerator.generator \
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_images_master(
+            do_updates_images_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_images_slave_mocked()
+            self.do_updates_images_subordinate_mocked()
 
         if self.settings.do_categories:
             do_match_categories(
@@ -2160,10 +2160,10 @@ python -m woogenerator.generator \
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_categories_master(
+            do_updates_categories_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_categories_slave_mocked()
+            self.do_updates_categories_subordinate_mocked()
         do_match_prod(self.parsers, self.matches, self.settings)
 
         if self.debug:
@@ -2181,8 +2181,8 @@ python -m woogenerator.generator \
     @pytest.mark.slow
     def test_dummy_do_merge_prod_cat_img(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -2192,10 +2192,10 @@ python -m woogenerator.generator \
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_images_master(
+            do_updates_images_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_images_slave_mocked()
+            self.do_updates_images_subordinate_mocked()
 
         if self.settings.do_categories:
             do_match_categories(self.parsers, self.matches, self.settings)
@@ -2203,10 +2203,10 @@ python -m woogenerator.generator \
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_categories_master(
+            do_updates_categories_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_categories_slave_mocked()
+            self.do_updates_categories_subordinate_mocked()
 
         if self.debug:
             report_cols = ColDataProductMeridian.get_col_values_native('path', target='gen-api')
@@ -2215,12 +2215,12 @@ python -m woogenerator.generator \
             # report_cols['WNT'] = 'WNT'
             # report_cols['WNS'] = 'WNS'
             # report_cols['category_objects'] = 'category_objects'
-            master_container = self.parsers.master.product_container.container
-            master_products = master_container(self.parsers.master.products.values())
-            slave_container = self.parsers.slave.product_container.container
-            slave_products = slave_container(self.parsers.slave.products.values())
-            print("matser_products:\n", master_products.tabulate(cols=report_cols))
-            print("slave_products:\n", slave_products.tabulate(cols=report_cols))
+            main_container = self.parsers.main.product_container.container
+            main_products = main_container(self.parsers.main.products.values())
+            subordinate_container = self.parsers.subordinate.product_container.container
+            subordinate_products = subordinate_container(self.parsers.subordinate.products.values())
+            print("matser_products:\n", main_products.tabulate(cols=report_cols))
+            print("subordinate_products:\n", subordinate_products.tabulate(cols=report_cols))
 
         do_match_prod(self.parsers, self.matches, self.settings)
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
@@ -2244,42 +2244,42 @@ python -m woogenerator.generator \
                             key,
                             new_s_core_img
                         )
-            if sync_update.get_slave_updates().get('attachment_objects'):
-                slave_updates_core_imgs = sync_update.get_slave_updates().get('attachment_objects')
-                for slave_updates_core_img in slave_updates_core_imgs:
+            if sync_update.get_subordinate_updates().get('attachment_objects'):
+                subordinate_updates_core_imgs = sync_update.get_subordinate_updates().get('attachment_objects')
+                for subordinate_updates_core_img in subordinate_updates_core_imgs:
                     for key in expected_sub_img_handles:
                         self.assertIn(
                             key,
-                            slave_updates_core_img
+                            subordinate_updates_core_img
                         )
                     for key in unexpected_sub_img_handles:
                         self.assertNotIn(
                             key,
-                            slave_updates_core_img
+                            subordinate_updates_core_img
                         )
-                slave_updates_native_imgs = sync_update.get_slave_updates_native().get('images')
-                for slave_updates_native_img in slave_updates_native_imgs:
+                subordinate_updates_native_imgs = sync_update.get_subordinate_updates_native().get('images')
+                for subordinate_updates_native_img in subordinate_updates_native_imgs:
                     for key in expected_sub_img_cols:
                         self.assertIn(
                             key,
-                            slave_updates_native_img
+                            subordinate_updates_native_img
                         )
 
 
         if self.debug:
             self.print_updates_summary(self.updates)
-        self.assertTrue(self.updates.slave)
-        self.assertEqual(len(self.updates.slave), 48)
+        self.assertTrue(self.updates.subordinate)
+        self.assertEqual(len(self.updates.subordinate), 48)
 
-        for sync_update in self.updates.slave:
+        for sync_update in self.updates.subordinate:
             try:
                 sync_update_prod_rudiments_test(sync_update)
             except AssertionError as exc:
                 self.fail_syncupdate_assertion(exc, sync_update)
 
-        # sync_update = self.updates.slave.get_by_ids(10, 24863)
+        # sync_update = self.updates.subordinate.get_by_ids(10, 24863)
         # Something must have changed in product matching??
-        sync_update = self.updates.slave.get_by_ids(93, 24863)
+        sync_update = self.updates.subordinate.get_by_ids(93, 24863)
 
         try:
             if self.debug:
@@ -2300,10 +2300,10 @@ python -m woogenerator.generator \
             )
 
             if self.settings.do_categories:
-                expected_master_categories = set([320, 323, 315, 316])
+                expected_main_categories = set([320, 323, 315, 316])
                 if not self.settings.skip_special_categories:
-                    expected_master_categories.update([100000, 100001])
-                expected_slave_categories = set([320, 315, 316])
+                    expected_main_categories.update([100000, 100001])
+                expected_subordinate_categories = set([320, 315, 316])
 
                 old_m_core_cat_ids = [
                     cat.get('term_id') for cat in \
@@ -2311,7 +2311,7 @@ python -m woogenerator.generator \
                 ]
                 self.assertEquals(
                     set(old_m_core_cat_ids),
-                    expected_master_categories
+                    expected_main_categories
                 )
                 old_s_core_cat_ids = [
                     cat.get('term_id') for cat in \
@@ -2319,7 +2319,7 @@ python -m woogenerator.generator \
                 ]
                 self.assertEquals(
                     set(old_s_core_cat_ids),
-                    expected_slave_categories
+                    expected_subordinate_categories
                 )
                 new_s_core_cat_ids = [
                     cat.get('term_id') for cat in \
@@ -2327,12 +2327,12 @@ python -m woogenerator.generator \
                 ]
                 self.assertEquals(
                     set(new_s_core_cat_ids),
-                    expected_master_categories
+                    expected_main_categories
                 )
 
             if self.settings.do_images:
-                expected_master_images = set([100044])
-                expected_slave_images = set([24864])
+                expected_main_images = set([100044])
+                expected_subordinate_images = set([24864])
 
                 old_m_core_img_ids = [
                     img.get('id') for img in \
@@ -2340,7 +2340,7 @@ python -m woogenerator.generator \
                 ]
                 self.assertEqual(
                     set(old_m_core_img_ids),
-                    expected_master_images
+                    expected_main_images
                 )
                 old_s_core_img_ids = [
                     img.get('id') for img in \
@@ -2348,7 +2348,7 @@ python -m woogenerator.generator \
                 ]
                 self.assertEqual(
                     set(old_s_core_img_ids),
-                    expected_slave_images
+                    expected_subordinate_images
                 )
                 new_s_core_img_ids = [
                     img.get('id') for img in \
@@ -2356,17 +2356,17 @@ python -m woogenerator.generator \
                 ]
                 self.assertEqual(
                     set(new_s_core_img_ids),
-                    expected_master_images
+                    expected_main_images
                 )
 
-            # TODO: test exact contents of get_slave_updates_native()
+            # TODO: test exact contents of get_subordinate_updates_native()
             # Specifically make sure that sale_price_dates_(to|from) are not datetime
 
-            slave_updates_core = sync_update.get_slave_updates()
-            slave_updates_native = sync_update.get_slave_updates_native()
+            subordinate_updates_core = sync_update.get_subordinate_updates()
+            subordinate_updates_native = sync_update.get_subordinate_updates_native()
             if self.debug:
-                print("slave_updates_native:\n%s" % pformat(slave_updates_native.items()))
-                print("slave_updates_core:\n%s" % pformat(slave_updates_core.items()))
+                print("subordinate_updates_native:\n%s" % pformat(subordinate_updates_native.items()))
+                print("subordinate_updates_core:\n%s" % pformat(subordinate_updates_core.items()))
 
             expected_dict = {
                 # 'lc_wn_sale_price_dates_from': datetime(
@@ -2378,7 +2378,7 @@ python -m woogenerator.generator \
             }
             for key, value in expected_dict.items():
                 expected_value = value
-                actual_value = slave_updates_core[key]
+                actual_value = subordinate_updates_core[key]
                 if isinstance(actual_value, dict):
                     actual_value = set(actual_value.items())
                     expected_value = set(expected_value.items())
@@ -2399,7 +2399,7 @@ python -m woogenerator.generator \
                 )
             expected_categories = set([315, 316, 323, 320, 100000, 100001])
             actual_categories = set([
-                cat.get('term_id') for cat in slave_updates_core['product_categories']
+                cat.get('term_id') for cat in subordinate_updates_core['product_categories']
             ])
             self.assertEqual(
                 expected_categories,
@@ -2407,14 +2407,14 @@ python -m woogenerator.generator \
             )
             expected_attachments = set([100044])
             actual_attachments = set([
-                img.get('id') for img in slave_updates_core['attachment_objects']
+                img.get('id') for img in subordinate_updates_core['attachment_objects']
             ])
             self.assertEqual(
                 expected_attachments,
                 actual_attachments
             )
 
-            for meta_object in slave_updates_native['meta_data']:
+            for meta_object in subordinate_updates_native['meta_data']:
                 if meta_object['key'] == 'lc_wn_sale_price_dates_to':
                     self.assertEqual(
                         meta_object['value'],
@@ -2426,8 +2426,8 @@ python -m woogenerator.generator \
     @pytest.mark.slow
     def test_reporting_imgs_only(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -2453,8 +2453,8 @@ python -m woogenerator.generator \
 
     def test_reporting_cat_only(self):
         self.settings.do_images = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
         if self.settings.do_categories:
             do_match_categories(
                 self.parsers, self.matches, self.settings
@@ -2479,8 +2479,8 @@ python -m woogenerator.generator \
     @pytest.mark.slow
     def test_reporting_cat_img(self):
         self.setup_temp_img_dir()
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_images:
             process_images(self.settings, self.parsers)
@@ -2490,10 +2490,10 @@ python -m woogenerator.generator \
             do_merge_images(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_images_master(
+            do_updates_images_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_images_slave_mocked()
+            self.do_updates_images_subordinate_mocked()
 
         if self.settings.do_categories:
             do_match_categories(
@@ -2523,8 +2523,8 @@ python -m woogenerator.generator \
         self.settings.do_images = False
         self.settings.do_specials = False
 
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         if self.settings.do_categories:
             do_match_categories(self.parsers, self.matches, self.settings)
@@ -2532,10 +2532,10 @@ python -m woogenerator.generator \
             do_merge_categories(
                 self.matches, self.parsers, self.updates, self.settings
             )
-            do_updates_categories_master(
+            do_updates_categories_main(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.do_updates_categories_slave_mocked()
+            self.do_updates_categories_subordinate_mocked()
 
 
         do_match_prod(self.parsers, self.matches, self.settings)
@@ -2544,47 +2544,47 @@ python -m woogenerator.generator \
 
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
-        sync_update = self.updates.slave.get_by_ids(93, 24863)
+        sync_update = self.updates.subordinate.get_by_ids(93, 24863)
 
-        self.assertNotIn('meta', sync_update.get_master_updates().keys())
+        self.assertNotIn('meta', sync_update.get_main_updates().keys())
 
-    def test_dummy_do_updates_prod_master_only(self):
+    def test_dummy_do_updates_prod_main_only(self):
         self.settings.do_variations = False
         self.settings.do_categories = False
         self.settings.do_attributes = False
         self.settings.do_images = False
         self.settings.do_specials = False
 
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         do_match_prod(self.parsers, self.matches, self.settings)
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
-        do_updates_prod_master(
+        do_updates_prod_main(
             self.updates, self.parsers, self.results, self.settings
         )
 
         self.assertEqual(
-            self.parsers.master.products['ACARA-CAL']['ID'],
+            self.parsers.main.products['ACARA-CAL']['ID'],
             24771
         )
 
     # TODO:
-    # def test_dummy_do_updates_prod_slave_only(self):
+    # def test_dummy_do_updates_prod_subordinate_only(self):
     #     self.settings.do_variations = False
     #     self.settings.do_categories = False
     #     self.settings.do_attributes = False
     #     self.settings.do_images = False
     #     self.settings.do_specials = False
     #
-    #     self.populate_master_parsers()
-    #     self.populate_slave_parsers()
+    #     self.populate_main_parsers()
+    #     self.populate_subordinate_parsers()
     #
     #     do_match_prod(self.parsers, self.matches, self.settings)
     #     do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
     #
-    #     do_updates_prod_slave()
+    #     do_updates_prod_subordinate()
 
 
 
@@ -2596,14 +2596,14 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
      - attributes
      - collapsable categories (e.g. Product A > Company A Product A => Company A Product A)
 
-    Generate slave input files:
+    Generate subordinate input files:
     ```
     python -m woogenerator.generator --testmode --schema "CA" \
       --local-work-dir "/Users/derwent/Documents/woogenerator/" \
       --local-test-config "/Users/derwent/GitHub/WooGenerator/tests/sample_data/generator_config_test.yaml" \
-      --master-file "/Users/derwent/GitHub/WooGenerator/tests/sample_data/generator_master_super_dummy.csv" \
-      --master-dialect-suggestion "SublimeCsvTable" --do-categories --skip-specials --do-images --skip-attributes --do-variations \
-      --download-slave --save-api-data \
+      --main-file "/Users/derwent/GitHub/WooGenerator/tests/sample_data/generator_main_super_dummy.csv" \
+      --main-dialect-suggestion "SublimeCsvTable" --do-categories --skip-specials --do-images --skip-attributes --do-variations \
+      --download-subordinate --save-api-data \
       -vvv --debug-trace
     ```
 
@@ -2616,31 +2616,31 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
     def setUp(self):
         super(TestGeneratorSuperDummy, self).setUp()
-        self.settings.master_dialect_suggestion = "SublimeCsvTable"
-        self.settings.download_master = False
-        self.settings.master_file = os.path.join(
-            TESTS_DATA_DIR, "generator_master_super_dummy.csv"
+        self.settings.main_dialect_suggestion = "SublimeCsvTable"
+        self.settings.download_main = False
+        self.settings.main_file = os.path.join(
+            TESTS_DATA_DIR, "generator_main_super_dummy.csv"
         )
-        self.settings.slave_file = os.path.join(
-            TESTS_DATA_DIR, "prod_slave_super_dummy.json"
+        self.settings.subordinate_file = os.path.join(
+            TESTS_DATA_DIR, "prod_subordinate_super_dummy.json"
         )
-        self.settings.slave_cat_file = os.path.join(
-            TESTS_DATA_DIR, "prod_slave_cat_super_dummy.json"
+        self.settings.subordinate_cat_file = os.path.join(
+            TESTS_DATA_DIR, "prod_subordinate_cat_super_dummy.json"
         )
-        self.settings.slave_img_file = os.path.join(
-            TESTS_DATA_DIR, "prod_slave_img_super_dummy.json"
+        self.settings.subordinate_img_file = os.path.join(
+            TESTS_DATA_DIR, "prod_subordinate_img_super_dummy.json"
         )
-        self.settings.slave_var_file_27063 = os.path.join(
-            TESTS_DATA_DIR, "prod_slave_var_27063_super_dummy.json"
+        self.settings.subordinate_var_file_27063 = os.path.join(
+            TESTS_DATA_DIR, "prod_subordinate_var_27063_super_dummy.json"
         )
-        self.settings.master_and_quit = False
+        self.settings.main_and_quit = False
         self.settings.do_specials = False
         self.settings.do_categories = True
         self.settings.do_images = True
         self.settings.do_variations = True
         self.settings.do_sync = True
         self.settings.auto_create_new = True
-        self.settings.update_slave = False
+        self.settings.update_subordinate = False
         self.settings.do_problematic = True
         self.settings.do_report = True
         self.settings.report_matching = True
@@ -2659,12 +2659,12 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
 
     @pytest.mark.first
-    def test_super_dummy_populate_master_parsers(self):
+    def test_super_dummy_populate_main_parsers(self):
 
-        self.populate_master_parsers()
+        self.populate_main_parsers()
 
-        prod_container = self.parsers.master.product_container.container
-        prod_list = prod_container(self.parsers.master.products.values())
+        prod_container = self.parsers.main.product_container.container
+        prod_list = prod_container(self.parsers.main.products.values())
         if self.debug:
             print(
                 (
@@ -2672,15 +2672,15 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
                     "%d items\n"
                     "%d products:\n"
                 ) % (
-                    len(self.parsers.master.objects.values()),
-                    len(self.parsers.master.items.values()),
+                    len(self.parsers.main.objects.values()),
+                    len(self.parsers.main.items.values()),
                     len(prod_list)
                 )
             )
             print(SanitationUtils.coerce_bytes(prod_list.tabulate(tablefmt='simple')))
 
-        self.assertEqual(len(self.parsers.master.objects.values()), 9)
-        self.assertEqual(len(self.parsers.master.items.values()), 6)
+        self.assertEqual(len(self.parsers.main.objects.values()), 9)
+        self.assertEqual(len(self.parsers.main.items.values()), 6)
         self.assertEqual(len(prod_list), 1)
 
         first_prod = prod_list[0]
@@ -2775,21 +2775,21 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         for key, value in test_dict.items():
             self.assertEqual(text_type(trashed_variation[key]), text_type(value))
 
-    def test_super_dummy_populate_slave_parsers(self):
+    def test_super_dummy_populate_subordinate_parsers(self):
 
-        self.populate_slave_parsers()
+        self.populate_subordinate_parsers()
         if self.debug:
-            print("slave objects: %s" % len(self.parsers.slave.objects.values()))
-            print("slave items: %s" % len(self.parsers.slave.items.values()))
-            print("slave products: %s" % len(self.parsers.slave.products.values()))
-            print("slave categories: %s" % len(self.parsers.slave.categories.values()))
+            print("subordinate objects: %s" % len(self.parsers.subordinate.objects.values()))
+            print("subordinate items: %s" % len(self.parsers.subordinate.items.values()))
+            print("subordinate products: %s" % len(self.parsers.subordinate.products.values()))
+            print("subordinate categories: %s" % len(self.parsers.subordinate.categories.values()))
 
         if self.debug:
-            print("parser tree:\n%s" % self.parsers.slave.to_str_tree())
+            print("parser tree:\n%s" % self.parsers.subordinate.to_str_tree())
 
-        self.assertEqual(len(self.parsers.slave.products), 1)
-        prod_container = self.parsers.slave.product_container.container
-        prod_list = prod_container(self.parsers.slave.products.values())
+        self.assertEqual(len(self.parsers.subordinate.products), 1)
+        prod_container = self.parsers.subordinate.product_container.container
+        prod_list = prod_container(self.parsers.subordinate.products.values())
         first_prod = prod_list[0]
         if self.debug:
             print("first_prod.dict %s" % pformat(first_prod.to_dict()))
@@ -2863,13 +2863,13 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
     def test_super_dummy_to_target_type(self):
         """
-        test the to_target_type functionality of master objects.
+        test the to_target_type functionality of main objects.
         """
 
-        self.populate_master_parsers()
+        self.populate_main_parsers()
 
-        prod_container = self.parsers.master.product_container.container
-        prod_list = prod_container(self.parsers.master.products.values())
+        prod_container = self.parsers.main.product_container.container
+        prod_list = prod_container(self.parsers.main.products.values())
 
         first_prod = prod_list[0]
         first_variation = first_prod.variations.get('AGL-CP5S')
@@ -2877,7 +2877,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         coldata_class = ColDataProductMeridian
 
         extra_colnames = self.settings.coldata_class.get_attribute_colnames_native(
-            self.parsers.master.attributes, self.parsers.master.vattributes
+            self.parsers.main.attributes, self.parsers.main.vattributes
         )
 
         first_prod_csv = first_prod.to_target_type(
@@ -2901,7 +2901,7 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             self.assertEqual(text_type(first_prod_csv[key]), text_type(value))
 
         extra_variation_col_names = self.settings.coldata_class_var.get_attribute_meta_colnames_native(
-            self.parsers.master.vattributes
+            self.parsers.main.vattributes
         )
 
         first_variation_csv = first_variation.to_target_type(
@@ -2929,17 +2929,17 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
 
     def test_super_dummy_match_var_only(self):
         self.settings.do_images = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         do_match_var(self.parsers, self.matches, self.settings)
 
         self.assertEqual(len(self.matches.variation.globals), 4)
-        self.assertEqual(len(self.matches.variation.masterless), 0)
-        self.assertEqual(len(self.matches.variation.slaveless), 1)
+        self.assertEqual(len(self.matches.variation.mainless), 0)
+        self.assertEqual(len(self.matches.variation.subordinateless), 1)
 
-        # For any two given variations, master should be newer than slave,
-        # since master comes from a file that should have recently been touched
+        # For any two given variations, main should be newer than subordinate,
+        # since main comes from a file that should have recently been touched
         first_match = self.matches.variation.globals[0]
         self.assertGreater(
             first_match.m_objects[0].get('modified_gmt'),
@@ -2951,8 +2951,8 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         self.settings.do_images = False
         self.settings.do_categories = False
         self.settings.do_attributes = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         do_match_var(self.parsers, self.matches, self.settings)
         if self.debug:
@@ -2961,14 +2961,14 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
 
         try:
-            self.assertEqual(len(self.updates.variation.delta_master), 0)
-            self.assertEqual(len(self.updates.variation.delta_slave), 1)
-            self.assertEqual(len(self.updates.variation.master), 3)
-            self.assertEqual(len(self.updates.variation.slave), 2)
-            self.assertEqual(len(self.updates.variation.slaveless), 1)
-            self.assertEqual(len(self.updates.variation.masterless), 1)
-            self.assertEqual(len(self.updates.variation.nonstatic_slave), 0)
-            self.assertEqual(len(self.updates.variation.nonstatic_master), 0)
+            self.assertEqual(len(self.updates.variation.delta_main), 0)
+            self.assertEqual(len(self.updates.variation.delta_subordinate), 1)
+            self.assertEqual(len(self.updates.variation.main), 3)
+            self.assertEqual(len(self.updates.variation.subordinate), 2)
+            self.assertEqual(len(self.updates.variation.subordinateless), 1)
+            self.assertEqual(len(self.updates.variation.mainless), 1)
+            self.assertEqual(len(self.updates.variation.nonstatic_subordinate), 0)
+            self.assertEqual(len(self.updates.variation.nonstatic_main), 0)
             self.assertEqual(len(self.updates.variation.problematic), 1)
         except BaseException as exc:
             self.fail_update_namespace_assertion(exc, self.updates.variation)
@@ -2976,22 +2976,22 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
         sync_update = self.updates.variation.problematic.get_by_ids('AGL-CP5S', 27065)
 
         try:
-            master_updates = sync_update.get_master_updates()
-            self.assertNotIn('meta', master_updates.keys())
-            self.assertNotIn('regular_price', master_updates.keys())
-            self.assertIn('id', master_updates.keys())
+            main_updates = sync_update.get_main_updates()
+            self.assertNotIn('meta', main_updates.keys())
+            self.assertNotIn('regular_price', main_updates.keys())
+            self.assertIn('id', main_updates.keys())
 
-            slave_updates = sync_update.get_slave_updates()
-            self.assertIn('lc_wn_regular_price', slave_updates.keys())
+            subordinate_updates = sync_update.get_subordinate_updates()
+            self.assertIn('lc_wn_regular_price', subordinate_updates.keys())
 
         except AssertionError as exc:
             self.fail_syncupdate_assertion(exc, sync_update)
 
-    def do_updates_var_slave_mocked(self):
+    def do_updates_var_subordinate_mocked(self):
         with mock.patch(
             MockUtils.get_mock_name(
                 self.settings.__class__,
-                'slave_var_sync_client_class'
+                'subordinate_var_sync_client_class'
             ),
             new_callable=mock.PropertyMock,
             return_value=self.settings.null_client_class
@@ -3044,76 +3044,76 @@ class TestGeneratorSuperDummy(AbstractParserSyncManagerTestCase):
             new_callable=mock.PropertyMock,
             return_value='id'
         ):
-            self.settings.update_slave = True
-            do_updates_var_slave(
+            self.settings.update_subordinate = True
+            do_updates_var_subordinate(
                 self.updates, self.parsers, self.results, self.settings
             )
-            self.settings.update_slave = False
+            self.settings.update_subordinate = False
 
-    def test_super_dummy_updates_var_master_only(self):
+    def test_super_dummy_updates_var_main_only(self):
         self.settings.do_images = False
         self.settings.do_categories = False
         self.settings.do_attributes = False
         self.settings.ask_before_update = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         do_match_var(self.parsers, self.matches, self.settings)
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
-        do_updates_var_master(
+        do_updates_var_main(
             self.updates, self.parsers, self.results, self.settings
         )
 
         self.assertEqual(
-            self.parsers.master.variations['AGL-CP5S']['ID'], 27065
+            self.parsers.main.variations['AGL-CP5S']['ID'], 27065
         )
 
-    def test_super_dummy_updates_create_var_slave_only(self):
+    def test_super_dummy_updates_create_var_subordinate_only(self):
         self.settings.do_images = False
         self.settings.do_categories = False
         self.settings.do_attributes = False
         self.settings.ask_before_update = False
         self.settings.auto_create_new = True
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         do_match_var(self.parsers, self.matches, self.settings)
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
         do_match_prod(self.parsers, self.matches, self.settings)
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
-        do_updates_var_master(
+        do_updates_var_main(
             self.updates, self.parsers, self.results, self.settings
         )
-        do_updates_prod_master(
+        do_updates_prod_main(
             self.updates, self.parsers, self.results, self.settings
         )
-        self.do_updates_var_slave_mocked()
+        self.do_updates_var_subordinate_mocked()
 
 
-    def test_super_dummy_updates_changes_var_slave_only(self):
+    def test_super_dummy_updates_changes_var_subordinate_only(self):
         self.settings.do_images = False
         self.settings.do_categories = False
         self.settings.do_attributes = False
         self.settings.ask_before_update = False
         self.settings.auto_create_new = False
-        self.populate_master_parsers()
-        self.populate_slave_parsers()
+        self.populate_main_parsers()
+        self.populate_subordinate_parsers()
 
         do_match_var(self.parsers, self.matches, self.settings)
         do_merge_var(self.matches, self.parsers, self.updates, self.settings)
 
-        do_updates_var_master(
+        do_updates_var_main(
             self.updates, self.parsers, self.results, self.settings
         )
 
-        self.do_updates_var_slave_mocked()
+        self.do_updates_var_subordinate_mocked()
 
 
     # def test_super_dummy_attributes(self):
-    #     self.populate_master_parsers()
+    #     self.populate_main_parsers()
     #
-    #     attributes = self.parsers.master.attributes
-    #     vattributes = self.parsers.master.vattributes
+    #     attributes = self.parsers.main.attributes
+    #     vattributes = self.parsers.main.vattributes
 
 class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
     settings_namespace_class = SettingsNamespaceProd
@@ -3123,7 +3123,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
 
     def setUp(self):
         super(TestGeneratorXeroDummy, self).setUp()
-        self.settings.download_master = False
+        self.settings.download_main = False
         self.settings.do_categories = False
         self.settings.do_specials = False
         if self.debug:
@@ -3137,13 +3137,13 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             self.settings.quiet = False
         self.settings.init_settings(self.override_args)
         self.settings.schema = "XERO"
-        self.settings.slave_name = "Xero"
+        self.settings.subordinate_name = "Xero"
         self.settings.do_sync = True
-        self.settings.master_file = os.path.join(
-            TESTS_DATA_DIR, "generator_master_dummy_xero.csv"
+        self.settings.main_file = os.path.join(
+            TESTS_DATA_DIR, "generator_main_dummy_xero.csv"
         )
-        self.settings.master_dialect_suggestion = "SublimeCsvTable"
-        self.settings.slave_file = os.path.join(
+        self.settings.main_dialect_suggestion = "SublimeCsvTable"
+        self.settings.subordinate_file = os.path.join(
             TESTS_DATA_DIR, "xero_demo_data.json"
         )
         self.settings.report_matching = True
@@ -3167,7 +3167,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             Registrar.strict = False
 
     def test_xero_init_settings(self):
-        self.assertFalse(self.settings.download_master)
+        self.assertFalse(self.settings.download_main)
         self.assertFalse(self.settings.do_specials)
         self.assertTrue(self.settings.do_sync)
         self.assertFalse(self.settings.do_categories)
@@ -3183,29 +3183,29 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         self.assertFalse(self.settings.do_specials)
         self.assertTrue(self.settings.do_report)
 
-    def test_xero_populate_master_parsers(self):
+    def test_xero_populate_main_parsers(self):
         if self.debug:
             # print(pformat(vars(self.settings)))
             registrar_vars = dict(vars(Registrar).items())
             print(pformat(registrar_vars.items()))
             del(registrar_vars['messages'])
             print(pformat(registrar_vars.items()))
-        populate_master_parsers(self.parsers, self.settings)
+        populate_main_parsers(self.parsers, self.settings)
         if self.debug:
-            print("master objects: %s" % len(self.parsers.master.objects.values()))
-            print("master items: %s" % len(self.parsers.master.items.values()))
-            print("master products: %s" % len(self.parsers.master.products.values()))
+            print("main objects: %s" % len(self.parsers.main.objects.values()))
+            print("main items: %s" % len(self.parsers.main.items.values()))
+            print("main products: %s" % len(self.parsers.main.products.values()))
 
-        self.assertEqual(len(self.parsers.master.objects.values()), 29)
-        self.assertEqual(len(self.parsers.master.items.values()), 20)
+        self.assertEqual(len(self.parsers.main.objects.values()), 29)
+        self.assertEqual(len(self.parsers.main.items.values()), 20)
 
-        prod_container = self.parsers.master.product_container.container
-        prod_list = prod_container(self.parsers.master.products.values())
+        prod_container = self.parsers.main.product_container.container
+        prod_list = prod_container(self.parsers.main.products.values())
         if self.debug:
             print("prod list:\n%s" % prod_list.tabulate())
-            item_list = ItemList(self.parsers.master.items.values())
+            item_list = ItemList(self.parsers.main.items.values())
             print("item list:\n%s" % item_list.tabulate())
-            print("prod_keys: %s" % self.parsers.master.products.keys())
+            print("prod_keys: %s" % self.parsers.main.products.keys())
 
         self.assertEqual(len(prod_list), 15)
         first_prod = prod_list[0]
@@ -3222,25 +3222,25 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
         }.items():
             self.assertEqual(first_prod[key], value)
 
-    def test_xero_populate_slave_parsers(self):
-        # self.parsers = populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+    def test_xero_populate_subordinate_parsers(self):
+        # self.parsers = populate_main_parsers(self.parsers, self.settings)
+        populate_subordinate_parsers(self.parsers, self.settings)
 
         if self.debug:
-            print("slave objects: %s" % len(self.parsers.slave.objects.values()))
-            print("slave items: %s" % len(self.parsers.slave.items.values()))
-            print("slave products: %s" % len(self.parsers.slave.products.values()))
+            print("subordinate objects: %s" % len(self.parsers.subordinate.objects.values()))
+            print("subordinate items: %s" % len(self.parsers.subordinate.items.values()))
+            print("subordinate products: %s" % len(self.parsers.subordinate.products.values()))
 
-        self.assertEqual(len(self.parsers.slave.objects.values()), 10)
-        self.assertEqual(len(self.parsers.slave.items.values()), 10)
+        self.assertEqual(len(self.parsers.subordinate.objects.values()), 10)
+        self.assertEqual(len(self.parsers.subordinate.items.values()), 10)
 
-        prod_container = self.parsers.slave.product_container.container
-        prod_list = prod_container(self.parsers.slave.products.values())
+        prod_container = self.parsers.subordinate.product_container.container
+        prod_list = prod_container(self.parsers.subordinate.products.values())
         if self.debug:
             print("prod list:\n%s" % prod_list.tabulate())
-            item_list = ItemList(self.parsers.slave.items.values())
+            item_list = ItemList(self.parsers.subordinate.items.values())
             print("item list:\n%s" % item_list.tabulate())
-            print("prod_keys: %s" % self.parsers.slave.products.keys())
+            print("prod_keys: %s" % self.parsers.subordinate.products.keys())
 
         self.assertEqual(len(prod_list), 10)
         first_prod = prod_list[0]
@@ -3254,8 +3254,8 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
 
     @pytest.mark.last
     def test_xero_do_match(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        populate_main_parsers(self.parsers, self.settings)
+        populate_subordinate_parsers(self.parsers, self.settings)
         do_match_prod(self.parsers, self.matches, self.settings)
 
         if self.debug:
@@ -3263,13 +3263,13 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             self.print_matches_summary(self.matches)
 
         self.assertEqual(len(self.matches.globals), 10)
-        self.assertEqual(len(self.matches.masterless), 0)
-        self.assertEqual(len(self.matches.slaveless), 5)
+        self.assertEqual(len(self.matches.mainless), 0)
+        self.assertEqual(len(self.matches.subordinateless), 5)
 
     @pytest.mark.last
     def test_xero_do_merge(self):
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        populate_main_parsers(self.parsers, self.settings)
+        populate_subordinate_parsers(self.parsers, self.settings)
         do_match_prod(self.parsers, self.matches, self.settings)
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)
 
@@ -3277,24 +3277,24 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             self.print_updates_summary(self.updates)
 
         if self.debug:
-            for sync_update in self.updates.slave:
+            for sync_update in self.updates.subordinate:
                 self.print_update(sync_update)
 
-        self.assertEqual(len(self.updates.delta_master), 0)
-        self.assertEqual(len(self.updates.delta_slave), 1)
-        self.assertEqual(len(self.updates.master), 10)
-        self.assertEqual(len(self.updates.slave), 1)
-        self.assertEqual(len(self.updates.slaveless), 5)
-        self.assertEqual(len(self.updates.masterless), 0)
-        self.assertEqual(len(self.updates.nonstatic_slave), 0)
-        self.assertEqual(len(self.updates.nonstatic_master), 0)
+        self.assertEqual(len(self.updates.delta_main), 0)
+        self.assertEqual(len(self.updates.delta_subordinate), 1)
+        self.assertEqual(len(self.updates.main), 10)
+        self.assertEqual(len(self.updates.subordinate), 1)
+        self.assertEqual(len(self.updates.subordinateless), 5)
+        self.assertEqual(len(self.updates.mainless), 0)
+        self.assertEqual(len(self.updates.nonstatic_subordinate), 0)
+        self.assertEqual(len(self.updates.nonstatic_main), 0)
         self.assertEqual(len(self.updates.problematic), 0)
 
-        # sync_update = self.updates.delta_slave[0]
+        # sync_update = self.updates.delta_subordinate[0]
         self.assertTrue(
-            self.updates.delta_slave[0].new_m_object.rowcount
+            self.updates.delta_subordinate[0].new_m_object.rowcount
         )
-        sync_update = self.updates.delta_slave.get_by_ids(19, 'c27221d7-8290-4204-9f3d-0cfb7c5a3d6f')
+        sync_update = self.updates.delta_subordinate.get_by_ids(19, 'c27221d7-8290-4204-9f3d-0cfb7c5a3d6f')
         try:
             if self.debug:
                 self.print_update(sync_update)
@@ -3304,7 +3304,7 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
                 610.0
             )
             self.assertEqual(
-                sync_update.slave_id,
+                sync_update.subordinate_id,
                 u'c27221d7-8290-4204-9f3d-0cfb7c5a3d6f'
             )
             self.assertEqual(sync_update.old_s_object.codesum, 'DevD')
@@ -3327,8 +3327,8 @@ class TestGeneratorXeroDummy(AbstractSyncManagerTestCase):
             print("working dir: %s" % temp_working_dir)
         self.settings.local_work_dir = temp_working_dir
         self.settings.init_dirs()
-        populate_master_parsers(self.parsers, self.settings)
-        populate_slave_parsers(self.parsers, self.settings)
+        populate_main_parsers(self.parsers, self.settings)
+        populate_subordinate_parsers(self.parsers, self.settings)
         do_match_prod(self.parsers, self.matches, self.settings)
         self.updates = UpdateNamespace()
         do_merge_prod(self.matches, self.parsers, self.updates, self.settings)

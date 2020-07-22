@@ -306,19 +306,19 @@ def process_images(settings, parsers):
     # list of attaches in compressed directory
     ls_cmp = os.listdir(settings.img_dst)
 
-    master_parser_attachment_basenames = [
+    main_parser_attachment_basenames = [
         attachment.file_name
-        for attachment in parsers.master.attachments.values()
+        for attachment in parsers.main.attachments.values()
     ]
 
     for fname in ls_cmp:
-        if fname not in master_parser_attachment_basenames:
+        if fname not in main_parser_attachment_basenames:
             Registrar.register_warning("DELETING FROM REFLATTENED", fname)
             if settings.do_delete_images:
                 os.remove(os.path.join(settings.img_dst, fname))
 
-    # for img_filename, obj_list in parsers.master.attachments.items():
-    for img_data in parsers.master.attachments.values():
+    # for img_filename, obj_list in parsers.main.attachments.items():
+    for img_data in parsers.main.attachments.values():
         img_filename = os.path.basename(img_data.file_name)
         if not img_data.attaches.has_products_categories:
             continue

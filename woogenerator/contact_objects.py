@@ -1396,10 +1396,10 @@ class ContactPhones(FieldGroup):
     reprocess_kwargs = True
     # perform_post = True
 
-    def is_master_source(self, source=None):
-        if not (source and self.master_name):
+    def is_main_source(self, source=None):
+        if not (source and self.main_name):
             return
-        return source.lower() == self.master_name.lower()
+        return source.lower() == self.main_name.lower()
 
     def get_pref(self, source=None, index=None):
         pref_data = self.properties.get('pref_data')
@@ -1484,19 +1484,19 @@ class ContactPhones(FieldGroup):
             return
         for key, value in self.kwargs.items():
             self.properties[key] = self.normalize_val(key, value)
-        # process pref_method, convert to master source
+        # process pref_method, convert to main source
         if all(
             key in self.properties for key in
             ['pref_method', 'pref_data']
         ):
-            if not self.is_master_source(self.source):
+            if not self.is_main_source(self.source):
                 pref_method = self.properties['pref_method']
                 if pref_method is not None:
                     if ',' in pref_method:
                         pref_method = pref_method.split(',')[0]
                     pref_method = self.translate_pref(
                         self.source,
-                        self.master_name,
+                        self.main_name,
                         pref_method
                     )
                 self.properties['pref_method'] = pref_method
@@ -1528,9 +1528,9 @@ class ContactPhones(FieldGroup):
     @property
     def pref_method(self):
         response = self['pref_method']
-        if not self.is_master_source(self.source):
+        if not self.is_main_source(self.source):
             response = self.translate_pref(
-                self.master_name,
+                self.main_name,
                 self.source,
                 response
             )

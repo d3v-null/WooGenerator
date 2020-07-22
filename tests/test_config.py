@@ -28,13 +28,13 @@ class TestConfigProd(unittest.TestCase):
     #     # print "args: %s" % pformat(vars(args))
     #     # known_args = parser.parse_known_args()
     #     # print "known args: \n%s\n%s" % (pformat(vars(known_args[0])), pformat(known_args[1]))
-    #     self.assertEqual(args.master_name, "MASTER")
+    #     self.assertEqual(args.main_name, "MASTER")
     #     self.assertEqual(args.schema, "WC")
 
     def test_override_config(self):
         parser = ArgumentParserProd()
-        args = parser.parse_args(['--master-name', 'MASTER_OVERRIDE'])
-        self.assertEqual(args.master_name, "MASTER_OVERRIDE")
+        args = parser.parse_args(['--main-name', 'MASTER_OVERRIDE'])
+        self.assertEqual(args.main_name, "MASTER_OVERRIDE")
 
     def test_config_stages(self):
         # TODO: complete this

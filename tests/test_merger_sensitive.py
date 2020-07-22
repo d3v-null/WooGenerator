@@ -15,8 +15,8 @@
 # from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
 #                                  do_summary, do_updates,
 #                                  populate_filter_settings,
-#                                  populate_master_parsers,
-#                                  populate_slave_parsers)
+#                                  populate_main_parsers,
+#                                  populate_subordinate_parsers)
 # from woogenerator.namespace.user import SettingsNamespaceUser
 # from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.utils import Registrar, TimeUtils
@@ -39,14 +39,14 @@
 #     The issue here is that it does a reflection and an update at the same time,
 #     but only performs the reflection, not the update.
 #     """
-#     master_file = "user_master-2017-09-20_16-00-01_C032560.csv"
-#     slave_file = "user_slave-2017-09-20_16-00-01_C032560.csv"
+#     main_file = "user_main-2017-09-20_16-00-01_C032560.csv"
+#     subordinate_file = "user_subordinate-2017-09-20_16-00-01_C032560.csv"
 #
 #     def test_sync_role(self):
-#         self.parsers = populate_master_parsers(
+#         self.parsers = populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         self.parsers = populate_slave_parsers(
+#         self.parsers = populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -92,8 +92,8 @@
 #     """
 #     The user is WN; TechnoTan Wholesale in Act but it shows up as RN; Pending
 #     """
-#     master_file = "user_master-2017-09-20_16-00-01_C005188.csv"
-#     slave_file = "user_slave-2017-09-20_16-00-01_C005188.csv"
+#     main_file = "user_main-2017-09-20_16-00-01_C005188.csv"
+#     subordinate_file = "user_subordinate-2017-09-20_16-00-01_C005188.csv"
 #     # debug = True
 #
 #     def setUp(self):
@@ -104,22 +104,22 @@
 #
 #     @unittest.skip("does not handle")
 #     def test_sync_role(self):
-#         self.parsers = populate_master_parsers(
+#         self.parsers = populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         self.parsers = populate_slave_parsers(
+#         self.parsers = populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #
 #         if self.debug:
-#             master_list = self.parsers.master.get_obj_list()
-#             first_master = master_list[0]
-#             slave_list =  self.parsers.slave.get_obj_list()
-#             first_slave = slave_list[0]
-#             print("\nFirst Master:")
-#             self.print_user_summary(first_master)
-#             print("\nFirst Slave:")
-#             self.print_user_summary(first_slave)
+#             main_list = self.parsers.main.get_obj_list()
+#             first_main = main_list[0]
+#             subordinate_list =  self.parsers.subordinate.get_obj_list()
+#             first_subordinate = subordinate_list[0]
+#             print("\nFirst Main:")
+#             self.print_user_summary(first_main)
+#             print("\nFirst Subordinate:")
+#             self.print_user_summary(first_subordinate)
 #
 #         self.matches = do_match(
 #             self.parsers, self.settings

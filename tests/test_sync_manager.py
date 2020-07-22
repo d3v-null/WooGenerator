@@ -44,11 +44,11 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
         print("matches.globals (%d):\n%s" % (
             len(matches.globals), matches.globals.tabulate())
         )
-        print("matches.masterless (%d):\n%s" % (
-            len(matches.masterless), matches.masterless.tabulate())
+        print("matches.mainless (%d):\n%s" % (
+            len(matches.mainless), matches.mainless.tabulate())
         )
-        print("matches.slaveless (%d):\n%s" % (
-            len(matches.slaveless), matches.slaveless.tabulate())
+        print("matches.subordinateless (%d):\n%s" % (
+            len(matches.subordinateless), matches.subordinateless.tabulate())
         )
         if hasattr(matches, 'valid'):
             print("matches.valid (%d):\n%s" % (
@@ -64,43 +64,43 @@ class AbstractSyncManagerTestCase(AbstractWooGeneratorTestCase):
             )
 
     def print_updates_summary(self, updates):
-        print("delta_master updates(%d):\n%s" % (
-            len(updates.delta_master), map(str, updates.delta_master))
+        print("delta_main updates(%d):\n%s" % (
+            len(updates.delta_main), map(str, updates.delta_main))
         )
-        print("delta_slave updates(%d):\n%s" % (
-            len(updates.delta_slave), map(str, updates.delta_slave))
+        print("delta_subordinate updates(%d):\n%s" % (
+            len(updates.delta_subordinate), map(str, updates.delta_subordinate))
         )
-        print("master updates(%d):\n%s" % (
-            len(updates.master), map(str, updates.master))
+        print("main updates(%d):\n%s" % (
+            len(updates.main), map(str, updates.main))
         )
-        print("masterless updates(%d):\n%s" % (
-            len(updates.masterless), map(str, updates.masterless))
+        print("mainless updates(%d):\n%s" % (
+            len(updates.mainless), map(str, updates.mainless))
         )
-        print("slaveless updates(%d):\n%s" % (
-            len(updates.slaveless), map(str, updates.slaveless))
+        print("subordinateless updates(%d):\n%s" % (
+            len(updates.subordinateless), map(str, updates.subordinateless))
         )
-        print("nonstatic_master updates(%d):\n%s" % (
-            len(updates.nonstatic_master), map(str, updates.nonstatic_master))
+        print("nonstatic_main updates(%d):\n%s" % (
+            len(updates.nonstatic_main), map(str, updates.nonstatic_main))
         )
-        print("nonstatic_slave updates(%d):\n%s" % (
-            len(updates.nonstatic_slave), map(str, updates.nonstatic_slave))
+        print("nonstatic_subordinate updates(%d):\n%s" % (
+            len(updates.nonstatic_subordinate), map(str, updates.nonstatic_subordinate))
         )
         print("problematic updates(%d):\n%s" % (
             len(updates.problematic), map(str, updates.problematic))
         )
-        print("slave updates(%d):\n%s" % (
-            len(updates.slave), map(str, updates.slave))
+        print("subordinate updates(%d):\n%s" % (
+            len(updates.subordinate), map(str, updates.subordinate))
         )
         print("static updates(%d):\n%s" % (
             len(updates.static), map(str, updates.static))
         )
-        if hasattr(updates, 'new_slaves'):
-            print("new_slave updates(%d):\n%s" % (
-                len(updates.new_slaves), map(str, updates.new_slaves))
+        if hasattr(updates, 'new_subordinates'):
+            print("new_subordinate updates(%d):\n%s" % (
+                len(updates.new_subordinates), map(str, updates.new_subordinates))
             )
-        if hasattr(updates, 'new_masters'):
-            print("new_master updates(%d):\n%s" % (
-                len(updates.new_masters), map(str, updates.new_masters))
+        if hasattr(updates, 'new_mains'):
+            print("new_main updates(%d):\n%s" % (
+                len(updates.new_mains), map(str, updates.new_mains))
             )
     def fail_syncupdate_assertion(self, exc, sync_update):
         msg = "failed assertion: \nITEMS:\n%s\nUPDATE:\n%s\nTRACEBACK:\n%s" % (

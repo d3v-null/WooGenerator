@@ -16,8 +16,8 @@
 # from woogenerator.merger import (do_match, do_merge, do_report, do_report_post,
 #                                  do_summary, do_updates,
 #                                  populate_filter_settings,
-#                                  populate_master_parsers,
-#                                  populate_slave_parsers)
+#                                  populate_main_parsers,
+#                                  populate_subordinate_parsers)
 # from woogenerator.namespace.user import SettingsNamespaceUser
 # from woogenerator.syncupdate import SyncUpdate
 # from woogenerator.utils import TimeUtils, Registrar
@@ -31,23 +31,23 @@
 #     settings_namespace_class = SettingsNamespaceUser
 #     config_file = "merger_config_test.yaml"
 #     data_dir = TESTS_DATA_DIR
-#     master_file = "merger_master_dummy.csv"
-#     slave_file = "merger_slave_dummy.csv"
+#     main_file = "merger_main_dummy.csv"
+#     subordinate_file = "merger_subordinate_dummy.csv"
 #
 #     def setUp(self):
 #         super(TestMergerAbstract, self).setUp()
-#         self.settings.master_dialect_suggestion = "ActOut"
-#         self.settings.download_master = False
-#         self.settings.download_slave = False
-#         self.settings.master_file = os.path.join(self.data_dir, self.master_file)
-#         self.settings.slave_file = os.path.join(self.data_dir, self.slave_file)
+#         self.settings.main_dialect_suggestion = "ActOut"
+#         self.settings.download_main = False
+#         self.settings.download_subordinate = False
+#         self.settings.main_file = os.path.join(self.data_dir, self.main_file)
+#         self.settings.subordinate_file = os.path.join(self.data_dir, self.subordinate_file)
 #         self.settings.testmode = True
 #         self.settings.do_sync = True
 #         self.settings.report_duplicates = True
 #         self.settings.report_sanitation = True
 #         self.settings.report_matching = True
-#         self.settings.update_master = False
-#         self.settings.update_slave = False
+#         self.settings.update_main = False
+#         self.settings.update_subordinate = False
 #         self.settings.ask_before_update = False
 #         self.settings.init_settings(self.override_args)
 #
@@ -89,30 +89,30 @@
 #     """
 #     def test_init_settings(self):
 #
-#         self.assertEqual(self.settings.master_name, "ACT")
-#         self.assertEqual(self.settings.slave_name, "WORDPRESS")
-#         self.assertEqual(self.settings.download_master, False)
+#         self.assertEqual(self.settings.main_name, "ACT")
+#         self.assertEqual(self.settings.subordinate_name, "WORDPRESS")
+#         self.assertEqual(self.settings.download_main, False)
 #         self.assertEqual(
-#             self.settings.master_download_client_args["limit"],
-#             self.settings.master_parse_limit
+#             self.settings.main_download_client_args["limit"],
+#             self.settings.main_parse_limit
 #         )
-#         self.assertEqual(self.settings.master_download_client_args["dialect_suggestion"], "ActOut")
+#         self.assertEqual(self.settings.main_download_client_args["dialect_suggestion"], "ActOut")
 #         self.assertFalse(FieldGroup.do_post)
-#         self.assertEqual(SyncUpdate.master_name, "ACT")
-#         self.assertEqual(SyncUpdate.slave_name, "WORDPRESS")
-#         self.assertEqual(self.settings.master_parser_args.get('schema'), None)
-#         self.assertEqual(self.settings.slave_parser_args['schema'], "TT")
+#         self.assertEqual(SyncUpdate.main_name, "ACT")
+#         self.assertEqual(SyncUpdate.subordinate_name, "WORDPRESS")
+#         self.assertEqual(self.settings.main_parser_args.get('schema'), None)
+#         self.assertEqual(self.settings.subordinate_parser_args['schema'], "TT")
 #
-#     def test_populate_master_parsers(self):
-#         self.settings.master_parse_limit = 4
+#     def test_populate_main_parsers(self):
+#         self.settings.main_parse_limit = 4
 #
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
 #
-#         usr_list = self.parsers.master.get_obj_list()
+#         usr_list = self.parsers.main.get_obj_list()
 #
-#         self.assertEqual(self.parsers.master.schema, None)
+#         self.assertEqual(self.parsers.main.schema, None)
 #
 #         #number of objects:
 #         self.assertTrue(len(usr_list))
@@ -166,13 +166,13 @@
 #         TimeUtils.get_system_timezone != '+1000',
 #         'Tests calibrated for AEST'
 #     )
-#     def test_populate_master_parsers_time(self):
-#         """check master time is parsed correctly (skip tests if not local)"""
-#         self.settings.master_parse_limit = 4
-#         populate_master_parsers(
+#     def test_populate_main_parsers_time(self):
+#         """check main time is parsed correctly (skip tests if not local)"""
+#         self.settings.main_parse_limit = 4
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         usr_list = self.parsers.master.get_obj_list()
+#         usr_list = self.parsers.main.get_obj_list()
 #         self.assertTrue(len(usr_list))
 #         first_usr = usr_list[0]
 #
@@ -185,14 +185,14 @@
 #         self.assertEqual(first_usr.act_last_transaction, 1445691600.0)
 #
 #
-#     def test_populate_slave_parsers(self):
-#         populate_slave_parsers(
+#     def test_populate_subordinate_parsers(self):
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #
-#         self.assertEqual(self.parsers.slave.schema, 'TT')
+#         self.assertEqual(self.parsers.subordinate.schema, 'TT')
 #
-#         usr_list = self.parsers.slave.get_obj_list()
+#         usr_list = self.parsers.subordinate.get_obj_list()
 #
 #         self.assertEqual(len(usr_list), 101)
 #
@@ -242,11 +242,11 @@
 #         TimeUtils.get_system_timezone not in ['+1000', '+1100'],
 #         'Tests calibrated for AEST'
 #     )
-#     def test_populate_slave_parsers_time(self):
-#         populate_slave_parsers(
+#     def test_populate_subordinate_parsers_time(self):
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
-#         usr_list = self.parsers.slave.get_obj_list()
+#         usr_list = self.parsers.subordinate.get_obj_list()
 #         self.assertTrue(len(usr_list))
 #         first_usr = usr_list[0]
 #         self.assertEqual(first_usr.act_modtime, None)
@@ -257,10 +257,10 @@
 #         self.assertEqual(first_usr.last_modtime, 1479060113.0)
 #
 #     def test_do_match(self):
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -284,10 +284,10 @@
 #         "Tests assume role not being synced"
 #     )
 #     def test_do_merge_basic_no_role(self):
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -299,15 +299,15 @@
 #         if self.debug:
 #             self.print_updates_summary(self.updates)
 #
-#         self.assertEqual(len(self.updates.delta_master), 3)
-#         self.assertEqual(len(self.updates.delta_slave), 4)
-#         self.assertEqual(len(self.updates.master), 6)
-#         self.assertEqual(len(self.updates.masterless), 0)
-#         self.assertEqual(len(self.updates.slaveless), 0)
-#         self.assertEqual(len(self.updates.nonstatic_master), 0)
-#         self.assertEqual(len(self.updates.nonstatic_slave), 1)
+#         self.assertEqual(len(self.updates.delta_main), 3)
+#         self.assertEqual(len(self.updates.delta_subordinate), 4)
+#         self.assertEqual(len(self.updates.main), 6)
+#         self.assertEqual(len(self.updates.mainless), 0)
+#         self.assertEqual(len(self.updates.subordinateless), 0)
+#         self.assertEqual(len(self.updates.nonstatic_main), 0)
+#         self.assertEqual(len(self.updates.nonstatic_subordinate), 1)
 #         self.assertEqual(len(self.updates.problematic), 0)
-#         self.assertEqual(len(self.updates.slave), 7)
+#         self.assertEqual(len(self.updates.subordinate), 7)
 #         self.assertEqual(len(self.updates.static), 7)
 #
 #         updates_static = self.updates.static[:]
@@ -372,10 +372,10 @@
 #             self.assertEqual(sync_update.new_m_object.get('Business Type'), None)
 #             self.assertTrue(sync_update.m_deltas)
 #             self.assertFalse(sync_update.s_deltas)
-#             master_updates = sync_update.get_master_updates()
-#             self.assertFalse('Business Type' in master_updates)
-#             slave_updates = sync_update.get_slave_updates()
-#             self.assertFalse('Business Type' in slave_updates)
+#             main_updates = sync_update.get_main_updates()
+#             self.assertFalse('Business Type' in main_updates)
+#             subordinate_updates = sync_update.get_subordinate_updates()
+#             self.assertFalse('Business Type' in subordinate_updates)
 #
 #         except AssertionError as exc:
 #             self.fail_syncupdate_assertion(exc, sync_update)
@@ -398,10 +398,10 @@
 #         "tests assume role being synced"
 #     )
 #     def test_do_merge_basic_with_role(self):
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -413,15 +413,15 @@
 #         if self.debug:
 #             self.print_updates_summary(self.updates)
 #
-#         self.assertEqual(len(self.updates.delta_master), 6)
-#         self.assertEqual(len(self.updates.delta_slave), 6)
-#         self.assertEqual(len(self.updates.master), 7)
-#         self.assertEqual(len(self.updates.masterless), 0)
-#         self.assertEqual(len(self.updates.slaveless), 0)
-#         self.assertEqual(len(self.updates.nonstatic_master), 0)
-#         self.assertEqual(len(self.updates.nonstatic_slave), 0)
+#         self.assertEqual(len(self.updates.delta_main), 6)
+#         self.assertEqual(len(self.updates.delta_subordinate), 6)
+#         self.assertEqual(len(self.updates.main), 7)
+#         self.assertEqual(len(self.updates.mainless), 0)
+#         self.assertEqual(len(self.updates.subordinateless), 0)
+#         self.assertEqual(len(self.updates.nonstatic_main), 0)
+#         self.assertEqual(len(self.updates.nonstatic_subordinate), 0)
 #         self.assertEqual(len(self.updates.problematic), 0)
-#         self.assertEqual(len(self.updates.slave), 7)
+#         self.assertEqual(len(self.updates.subordinate), 7)
 #         self.assertEqual(len(self.updates.static), 7)
 #
 #         updates_static = self.updates.static[:]
@@ -521,10 +521,10 @@
 #             self.assertTrue(sync_update.m_deltas)
 #             self.assertTrue(sync_update.s_deltas)
 #             # TODO: uncomment these
-#             master_updates = sync_update.get_master_updates()
-#             self.assertFalse('Business Type' in master_updates)
-#             slave_updates = sync_update.get_slave_updates()
-#             self.assertFalse('Business Type' in slave_updates)
+#             main_updates = sync_update.get_main_updates()
+#             self.assertFalse('Business Type' in main_updates)
+#             subordinate_updates = sync_update.get_subordinate_updates()
+#             self.assertFalse('Business Type' in subordinate_updates)
 #
 #         except AssertionError as exc:
 #             self.fail_syncupdate_assertion(exc, sync_update)
@@ -559,7 +559,7 @@
 #     )
 #     def test_do_merge_hard_1(self):
 #         suffix = 'hard_1'
-#         for source, line in [('master', 8), ('slave', 89)]:
+#         for source, line in [('main', 8), ('subordinate', 89)]:
 #             new_filename = self.make_temp_with_lines(
 #                 getattr(self.settings, '%s_file' % source),
 #                 [0, line],
@@ -567,10 +567,10 @@
 #             )
 #             setattr(self.settings, '%s_file' % source, new_filename)
 #
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -608,17 +608,17 @@
 #     )
 #     def test_do_merge_hard_2(self):
 #         suffix = 'hard_2'
-#         for source, line in [('master', 96), ('slave', 100)]:
+#         for source, line in [('main', 96), ('subordinate', 100)]:
 #             new_filename = self.make_temp_with_lines(
 #                 getattr(self.settings, '%s_file' % source),
 #                 [0, line],
 #                 suffix
 #             )
 #             setattr(self.settings, '%s_file' % source, new_filename)
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -668,12 +668,12 @@
 #
 #
 #     def test_do_merge_false_pos(self):
-#         self.settings.master_file = os.path.join(TESTS_DATA_DIR, "merger_master_false_positive.csv")
-#         self.settings.slave_file = os.path.join(TESTS_DATA_DIR, "merger_slave_false_positive.csv")
-#         populate_master_parsers(
+#         self.settings.main_file = os.path.join(TESTS_DATA_DIR, "merger_main_false_positive.csv")
+#         self.settings.subordinate_file = os.path.join(TESTS_DATA_DIR, "merger_subordinate_false_positive.csv")
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -711,10 +711,10 @@
 #         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
 #         self.settings.local_work_dir = temp_working_dir
 #         self.settings.init_dirs()
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -734,10 +734,10 @@
 #         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
 #         self.settings.local_work_dir = temp_working_dir
 #         self.settings.init_dirs()
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -750,12 +750,12 @@
 #             self.matches, self.updates, self.parsers, self.settings
 #         )
 #         with mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'main_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ), \
 #         mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'subordinate_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ):
@@ -769,13 +769,13 @@
 #         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
 #         self.settings.local_work_dir = temp_working_dir
 #         self.settings.init_dirs()
-#         self.settings.update_master = True
-#         self.settings.update_slave = True
+#         self.settings.update_main = True
+#         self.settings.update_subordinate = True
 #         self.settings.do_mail = False
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -789,12 +789,12 @@
 #         )
 #
 #         with mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'main_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ), \
 #         mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'subordinate_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ):
@@ -811,13 +811,13 @@
 #         temp_working_dir = tempfile.mkdtemp(suffix + '_working')
 #         self.settings.local_work_dir = temp_working_dir
 #         self.settings.init_dirs()
-#         self.settings.update_master = True
-#         self.settings.update_slave = True
+#         self.settings.update_main = True
+#         self.settings.update_subordinate = True
 #         self.settings.do_mail = False
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
 #         self.matches = do_match(
@@ -831,12 +831,12 @@
 #         )
 #
 #         with mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'master_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'main_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ), \
 #         mock.patch(
-#             MockUtils.get_mock_name(self.settings.__class__, 'slave_upload_client_class'),
+#             MockUtils.get_mock_name(self.settings.__class__, 'subordinate_upload_client_class'),
 #             new_callable=mock.PropertyMock,
 #             return_value = self.settings.null_client_class
 #         ):
@@ -855,7 +855,7 @@
 #         self.settings.do_filter = True
 #         self.settings.ignore_cards = "C001280"
 #         suffix = 'filter_ignore_cards'
-#         for source, lines in [('master', [0, 8, 96]), ('slave', [0, 89, 100])]:
+#         for source, lines in [('main', [0, 8, 96]), ('subordinate', [0, 89, 100])]:
 #             new_filename = self.make_temp_with_lines(
 #                 getattr(self.settings, '%s_file' % source),
 #                 lines,
@@ -871,22 +871,22 @@
 #             self.settings.filter_items.get('ignore_cards'),
 #             self.settings.ignore_cards.split(',')
 #         )
-#         populate_master_parsers(
+#         populate_main_parsers(
 #             self.parsers, self.settings
 #         )
-#         populate_slave_parsers(
+#         populate_subordinate_parsers(
 #             self.parsers, self.settings
 #         )
-#         # m_usr_list = self.parsers.master.get_obj_list()
-#         # print("master parsers (%d): %s" % (len(m_usr_list), m_usr_list.tabulate()))
-#         # s_usr_list = self.parsers.slave.get_obj_list()
-#         # print("slave parsers (%d): %s" % (len(s_usr_list), s_usr_list.tabulate()))
-#         # print("master parser cards: %s" % (self.parsers.master.cards.keys()))
+#         # m_usr_list = self.parsers.main.get_obj_list()
+#         # print("main parsers (%d): %s" % (len(m_usr_list), m_usr_list.tabulate()))
+#         # s_usr_list = self.parsers.subordinate.get_obj_list()
+#         # print("subordinate parsers (%d): %s" % (len(s_usr_list), s_usr_list.tabulate()))
+#         # print("main parser cards: %s" % (self.parsers.main.cards.keys()))
 #         self.assertTrue(
-#             "C016546" in self.parsers.master.cards
+#             "C016546" in self.parsers.main.cards
 #         )
 #         self.assertFalse(
-#             "C001280" in self.parsers.master.cards
+#             "C001280" in self.parsers.main.cards
 #         )
 #
 #

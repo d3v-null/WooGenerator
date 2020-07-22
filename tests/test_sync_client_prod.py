@@ -38,8 +38,8 @@ class TestProdSyncClient(AbstractSyncClientTestCase):
     def setUp(self):
         super(TestProdSyncClient, self).setUp()
 
-        self.settings.download_slave = True
-        self.settings.download_master = True
+        self.settings.download_subordinate = True
+        self.settings.download_main = True
 
         if self.debug:
             logging.basicConfig(level=logging.DEBUG)
@@ -203,8 +203,8 @@ class TestProdSyncClientSimple(TestProdSyncClient):
     def test_read(self):
         response = []
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with product_client_class(**product_client_args) as client:
             response = client.get_iterator()
@@ -217,21 +217,21 @@ class TestProdSyncClientSimple(TestProdSyncClient):
     def test_get_first_item(self):
         # self.settings.wc_api_namespace = 'wc-api'
         # self.settings.wc_api_version = 'v3'
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with product_client_class(**product_client_args) as client:
             first_item = client.get_first_endpoint_item()
             self.assertTrue(first_item)
 
     def test_analyse_remote(self):
-        product_parser_class = self.settings.slave_parser_class
+        product_parser_class = self.settings.subordinate_parser_class
         product_parser = product_parser_class(
-            **self.settings.slave_parser_args
+            **self.settings.subordinate_parser_args
         )
 
-        cat_client_class = self.settings.slave_cat_sync_client_class
-        cat_client_args = self.settings.slave_cat_sync_client_args
+        cat_client_class = self.settings.subordinate_cat_sync_client_class
+        cat_client_args = self.settings.subordinate_cat_sync_client_args
 
         with cat_client_class(**cat_client_args) as client:
             client.analyse_remote_categories(product_parser)
@@ -241,8 +241,8 @@ class TestProdSyncClientSimple(TestProdSyncClient):
                 product_parser.to_str_tree()
             ))
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with product_client_class(**product_client_args) as client:
             client.analyse_remote(product_parser, limit=20)
@@ -281,8 +281,8 @@ class TestProdSyncClientSimple(TestProdSyncClient):
 
     def test_upload_changes(self):
         delta_path = 'weight'
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with product_client_class(**product_client_args) as client:
             first_item_raw = client.get_first_endpoint_item()
@@ -303,8 +303,8 @@ class TestProdSyncClientSimple(TestProdSyncClient):
         IndexError: No key lc_wn_regular_price in data [OrderedDict([('meta_value', []), ('meta_id', 110485), ('meta_key', u'_upsell_skus')]), OrderedDict([('meta_value', []), ('meta_id', 110486), ('meta_key', u'_crosssell_skus')]), OrderedDict([('meta_value', u''), ('meta_id', 110489), ('meta_key', u'_min_variation_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110490), ('meta_key', u'_max_variation_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110491), ('meta_key', u'_min_variation_regular_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110492), ('meta_key', u'_max_variation_regular_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110493), ('meta_key', u'_min_variation_sale_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110494), ('meta_key', u'_max_variation_sale_price')]), OrderedDict([('meta_value', u''), ('meta_id', 110496), ('meta_key', u'_file_path')]), OrderedDict([('meta_value', u''), ('meta_id', 110500), ('meta_key', u'_product_url')]), OrderedDict([('meta_value', u''), ('meta_id', 110501), ('meta_key', u'_button_text')]), OrderedDict([('meta_value', u'Cotton Glove Pack x5 Pairs'), ('meta_id', 110503), ('meta_key', u'title_1')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110769), ('meta_key', u'_min_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110770), ('meta_key', u'_min_regular_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110771), ('meta_key', u'_min_sale_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110772), ('meta_key', u'_max_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110773), ('meta_key', u'_max_regular_price_variation_id')]), OrderedDict([('meta_value', u'27065'), ('meta_id', 110774), ('meta_key', u'_max_sale_price_variation_id')])]
         """
         delta_path = 'meta.lc_wn_regular_price'
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with product_client_class(**product_client_args) as client:
             first_item_raw = client.get_first_endpoint_item()
@@ -321,8 +321,8 @@ class TestProdSyncClientSimple(TestProdSyncClient):
 
     def test_upload_delete_meta(self):
         delta_path = 'meta.lc_wn_regular_price'
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with product_client_class(**product_client_args) as client:
             first_item_raw = client.get_first_endpoint_item()
@@ -336,8 +336,8 @@ class TestProdSyncClientSimple(TestProdSyncClient):
             self.check_update_target_path(client, pkey, delta_path, value)
 
     def test_upload_create_delete_product(self):
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with product_client_class(**product_client_args) as client:
             first_prod_raw = client.get_first_endpoint_item()
@@ -370,11 +370,11 @@ class TestProdSyncClientSimple(TestProdSyncClient):
     def test_upload_product_categories_join_leave(self):
         sub_handle = 'product_categories'
 
-        cat_client_class = self.settings.slave_cat_sync_client_class
-        cat_client_args = self.settings.slave_cat_sync_client_args
+        cat_client_class = self.settings.subordinate_cat_sync_client_class
+        cat_client_args = self.settings.subordinate_cat_sync_client_args
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with cat_client_class(**cat_client_args) as sub_client, \
         product_client_class(**product_client_args) as client:
@@ -408,11 +408,11 @@ class TestProdSyncClientSimple(TestProdSyncClient):
 
         sub_handle = 'attachment_objects'
 
-        img_client_class = self.settings.slave_img_sync_client_class
-        img_client_args = self.settings.slave_img_sync_client_args
+        img_client_class = self.settings.subordinate_img_sync_client_class
+        img_client_args = self.settings.subordinate_img_sync_client_args
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with img_client_class(**img_client_args) as sub_client, \
         product_client_class(**product_client_args) as client:
@@ -446,11 +446,11 @@ class TestProdSyncClientSimpleWC(TestProdSyncClientSimple):
 
         sub_handle = 'variations'
 
-        var_client_class = self.settings.slave_var_sync_client_class
-        var_client_args = self.settings.slave_var_sync_client_args
+        var_client_class = self.settings.subordinate_var_sync_client_class
+        var_client_args = self.settings.subordinate_var_sync_client_args
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
 
         with var_client_class(**var_client_args) as sub_client, \
         product_client_class(**product_client_args) as client:
@@ -624,16 +624,16 @@ class TestVarSyncClientWC(TestProdSyncClient):
     def test_upload_changes_variation(self):
         delta_path = 'weight'
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
         with product_client_class(**product_client_args) as client:
             first_prod_raw = client.get_first_variable_product()
             parent_pkey,  = tuple(self.raw_get_core_paths(
                 client, first_prod_raw, [client.primary_key_handle]
             ))
 
-        var_client_class = self.settings.slave_var_sync_client_class
-        var_client_args = self.settings.slave_var_sync_client_args
+        var_client_class = self.settings.subordinate_var_sync_client_class
+        var_client_args = self.settings.subordinate_var_sync_client_args
         with var_client_class(**var_client_args) as client:
             first_var_raw = client.get_first_variation(parent_pkey)
             value, var_pkey = tuple(self.raw_get_core_paths(
@@ -663,16 +663,16 @@ class TestVarSyncClientWC(TestProdSyncClient):
         """
         delta_path = 'meta.lc_wn_regular_price'
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
         with product_client_class(**product_client_args) as client:
             first_prod_raw = client.get_first_variable_product()
             parent_pkey,  = tuple(self.raw_get_core_paths(
                 client, first_prod_raw, [client.primary_key_handle]
             ))
 
-        var_client_class = self.settings.slave_var_sync_client_class
-        var_client_args = self.settings.slave_var_sync_client_args
+        var_client_class = self.settings.subordinate_var_sync_client_class
+        var_client_args = self.settings.subordinate_var_sync_client_args
         with var_client_class(**var_client_args) as client:
 
             # TODO: fails here, see docstring
@@ -693,16 +693,16 @@ class TestVarSyncClientWC(TestProdSyncClient):
     def test_upload_delete_var_meta(self):
         delta_path = 'meta.lc_wn_regular_price'
 
-        product_client_class = self.settings.slave_download_client_class
-        product_client_args = self.settings.slave_download_client_args
+        product_client_class = self.settings.subordinate_download_client_class
+        product_client_args = self.settings.subordinate_download_client_args
         with product_client_class(**product_client_args) as client:
             first_prod_raw = client.get_first_variable_product()
             parent_pkey,  = tuple(self.raw_get_core_paths(
                 client, first_prod_raw, [client.primary_key_handle]
             ))
 
-        var_client_class = self.settings.slave_var_sync_client_class
-        var_client_args = self.settings.slave_var_sync_client_args
+        var_client_class = self.settings.subordinate_var_sync_client_class
+        var_client_args = self.settings.subordinate_var_sync_client_args
         with var_client_class(**var_client_args) as client:
             first_var_raw = client.get_first_variation(parent_pkey)
             value, var_pkey = tuple(self.raw_get_core_paths(
@@ -724,8 +724,8 @@ class TestAttrSyncClientWC(TestProdSyncClient):
 @pytest.mark.local
 class TestCatSyncClient(TestProdSyncClient):
     def test_get_first_cat(self):
-        cat_client_class = self.settings.slave_cat_sync_client_class
-        cat_client_args = self.settings.slave_cat_sync_client_args
+        cat_client_class = self.settings.subordinate_cat_sync_client_class
+        cat_client_args = self.settings.subordinate_cat_sync_client_args
 
         with cat_client_class(**cat_client_args) as client:
             first_item = client.get_first_endpoint_item()
@@ -734,8 +734,8 @@ class TestCatSyncClient(TestProdSyncClient):
                 print("fist_cat:\n%s" % pformat(first_item))
 
     def test_cat_sync_client(self):
-        cat_client_class = self.settings.slave_cat_sync_client_class
-        cat_client_args = self.settings.slave_cat_sync_client_args
+        cat_client_class = self.settings.subordinate_cat_sync_client_class
+        cat_client_args = self.settings.subordinate_cat_sync_client_args
 
         with cat_client_class(**cat_client_args) as client:
             for page in client.get_iterator():
@@ -754,8 +754,8 @@ class TestImgSyncClient(TestProdSyncClient):
     """
 
     def test_get_first_img(self):
-        img_client_class = self.settings.slave_img_sync_client_class
-        img_client_args = self.settings.slave_img_sync_client_args
+        img_client_class = self.settings.subordinate_img_sync_client_class
+        img_client_args = self.settings.subordinate_img_sync_client_args
 
         with img_client_class(**img_client_args) as client:
             first_item = client.get_first_endpoint_item()
@@ -771,8 +771,8 @@ class TestImgSyncClient(TestProdSyncClient):
         if self.debug:
             Registrar.DEBUG_API = True
             logging.basicConfig(level=logging.DEBUG)
-        img_client_class = self.settings.slave_img_sync_client_class
-        img_client_args = self.settings.slave_img_sync_client_args
+        img_client_class = self.settings.subordinate_img_sync_client_class
+        img_client_args = self.settings.subordinate_img_sync_client_args
 
         with img_client_class(**img_client_args) as client:
             img_path = os.path.join(TESTS_DATA_DIR, 'sample_img.jpg')
@@ -781,12 +781,12 @@ class TestImgSyncClient(TestProdSyncClient):
             img_id = client.get_data_core(response.json(), client.primary_key_handle)
             client.delete_item(img_id)
 
-    def test_upload_image_changes_slave_delete(self):
+    def test_upload_image_changes_subordinate_delete(self):
         if self.debug:
             Registrar.DEBUG_API = True
             logging.basicConfig(level=logging.DEBUG)
-        img_client_class = self.settings.slave_img_sync_client_class
-        img_client_args = self.settings.slave_img_sync_client_args
+        img_client_class = self.settings.subordinate_img_sync_client_class
+        img_client_args = self.settings.subordinate_img_sync_client_args
 
         title = "Range A - Style 2 - 1Litre"
         content = (
@@ -839,8 +839,8 @@ class TestImgSyncClient(TestProdSyncClient):
         if self.debug:
             Registrar.DEBUG_API = True
             logging.basicConfig(level=logging.DEBUG)
-        img_client_class = self.settings.slave_img_sync_client_class
-        img_client_args = self.settings.slave_img_sync_client_args
+        img_client_class = self.settings.subordinate_img_sync_client_class
+        img_client_args = self.settings.subordinate_img_sync_client_args
 
         new_img_core = OrderedDict([
             ('file_path', 'tests/sample_data/imgs_raw/ACARA-CCL.png')
@@ -886,36 +886,36 @@ class TestImgSyncClient(TestProdSyncClient):
 @pytest.mark.local
 class TestProdSyncClientConstructors(TestProdSyncClient):
     # def test_make_usr_m_up_client(self):
-    #     self.settings.update_master = True
-    #     master_client_args = self.settings.master_upload_client_args
-    #     master_client_class = self.settings.master_upload_client_class
-    #     with master_client_class(**master_client_args) as master_client:
-    #         self.assertTrue(master_client)
+    #     self.settings.update_main = True
+    #     main_client_args = self.settings.main_upload_client_args
+    #     main_client_class = self.settings.main_upload_client_class
+    #     with main_client_class(**main_client_args) as main_client:
+    #         self.assertTrue(main_client)
 
     def test_make_prod_s_up_client(self):
-        self.settings.update_slave = True
-        slave_client_args = self.settings.slave_upload_client_args
-        slave_client_class = self.settings.slave_upload_client_class
-        with slave_client_class(**slave_client_args) as slave_client:
-            self.assertTrue(slave_client)
+        self.settings.update_subordinate = True
+        subordinate_client_args = self.settings.subordinate_upload_client_args
+        subordinate_client_class = self.settings.subordinate_upload_client_class
+        with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+            self.assertTrue(subordinate_client)
 
     @unittest.skipIf(
         TestProdSyncClient.local_work_dir == TESTS_DATA_DIR,
         "won't work with dummy conf"
     )
     def test_make_prod_m_down_client(self):
-        self.settings.download_master = True
-        master_client_args = self.settings.master_download_client_args
-        master_client_class = self.settings.master_download_client_class
-        with master_client_class(**master_client_args) as master_client:
-            self.assertTrue(master_client)
+        self.settings.download_main = True
+        main_client_args = self.settings.main_download_client_args
+        main_client_class = self.settings.main_download_client_class
+        with main_client_class(**main_client_args) as main_client:
+            self.assertTrue(main_client)
 
     def test_make_prod_s_down_client(self):
-        self.settings.download_slave = True
-        slave_client_args = self.settings.slave_download_client_args
-        slave_client_class = self.settings.slave_download_client_class
-        with slave_client_class(**slave_client_args) as slave_client:
-            self.assertTrue(slave_client)
+        self.settings.download_subordinate = True
+        subordinate_client_args = self.settings.subordinate_download_client_args
+        subordinate_client_class = self.settings.subordinate_download_client_class
+        with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+            self.assertTrue(subordinate_client)
 
 @pytest.mark.local
 class TestProdSyncClientXero(TestProdSyncClient):
@@ -926,17 +926,17 @@ class TestProdSyncClientXero(TestProdSyncClient):
         "won't work with dummy conf"
     )
     def test_read(self):
-        self.settings.download_slave = True
+        self.settings.download_subordinate = True
         self.settings.schema = 'XERO'
-        slave_client_args = self.settings.slave_download_client_args
-        slave_client_class = self.settings.slave_download_client_class
+        subordinate_client_args = self.settings.subordinate_download_client_args
+        subordinate_client_class = self.settings.subordinate_download_client_class
         if self.debug:
-            print("slave_client_args: %s" % slave_client_args)
-            print("slave_client_class: %s" % slave_client_class)
-        with slave_client_class(**slave_client_args) as slave_client:
-            self.assertTrue(slave_client)
+            print("subordinate_client_args: %s" % subordinate_client_args)
+            print("subordinate_client_class: %s" % subordinate_client_class)
+        with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+            self.assertTrue(subordinate_client)
             if self.debug:
-                print(slave_client.service.items.all()[:10])
+                print(subordinate_client.service.items.all()[:10])
 
 if __name__ == '__main__':
     unittest.main()

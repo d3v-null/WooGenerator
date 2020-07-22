@@ -37,7 +37,7 @@ from woogenerator.utils import (HtmlReporter, ProgressCounter, Registrar,
                                 SanitationUtils, TimeUtils, DebugUtils, SeqUtils)
 from woogenerator.conf.parser import ArgumentParserUser, ArgumentParserProtoUser
 from woogenerator.namespace.core import ParserNamespace, MatchNamespace
-from woogenerator.merger import populate_master_parsers, populate_slave_parsers, do_match
+from woogenerator.merger import populate_main_parsers, populate_subordinate_parsers, do_match
 
 """
 Explanation:
@@ -309,13 +309,13 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
 
     override_args = [
         '--livemode',
-        # '--download-master',
-        '--download-slave',
-        '--skip-download-master',
-        # '--skip-download-slave',
-        '--master-file=/Users/derwent/Documents/woogenerator/input/user_master-2017-07-12_00-41-26.csv',
-        # '--master-parse-limit=5000',
-        # '--slave-parse-limit=5000',
+        # '--download-main',
+        '--download-subordinate',
+        '--skip-download-main',
+        # '--skip-download-subordinate',
+        '--main-file=/Users/derwent/Documents/woogenerator/input/user_main-2017-07-12_00-41-26.csv',
+        # '--main-parse-limit=5000',
+        # '--subordinate-parse-limit=5000',
         '--schema=TT',
         '-vvv'
     ]
@@ -326,8 +326,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         "schema %s should be in %s" % (settings.schema, SCHEMA_TRANSLATIONS)
 
     parsers = ParserNamespace()
-    parsers = populate_slave_parsers(parsers, settings)
-    parsers = populate_master_parsers(parsers, settings)
+    parsers = populate_subordinate_parsers(parsers, settings)
+    parsers = populate_main_parsers(parsers, settings)
 
     matches = MatchNamespace()
     matches = do_match(matches, parsers, settings)
@@ -340,8 +340,8 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         'card_id',
         'name',
         'direct brand',
-        '%s role' % settings.master_name,
-        '%s role' % settings.slave_name,
+        '%s role' % settings.main_name,
+        '%s role' % settings.subordinate_name,
         'expected role',
         'jess direct brand',
         'jess role',
@@ -352,16 +352,16 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         if Registrar.DEBUG_PROGRESS:
             sync_progress_counter.maybe_print_update(count)
 
-        master_object = match.m_objects[0]
-        slave_object = match.s_objects[0]
+        main_object = match.m_objects[0]
+        subordinate_object = match.s_objects[0]
 
         errors = ''
-        card_id = master_object.MYOBID
-        name = str(master_object.name)
-        act_direct_brand_str = str(master_object.get('Direct Brand'))
+        card_id = main_object.MYOBID
+        name = str(main_object.name)
+        act_direct_brand_str = str(main_object.get('Direct Brand'))
         parsed_direct_brand_str = parse_direct_brand_str(act_direct_brand_str)
-        master_role = str(master_object.get('Role'))
-        slave_role = str(slave_object.get('Role'))
+        main_role = str(main_object.get('Role'))
+        subordinate_role = str(subordinate_object.get('Role'))
         try:
             expected_role = determine_role(act_direct_brand_str, settings.schema)
         except AssertionError, exc:
@@ -369,15 +369,15 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
             errors = str(exc)
         jess_direct_brand_str, jess_role = None, None
         try:
-            jess_direct_brand_str, jess_role = jess_fix(act_direct_brand_str, master_role)
+            jess_direct_brand_str, jess_role = jess_fix(act_direct_brand_str, main_role)
         except AssertionError, exc:
             errors = "; ".join([errors, str(exc)])
         row = (
             card_id,
             name,
             act_direct_brand_str,
-            master_role,
-            slave_role,
+            main_role,
+            subordinate_role,
             expected_role,
             jess_direct_brand_str,
             jess_role,
@@ -386,7 +386,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
         for parsed_schema, parsed_role in parsed_direct_brand_str:
             direct_brand_counter.update({format_direct_brand(parsed_schema, parsed_role): 1})
 
-        unique_roles = SeqUtils.filter_unique_true([master_role, slave_role, jess_role])
+        unique_roles = SeqUtils.filter_unique_true([main_role, subordinate_role, jess_role])
         unique_direct_brands = SeqUtils.filter_unique_true([act_direct_brand_str, jess_direct_brand_str])
 
         if errors or len(unique_roles) > 1 or len(unique_direct_brands) > 1:
@@ -447,7 +447,7 @@ def main(override_args=None, settings=None):  # pylint: disable=too-many-branche
     # parser_cols = ma_parser_objectlist.report_cols
     # parser_cols['Direct Brand'] = {}
     # Registrar.register_message(
-    #     "master parser: \n%s" % \
+    #     "main parser: \n%s" % \
     #     SanitationUtils.coerce_unicode(ma_parser_objectlist.tabulate(cols=parser_cols))
     # )
 

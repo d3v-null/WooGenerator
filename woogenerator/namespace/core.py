@@ -42,12 +42,12 @@ class SettingsNamespaceProto(argparse.Namespace):
         self.pickle_dir = getattr(self, 'pickle_dir', DEFAULT_LOCAL_PICKLE_DIR)
         self.import_name = getattr(self, 'import_name',
                                    TimeUtils.get_ms_timestamp())
-        self.master_name = getattr(self, 'master_name', DEFAULT_MASTER_NAME)
-        self.slave_name = getattr(self, 'slave_name', DEFAULT_SLAVE_NAME)
+        self.main_name = getattr(self, 'main_name', DEFAULT_MASTER_NAME)
+        self.subordinate_name = getattr(self, 'subordinate_name', DEFAULT_SLAVE_NAME)
         self.start_time = getattr(self, 'start_time', time.time())
         self.schema = getattr(self, 'schema', None)
-        self.download_master = getattr(self, 'download_master', False)
-        self.download_slave = getattr(self, 'download_slave', False)
+        self.download_main = getattr(self, 'download_main', False)
+        self.download_subordinate = getattr(self, 'download_subordinate', False)
         self.do_post = getattr(self, 'do_post', None)
 
         super(SettingsNamespaceProto, self).__init__(*args, **kwargs)
@@ -152,7 +152,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
-    def slave_wp_api_params(self):
+    def subordinate_wp_api_params(self):
         response = {
             'consumer_key': self.get('wp_api_key'),
             'consumer_secret': self.get('wp_api_secret'),
@@ -170,7 +170,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
-    def slave_wc_api_params(self):
+    def subordinate_wc_api_params(self):
         response = {
             'consumer_key': self.get('wc_api_key'),
             'consumer_secret': self.get('wc_api_secret'),
@@ -190,7 +190,7 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
-    def slave_xero_api_params(self):
+    def subordinate_xero_api_params(self):
         response = {
             'api_key': self.get('xero_consumer_key'),
             'rsa_key_file': self.get('xero_private_key_file')
@@ -283,17 +283,17 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
-    def rep_san_master_csv_path(self):
+    def rep_san_main_csv_path(self):
         response = "%s_bad_contact_%s_%s.csv" % (
-            self.file_prefix, self.slave_name, self.file_suffix)
+            self.file_prefix, self.subordinate_name, self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
-    def rep_san_slave_csv_path(self):
+    def rep_san_subordinate_csv_path(self):
         response = "%s_bad_contact_%s_%s.csv" % (
-            self.file_prefix, self.slave_name, self.file_suffix)
+            self.file_prefix, self.subordinate_name, self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
@@ -315,32 +315,32 @@ class SettingsNamespaceProto(argparse.Namespace):
         return response
 
     @property
-    def rep_fail_master_csv_path(self):
-        response = "%s%s_fails_%s.csv" % (self.file_prefix, self.master_name,
+    def rep_fail_main_csv_path(self):
+        response = "%s%s_fails_%s.csv" % (self.file_prefix, self.main_name,
                                           self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
-    def rep_fail_slave_csv_path(self):
-        response = "%s%s_fails_%s.csv" % (self.file_prefix, self.slave_name,
+    def rep_fail_subordinate_csv_path(self):
+        response = "%s%s_fails_%s.csv" % (self.file_prefix, self.subordinate_name,
                                           self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
-    def rep_delta_master_csv_path(self):
-        response = "%s%s_deltas_%s.csv" % (self.file_prefix, self.master_name,
+    def rep_delta_main_csv_path(self):
+        response = "%s%s_deltas_%s.csv" % (self.file_prefix, self.main_name,
                                            self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
         return response
 
     @property
-    def rep_delta_slave_csv_path(self):
-        response = "%s%s_deltas_%s.csv" % (self.file_prefix, self.slave_name,
+    def rep_delta_subordinate_csv_path(self):
+        response = "%s%s_deltas_%s.csv" % (self.file_prefix, self.subordinate_name,
                                            self.file_suffix)
         if self.report_dir_full:
             response = os.path.join(self.report_dir_full, response)
@@ -406,8 +406,8 @@ class SettingsNamespaceProto(argparse.Namespace):
         Registrar.DEBUG_WOO = self.get('debug_woo')
         Registrar.DEBUG_TRACE = self.get('debug_trace')
         Registrar.DEBUG_USR = self.get('debug_usr')
-        Registrar.master_name = self.get('master_name')
-        Registrar.slave_name = self.get('slave_name')
+        Registrar.main_name = self.get('main_name')
+        Registrar.subordinate_name = self.get('subordinate_name')
 
     def init_settings(self, override_args=None):
         """
@@ -490,8 +490,8 @@ class ParserNamespace(argparse.Namespace):
 
     def __init__(self, *args, **kwargs):
         super(ParserNamespace, self).__init__(*args, **kwargs)
-        self.master = getattr(self, 'master', None)
-        self.slave = getattr(self, 'slave', None)
+        self.main = getattr(self, 'main', None)
+        self.subordinate = getattr(self, 'subordinate', None)
         self.anomalous = {}
 
     def deny_anomalous(self, parselist_type, anomalous_parselist, error=False):
@@ -518,8 +518,8 @@ class MatchNamespace(argparse.Namespace):
     def __init__(self, index_fn=None, *args, **kwargs):
         super(MatchNamespace, self).__init__(*args, **kwargs)
         self.globals = MatchList(index_fn=index_fn)
-        self.masterless = MatchList(index_fn=index_fn)
-        self.slaveless = MatchList(index_fn=index_fn)
+        self.mainless = MatchList(index_fn=index_fn)
+        self.subordinateless = MatchList(index_fn=index_fn)
         self.valid = MatchList(index_fn=index_fn)
         self.invalid = MatchList(index_fn=index_fn)
         self.anomalous = OrderedDict()
@@ -557,18 +557,18 @@ class UpdateNamespace(argparse.Namespace):
 
     def __init__(self, *args, **kwargs):
         super(UpdateNamespace, self).__init__(*args, **kwargs)
-        self.master = UpdateList()
-        self.slave = UpdateList()
+        self.main = UpdateList()
+        self.subordinate = UpdateList()
         self.static = UpdateList()
         self.problematic = UpdateList()
-        self.nonstatic_master = UpdateList()
-        self.nonstatic_slave = UpdateList()
-        self.delta_master = UpdateList()
-        self.delta_slave = UpdateList()
-        self.masterless = UpdateList()
-        self.slaveless = UpdateList()
-        self.new_masters = UpdateList()
-        self.new_slaves = UpdateList()
+        self.nonstatic_main = UpdateList()
+        self.nonstatic_subordinate = UpdateList()
+        self.delta_main = UpdateList()
+        self.delta_subordinate = UpdateList()
+        self.mainless = UpdateList()
+        self.subordinateless = UpdateList()
+        self.new_mains = UpdateList()
+        self.new_subordinates = UpdateList()
 
     def tabulate(self, tablefmt=None):
         response = ''
@@ -582,12 +582,12 @@ class UpdateNamespace(argparse.Namespace):
 class ResultsNamespace(argparse.Namespace):
     """Collect information about failures into a single namespace."""
 
-    result_attrs = ['fails_master', 'fails_slave', 'successes']
+    result_attrs = ['fails_main', 'fails_subordinate', 'successes']
 
     def __init__(self, *args, **kwargs):
         super(ResultsNamespace, self).__init__(*args, **kwargs)
-        self.fails_master = []
-        self.fails_slave = []
+        self.fails_main = []
+        self.fails_subordinate = []
         self.successes = []
 
     @property

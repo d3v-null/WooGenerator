@@ -45,12 +45,12 @@ class SyncUpdate(Registrar):
 
     coldata_class = ColDataAbstract
     merge_mode = None
-    master_target = None
-    slave_target = None
+    main_target = None
+    subordinate_target = None
     # The target format of (m|s)_object, gets immediately converted to core
     object_target = 'gen-api'
-    default_master_container = ImportObject
-    default_slave_container = ImportObject
+    default_main_container = ImportObject
+    default_subordinate_container = ImportObject
 
     @classmethod
     def set_globals(cls, merge_mode, default_last_sync):
@@ -76,10 +76,10 @@ class SyncUpdate(Registrar):
         self.new_s_object_core = {}
         self.old_m_object_gen = {}
         self.old_s_object_gen = {}
-        self.master_parent = None
-        self.slave_parent = None
-        self.master_container = self.default_master_container
-        self.slave_container = self.default_slave_container
+        self.main_parent = None
+        self.subordinate_parent = None
+        self.main_container = self.default_main_container
+        self.subordinate_container = self.default_subordinate_container
         self.m_time = 0
         self.s_time = 0
         if old_m_object_gen:
@@ -96,18 +96,18 @@ class SyncUpdate(Registrar):
         self.important_updates = 0
         self.important_handles = []
 
-        # If there is a change in master that is not just an insertion
+        # If there is a change in main that is not just an insertion
         self.m_deltas = False
-        # If there is a change in master that is not just an insertion
+        # If there is a change in main that is not just an insertion
         self.s_deltas = False
 
         self.b_time = 0
 
     def set_old_m_object_gen(self, old_m_object_gen):
         self.old_m_object_gen = old_m_object_gen
-        self.master_container = type(self.old_m_object_gen)
-        assert issubclass(self.master_container, ImportObject)
-        self.master_parent = self.old_m_object_gen.parent
+        self.main_container = type(self.old_m_object_gen)
+        assert issubclass(self.main_container, ImportObject)
+        self.main_parent = self.old_m_object_gen.parent
         self.old_m_object_core = self.coldata_class.translate_data_from(
             self.old_m_object_gen.to_dict(), self.object_target,
             excluding_properties=['sync']
@@ -119,9 +119,9 @@ class SyncUpdate(Registrar):
 
     def set_old_s_object_gen(self, old_s_object_gen):
         self.old_s_object_gen = old_s_object_gen
-        self.slave_container = type(self.old_s_object_gen)
-        assert issubclass(self.slave_container, ImportObject)
-        self.slave_parent = self.old_s_object_gen.parent
+        self.subordinate_container = type(self.old_s_object_gen)
+        assert issubclass(self.subordinate_container, ImportObject)
+        self.subordinate_parent = self.old_s_object_gen.parent
         self.old_s_object_core = self.coldata_class.translate_data_from(
             self.old_s_object_gen.to_dict(), self.object_target,
             excluding_properties=['sync']
@@ -132,24 +132,24 @@ class SyncUpdate(Registrar):
             )
 
     def set_new_m_object_gen(self, new_m_object_gen):
-        self.master_container = type(new_m_object_gen)
-        assert issubclass(self.master_container, ImportObject)
-        self.master_parent = new_m_object_gen.parent
+        self.main_container = type(new_m_object_gen)
+        assert issubclass(self.main_container, ImportObject)
+        self.main_parent = new_m_object_gen.parent
         new_m_object_core = self.coldata_class.translate_data_from(
             new_m_object_gen.to_dict(), self.object_target,
             excluding_properties=['sync']
         )
-        self.set_new_subject_object(new_m_object_core, self.master_name)
+        self.set_new_subject_object(new_m_object_core, self.main_name)
 
     def set_new_s_object_gen(self, new_s_object_gen):
-        self.slave_container = type(new_s_object_gen)
-        assert issubclass(self.master_container, ImportObject)
-        self.slave_parent = new_s_object_gen.parent
+        self.subordinate_container = type(new_s_object_gen)
+        assert issubclass(self.main_container, ImportObject)
+        self.subordinate_parent = new_s_object_gen.parent
         new_s_object_core = self.coldata_class.translate_data_from(
             new_s_object_gen.to_dict(), self.object_target,
             excluding_properties=['sync']
         )
-        self.set_new_subject_object(new_s_object_core, self.slave_name)
+        self.set_new_subject_object(new_s_object_core, self.subordinate_name)
 
     sync_warning_value_keys = ['old_value', 'new_value', 'm_value', 's_value']
 
@@ -225,49 +225,49 @@ class SyncUpdate(Registrar):
 
     @property
     def s_updated(self):
-        """Return whether slave has been updated."""
+        """Return whether subordinate has been updated."""
         return bool(self.new_s_object_core)
 
     @property
     def m_updated(self):
-        """Return whether master has been updated."""
+        """Return whether main has been updated."""
         return bool(self.new_m_object_core)
 
     @property
     def e_updated(self):
-        """Return whether either master or slave has updated."""
+        """Return whether either main or subordinate has updated."""
         return self.s_updated or self.m_updated
 
     @property
     def l_time(self):
-        """Return latest modtime out of master and slave."""
+        """Return latest modtime out of main and subordinate."""
         return max(self.m_time, self.s_time)
 
     def get_subject_mod_time(self, subject):
         """Return the modtime of a subject."""
-        if subject == self.master_name:
+        if subject == self.main_name:
             return self.m_time
-        elif subject == self.slave_name:
+        elif subject == self.subordinate_name:
             return self.s_time
 
     def get_new_subject_object(self, subject):
         """Return the new object associated with the subject."""
-        if subject == self.master_name:
+        if subject == self.main_name:
             return self.new_m_object_core
-        elif subject == self.slave_name:
+        elif subject == self.subordinate_name:
             return self.new_s_object_core
 
     def set_new_subject_object(self, value, subject):
-        if subject == self.master_name:
+        if subject == self.main_name:
             self.new_m_object_core = value
-        elif subject == self.slave_name:
+        elif subject == self.subordinate_name:
             self.new_s_object_core = value
 
     def get_old_subject_object(self, subject):
         """Return the new object associated with the subject."""
-        if subject == self.master_name:
+        if subject == self.main_name:
             return self.old_m_object_core
-        elif subject == self.slave_name:
+        elif subject == self.subordinate_name:
             return self.old_s_object_core
 
     @property
@@ -277,56 +277,56 @@ class SyncUpdate(Registrar):
 
     @property
     def s_mod(self):
-        """Return whether slave has been updated since last sync."""
+        """Return whether subordinate has been updated since last sync."""
         return self.s_time >= self.t_time
 
     @property
-    def master_id(self):
-        """Abstract method fo getting the ID of the master object."""
+    def main_id(self):
+        """Abstract method fo getting the ID of the main object."""
         raise NotImplementedError()
 
     @property
-    def slave_id(self):
-        """Abstract method fo getting the ID of the slave object."""
+    def subordinate_id(self):
+        """Abstract method fo getting the ID of the subordinate object."""
         raise NotImplementedError()
 
     @classmethod
-    def make_index(cls, master_id, slave_id):
+    def make_index(cls, main_id, subordinate_id):
         return u"|".join([
-            u"m:%s" % text_type(master_id),
-            u"s:%s" % text_type(slave_id)
+            u"m:%s" % text_type(main_id),
+            u"s:%s" % text_type(subordinate_id)
         ])
 
     @property
     def index(self):
-        return self.make_index(self.master_id, self.slave_id)
+        return self.make_index(self.main_id, self.subordinate_id)
 
     def get_winner_name(self, m_time, s_time):
-        """Get name of database containing winning object (master / slave)."""
+        """Get name of database containing winning object (main / subordinate)."""
         if not s_time:
-            return self.master_name
+            return self.main_name
         elif not m_time:
-            return self.slave_name
+            return self.subordinate_name
         else:
-            return self.slave_name if(s_time >= m_time) else self.master_name
+            return self.subordinate_name if(s_time >= m_time) else self.main_name
 
     @classmethod
     def parse_m_time(cls, raw_m_time):
-        """Parse a raw master time value into a timestamp."""
+        """Parse a raw main time value into a timestamp."""
         return TimeUtils.datetime2localtimestamp(raw_m_time)
         # return raw_m_time
 
     @classmethod
     def parse_s_time(cls, raw_s_time):
-        """Parse a raw slave time value into a timestamp."""
+        """Parse a raw subordinate time value into a timestamp."""
         return TimeUtils.datetime2localtimestamp(raw_s_time)
         # return raw_s_time
 
     def parse_subject_time(self, raw_time, subject):
         """Parse a raw time string for a given subject's format."""
-        if subject == self.master_name:
+        if subject == self.main_name:
             return self.parse_m_time(raw_time)
-        elif subject == self.slave_name:
+        elif subject == self.subordinate_name:
             return self.parse_s_time(raw_time)
 
     def sanitize_value(self, handle, value):
@@ -356,10 +356,10 @@ class SyncUpdate(Registrar):
 
     def get_subject_target(self, subject):
         """Get the value for the subject's new object."""
-        if subject == self.master_name:
-            return self.master_target
-        elif subject == self.slave_name:
-            return self.slave_target
+        if subject == self.main_name:
+            return self.main_target
+        elif subject == self.subordinate_name:
+            return self.subordinate_target
 
     def values_similar(self, handle, m_value, s_value):
         """Check if two values are similar. Depends on handle."""
@@ -390,9 +390,9 @@ class SyncUpdate(Registrar):
         return response
 
     def old_handle_identical(self, handle):
-        """Check if handle's master / slave values are identical in old."""
-        m_value = self.get_old_subject_value(handle, self.master_name)
-        s_value = self.get_old_subject_value(handle, self.slave_name)
+        """Check if handle's main / subordinate values are identical in old."""
+        m_value = self.get_old_subject_value(handle, self.main_name)
+        s_value = self.get_old_subject_value(handle, self.subordinate_name)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -401,9 +401,9 @@ class SyncUpdate(Registrar):
         return response
 
     def new_handle_similar(self, handle):
-        """Check if handle's master / slave values are similar in new."""
-        m_value = self.get_new_subject_value(handle, self.master_name)
-        s_value = self.get_new_subject_value(handle, self.slave_name)
+        """Check if handle's main / subordinate values are similar in new."""
+        m_value = self.get_new_subject_value(handle, self.main_name)
+        s_value = self.get_new_subject_value(handle, self.subordinate_name)
         response = self.values_similar(handle, m_value, s_value)
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -412,9 +412,9 @@ class SyncUpdate(Registrar):
         return response
 
     def new_handle_identical(self, handle):
-        """Check if handle's master / slave values are identical in new."""
-        m_value = self.get_new_subject_value(handle, self.master_name)
-        s_value = self.get_new_subject_value(handle, self.slave_name)
+        """Check if handle's main / subordinate values are identical in new."""
+        m_value = self.get_new_subject_value(handle, self.main_name)
+        s_value = self.get_new_subject_value(handle, self.subordinate_name)
         response = m_value == s_value
         if self.DEBUG_UPDATE:
             self.register_message(
@@ -445,24 +445,24 @@ class SyncUpdate(Registrar):
         return response
 
     def m_handle_static(self, handle):
-        """Check if handle's old / new values are identical in master."""
+        """Check if handle's old / new values are identical in main."""
         # TODO: deprecate this
-        return self.col_static(handle, self.master_name)
+        return self.col_static(handle, self.main_name)
 
     def s_handle_static(self, handle):
-        """Check if handle's old / new values are identical in slave."""
+        """Check if handle's old / new values are identical in subordinate."""
         # TODO: deprecate this
-        return self.col_static(handle, self.slave_name)
+        return self.col_static(handle, self.subordinate_name)
 
     def m_handle_semi_static(self, handle):
-        """Check if handle's old / new values are similar in master."""
+        """Check if handle's old / new values are similar in main."""
         # TODO: deprecate this
-        return self.col_semi_static(handle, self.master_name)
+        return self.col_semi_static(handle, self.main_name)
 
     def s_handle_semi_static(self, handle):
-        """Check if handle's old / new values are similar in slave."""
+        """Check if handle's old / new values are similar in subordinate."""
         # TODO: deprecate this
-        return self.col_semi_static(handle, self.slave_name)
+        return self.col_semi_static(handle, self.subordinate_name)
 
     def test_to_str(self, handle, val1, val2, res, norm1=None, norm2=None):
         left = repr(val1)
@@ -549,15 +549,15 @@ class SyncUpdate(Registrar):
             ]
         elif update_type == 'pass':
             header_items += [
-                ('m_value', 'Master'),
-                ('s_value', 'Slave'),
+                ('m_value', 'Main'),
+                ('s_value', 'Subordinate'),
             ]
         elif update_type == 'reflect':
             header_items += [
-                ('m_value', 'Master'),
-                ('s_value', 'Slave'),
-                ('reflected_master', 'Reflected Master'),
-                ('reflected_slave', 'Reflected Slave'),
+                ('m_value', 'Main'),
+                ('s_value', 'Subordinate'),
+                ('reflected_main', 'Reflected Main'),
+                ('reflected_subordinate', 'Reflected Subordinate'),
             ]
         header_items += [
             ('m_handle_time', 'M TIME'),
@@ -625,14 +625,14 @@ class SyncUpdate(Registrar):
 
     # def getOldLoserObject(self, winner=None):
     #     if not winner: winner = self.winner
-    #     if(winner == self.master_name):
+    #     if(winner == self.main_name):
     #         oldLoserObject = self.old_s_object_core
 
     def opposite_src(self, subject):
-        if subject == self.master_name:
-            return self.slave_name
-        elif subject == self.slave_name:
-            return self.master_name
+        if subject == self.main_name:
+            return self.subordinate_name
+        elif subject == self.subordinate_name:
+            return self.main_name
         elif subject == '-':
             return '-'
         else:
@@ -693,9 +693,9 @@ class SyncUpdate(Registrar):
                 update_params)
 
         if loser_delta and reason in ['updating', 'deleting', 'reflect']:
-            if loser == self.slave_name:
+            if loser == self.subordinate_name:
                 self.s_deltas = True
-            elif loser == self.master_name:
+            elif loser == self.main_name:
                 self.m_deltas = True
 
         self.updates += 1
@@ -770,21 +770,21 @@ class SyncUpdate(Registrar):
 
         winner = None
 
-        master_read = self.coldata_class.get_handle_property(
-            handle, 'read', self.master_target)
-        slave_read = self.coldata_class.get_handle_property(
-            handle, 'read', self.slave_target)
-        # master_write = self.coldata_class.get_handle_property(
-        #     handle, 'write', self.master_target)
-        # slave_write = self.coldata_class.get_handle_property(
-        #     handle, 'write', self.slave_target)
+        main_read = self.coldata_class.get_handle_property(
+            handle, 'read', self.main_target)
+        subordinate_read = self.coldata_class.get_handle_property(
+            handle, 'read', self.subordinate_target)
+        # main_write = self.coldata_class.get_handle_property(
+        #     handle, 'write', self.main_target)
+        # subordinate_write = self.coldata_class.get_handle_property(
+        #     handle, 'write', self.subordinate_target)
 
-        if bool(master_read) ^ bool(slave_read):
-            if not slave_read and update_params['m_value']:
-                winner = self.master_name
+        if bool(main_read) ^ bool(subordinate_read):
+            if not subordinate_read and update_params['m_value']:
+                winner = self.main_name
                 update_params['reason'] = 'merging-read'
-            if not master_read and update_params['s_value']:
-                winner = self.slave_name
+            if not main_read and update_params['s_value']:
+                winner = self.subordinate_name
                 update_params['reason'] = 'merging-read'
 
         if not winner:
@@ -796,14 +796,14 @@ class SyncUpdate(Registrar):
             self.merge_mode == 'merge'
             and not (update_params['m_value'] and update_params['s_value'])
         ):
-            if winner == self.slave_name and not update_params['s_value']:
-                winner = self.master_name
+            if winner == self.subordinate_name and not update_params['s_value']:
+                winner = self.main_name
                 update_params['reason'] = 'merging'
-            elif winner == self.master_name and not update_params['m_value']:
-                winner = self.slave_name
+            elif winner == self.main_name and not update_params['m_value']:
+                winner = self.subordinate_name
                 update_params['reason'] = 'merging'
 
-        if winner == self.slave_name:
+        if winner == self.subordinate_name:
             update_params['new_value'] = update_params['s_value']
             update_params['old_value'] = update_params['m_value']
         else:
@@ -828,23 +828,23 @@ class SyncUpdate(Registrar):
         handle = update_params['handle']
 
         update_params['m_value'] = self.get_new_subject_value(
-            handle, self.master_name
+            handle, self.main_name
         )
         update_params['s_value'] = self.get_new_subject_value(
-            handle, self.slave_name
+            handle, self.subordinate_name
         )
         update_params['m_handle_time'] = self.get_handle_mod_time(
-            handle, self.master_name
+            handle, self.main_name
         )
         update_params['s_handle_time'] = self.get_handle_mod_time(
-            handle, self.slave_name
+            handle, self.subordinate_name
         )
         self.sync_handle(**update_params)
 
     @classmethod
     def get_sync_handles(cls):
         return cls.coldata_class.get_sync_handles(
-            cls.master_target, cls.slave_target
+            cls.main_target, cls.subordinate_target
         )
 
     def update(self, sync_handles=None):
@@ -861,38 +861,38 @@ class SyncUpdate(Registrar):
                 "important_static", "yes" if self.important_static else "no"))
         ]
 
-    def containerize_master(self, master_data):
-        master_data_gen = self.coldata_class.translate_data_to(
-            deepcopy(master_data), self.object_target)
-        if 'rowcount' not in master_data_gen:
-            master_data_gen['rowcount'] = 0
-        if 'ID' not in master_data_gen:
-            master_data_gen['ID'] = ''
-        return self.master_container(
-            master_data_gen, parent=self.master_parent)
+    def containerize_main(self, main_data):
+        main_data_gen = self.coldata_class.translate_data_to(
+            deepcopy(main_data), self.object_target)
+        if 'rowcount' not in main_data_gen:
+            main_data_gen['rowcount'] = 0
+        if 'ID' not in main_data_gen:
+            main_data_gen['ID'] = ''
+        return self.main_container(
+            main_data_gen, parent=self.main_parent)
 
-    def containerize_slave(self, slave_data):
-        slave_data_gen = self.coldata_class.translate_data_to(
-            deepcopy(slave_data), self.object_target)
-        return self.slave_container(slave_data_gen, parent=self.slave_parent)
+    def containerize_subordinate(self, subordinate_data):
+        subordinate_data_gen = self.coldata_class.translate_data_to(
+            deepcopy(subordinate_data), self.object_target)
+        return self.subordinate_container(subordinate_data_gen, parent=self.subordinate_parent)
 
     @property
     def old_m_object(self):
         return self.old_m_object_gen
-        # return self.containerize_master(self.old_m_object_core)
+        # return self.containerize_main(self.old_m_object_core)
 
     @property
     def old_s_object(self):
         return self.old_s_object_gen
-        # return self.containerize_master(self.new_m_object_core)
+        # return self.containerize_main(self.new_m_object_core)
 
     @property
     def new_m_object(self):
-        return self.containerize_master(self.new_m_object_core)
+        return self.containerize_main(self.new_m_object_core)
 
     @property
     def new_s_object(self):
-        return self.containerize_slave(self.new_s_object_core)
+        return self.containerize_subordinate(self.new_s_object_core)
 
     def tabulate(self, tablefmt=None):
         subtitle_fmt = heading_fmt = "%s"
@@ -938,13 +938,13 @@ class SyncUpdate(Registrar):
         ]
         if self.m_updated:
             changes_components += [
-                subtitle_fmt % '%s CHANGES' % self.master_name,
-                self.display_master_changes(tablefmt),
+                subtitle_fmt % '%s CHANGES' % self.main_name,
+                self.display_main_changes(tablefmt),
             ]
         if self.s_updated:
             changes_components += [
-                subtitle_fmt % '%s CHANGES' % self.slave_name,
-                self.display_slave_changes(tablefmt),
+                subtitle_fmt % '%s CHANGES' % self.subordinate_name,
+                self.display_subordinate_changes(tablefmt),
             ]
         out_str += info_delimeter.join(filter(None, changes_components))
         out_str += info_delimeter
@@ -985,25 +985,25 @@ class SyncUpdate(Registrar):
             self.register_message(u"returned %s" % text_type(updates_core))
         return updates_core
 
-    def get_slave_updates(self):
-        return self.get_subject_updates(self.slave_name)
+    def get_subordinate_updates(self):
+        return self.get_subject_updates(self.subordinate_name)
 
-    def get_master_updates(self):
-        return self.get_subject_updates(self.master_name)
+    def get_main_updates(self):
+        return self.get_subject_updates(self.main_name)
 
-    def get_slave_updates_native(self):
-        updates_core = self.get_slave_updates()
+    def get_subordinate_updates_native(self):
+        updates_core = self.get_subordinate_updates()
         updates_native = self.coldata_class.translate_data_to(
-            updates_core, self.slave_target)
+            updates_core, self.subordinate_target)
         return updates_native
 
-    def get_master_updates_native(self):
-        updates_core = self.get_master_updates()
+    def get_main_updates_native(self):
+        updates_core = self.get_main_updates()
         updates_native = self.coldata_class.translate_data_to(
-            updates_core, self.master_target)
+            updates_core, self.main_target)
         return updates_native
 
-    def display_slave_changes(self, tablefmt=None):
+    def display_subordinate_changes(self, tablefmt=None):
         if self.sync_warnings_core:
             info_delimeter = "\n"
             # subtitle_fmt = "%s"
@@ -1014,17 +1014,17 @@ class SyncUpdate(Registrar):
             print_elements = []
 
             try:
-                pkey = self.slave_id
+                pkey = self.subordinate_id
                 assert pkey, "primary key must be valid, %s" % repr(pkey)
             except Exception as exc:
                 print_elements.append(
                     "NO %s CHANGES: must have a primary key to update data: " %
-                    self.slave_name + repr(exc)
+                    self.subordinate_name + repr(exc)
                 )
                 pkey = None
                 return info_delimeter.join(print_elements)
 
-            updates = self.get_slave_updates_native()
+            updates = self.get_subordinate_updates_native()
             additional_updates = OrderedDict()
             if pkey:
                 additional_updates['ID'] = pkey
@@ -1047,12 +1047,12 @@ class SyncUpdate(Registrar):
             else:
                 print_elements.append(
                     "NO %s CHANGES: no user_updates or meta_updates"
-                    % self.slave_name)
+                    % self.subordinate_name)
 
             return info_delimeter.join(print_elements)
         return ""
 
-    def display_master_changes(self, tablefmt=None):
+    def display_main_changes(self, tablefmt=None):
         if self.sync_warnings_core:
             info_delimeter = "\n"
             # subtitle_fmt = "%s"
@@ -1063,17 +1063,17 @@ class SyncUpdate(Registrar):
             print_elements = []
 
             try:
-                pkey = self.master_id
+                pkey = self.main_id
                 assert pkey, "primary key must be valid, %s" % repr(pkey)
             except Exception as exc:
                 print_elements.append(
                     ("NO %s CHANGES: "
                      "must have a primary key to update data: ") %
-                    self.master_name + repr(exc))
+                    self.main_name + repr(exc))
                 pkey = None
                 return info_delimeter.join(print_elements)
 
-            updates = self.get_master_updates()
+            updates = self.get_main_updates()
             additional_updates = OrderedDict()
             if pkey:
                 additional_updates['ID'] = pkey
@@ -1096,30 +1096,30 @@ class SyncUpdate(Registrar):
             else:
                 print_elements.append(
                     "NO %s CHANGES: no user_updates or meta_updates"
-                    % self.master_name)
+                    % self.main_name)
 
             return info_delimeter.join(print_elements)
         return ""
 
-    def update_master(self, client):
+    def update_main(self, client):
         raise DeprecationWarning("calling syncupate.update* is deprecated")
-        updates = self.get_master_updates()
+        updates = self.get_main_updates()
         if not updates:
             return
 
-        pkey = self.master_id
+        pkey = self.main_id
         return client.upload_changes(pkey, updates)
 
         # todo: Determine if file imported correctly and delete file
 
-    def update_slave(self, client):
+    def update_subordinate(self, client):
         raise DeprecationWarning("calling syncupate.update* is deprecated")
-        # SanitationUtils.safe_print(  self.display_slave_changes() )
-        updates = self.get_slave_updates_native()
+        # SanitationUtils.safe_print(  self.display_subordinate_changes() )
+        updates = self.get_subordinate_updates_native()
         if not updates:
             return
 
-        pkey = self.slave_id
+        pkey = self.subordinate_id
 
         return client.upload_changes(pkey, updates)
 
@@ -1127,7 +1127,7 @@ class SyncUpdate(Registrar):
         return -cmp(self.b_time, other.b_time)
 
     def __str__(self):
-        return "update < %7s | %7s >" % (self.master_id, self.slave_id)
+        return "update < %7s | %7s >" % (self.main_id, self.subordinate_id)
 
     def __nonzero__(self):
         return self.e_updated
@@ -1135,14 +1135,14 @@ class SyncUpdate(Registrar):
 
 class SyncUpdateGen(SyncUpdate):
     """
-    Abstract class for when sync master is in generator format.
+    Abstract class for when sync main is in generator format.
     """
-    master_target = 'gen-api'
+    main_target = 'gen-api'
     merge_mode = 'merge'
 
     @property
-    def master_id(self):
-        return self.get_new_subject_value('rowcount', self.master_name)
+    def main_id(self):
+        return self.get_new_subject_value('rowcount', self.main_name)
 
 
 class SyncUpdateProd(SyncUpdateGen):
@@ -1155,33 +1155,33 @@ class SyncUpdateProd(SyncUpdateGen):
         super(SyncUpdateProd, self).__init__(*args, **kwargs)
 
     @property
-    def slave_id(self):
-        return self.get_new_subject_value('id', self.slave_name)
+    def subordinate_id(self):
+        return self.get_new_subject_value('id', self.subordinate_name)
 
 
 class SyncUpdateWooMixin(object):
-    slave_target = 'wc-wp-api-v2-edit'
+    subordinate_target = 'wc-wp-api-v2-edit'
 
 
 class SyncUpdateProdWoo(SyncUpdateProd, SyncUpdateWooMixin):
     coldata_class = SyncUpdateProd.coldata_class
-    slave_target = SyncUpdateWooMixin.slave_target
+    subordinate_target = SyncUpdateWooMixin.subordinate_target
 
 
 class SyncUpdateProdXero(SyncUpdateProd):
     coldata_class = SyncUpdateProd.coldata_class
-    slave_target = 'xero-api'
+    subordinate_target = 'xero-api'
 
     @property
-    def slave_id(self):
-        return self.get_new_subject_value('xero_id', self.slave_name)
+    def subordinate_id(self):
+        return self.get_new_subject_value('xero_id', self.subordinate_name)
 
 
 class SyncUpdateVarWoo(SyncUpdateProdWoo):
     coldata_class = ColDataProductVariationMeridian
 
     @property
-    def master_id(self):
+    def main_id(self):
         if not self.old_m_object_gen:
             return
         old_m_object_gen = self.old_m_object_gen
@@ -1190,29 +1190,29 @@ class SyncUpdateVarWoo(SyncUpdateProdWoo):
 
 class SyncUpdateImgWoo(SyncUpdateGen, SyncUpdateWooMixin):
     coldata_class = ColDataAttachment
-    slave_target = SyncUpdateWooMixin.slave_target
+    subordinate_target = SyncUpdateWooMixin.subordinate_target
 
     @property
-    def master_id(self):
+    def main_id(self):
         if not self.old_m_object_gen:
             return
         old_m_object_gen = self.old_m_object_gen
         return old_m_object_gen.attachment_indexer(old_m_object_gen)
 
     @property
-    def slave_id(self):
-        return self.get_new_subject_value('id', self.slave_name)
+    def subordinate_id(self):
+        return self.get_new_subject_value('id', self.subordinate_name)
 
 
 class SyncUpdateCatWoo(SyncUpdateGen, SyncUpdateWooMixin):
     coldata_class = ColDataWcProdCategory
-    slave_target = SyncUpdateWooMixin.slave_target
-    default_master_container = ImportWooCategory
-    default_slave_container = ImportWooApiCategory
+    subordinate_target = SyncUpdateWooMixin.subordinate_target
+    default_main_container = ImportWooCategory
+    default_subordinate_container = ImportWooApiCategory
 
     @property
-    def slave_id(self):
-        return self.get_new_subject_value('term_id', self.slave_name)
+    def subordinate_id(self):
+        return self.get_new_subject_value('term_id', self.subordinate_name)
 
 
 class UpdateList(list, Registrar):
@@ -1262,8 +1262,8 @@ class UpdateList(list, Registrar):
     def get_by_index(self, index):
         return self[self.indices.index(index)]
 
-    def get_by_ids(self, master_id='', slave_id=''):
-        index = self.supported_type.make_index(master_id, slave_id)
+    def get_by_ids(self, main_id='', subordinate_id=''):
+        index = self.supported_type.make_index(main_id, subordinate_id)
         return self.get_by_index(index)
 
     def tabulate(self, cols=None, tablefmt=None, highlight_rules=None):

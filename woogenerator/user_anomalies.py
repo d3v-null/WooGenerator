@@ -9,16 +9,16 @@ from pprint import pformat
 
 import phpserialize
 
-from .merger import (export_slave_parser, populate_filter_settings,
-                     populate_slave_parsers)
+from .merger import (export_subordinate_parser, populate_filter_settings,
+                     populate_subordinate_parsers)
 from .namespace.core import ParserNamespace, ResultsNamespace
 from .namespace.user import SettingsNamespaceUser
 from .utils import Registrar, SanitationUtils
 
 def process_role_anomalies(parsers, settings):
     new_roles = []
-    parsers.slave.bad_role = OrderedDict()
-    for user in parsers.slave.objects.values():
+    parsers.subordinate.bad_role = OrderedDict()
+    for user in parsers.subordinate.objects.values():
         role_reason = None
         wp_roles = user.get('WP Roles')
         if wp_roles:
@@ -50,9 +50,9 @@ def process_role_anomalies(parsers, settings):
                 ]))
                 new_roles.append((user.wpid, new_wp_role))
 
-            parsers.slave.register_anything(
+            parsers.subordinate.register_anything(
                 user,
-                parsers.slave.bad_role,
+                parsers.subordinate.bad_role,
                 user.index,
                 singular=True,
                 register_name='badrole'
@@ -87,7 +87,7 @@ def main(override_args=None, settings=None):
     if not settings:
         settings = SettingsNamespaceUser()
     settings.init_settings(override_args)
-    settings.download_slave = True
+    settings.download_subordinate = True
     settings.report_sanitation = True
     settings.exclude_cols = [
         'Address',
@@ -108,9 +108,9 @@ def main(override_args=None, settings=None):
 
     parsers = ParserNamespace()
     # import pudb; pudb.set_trace()
-    parsers = populate_slave_parsers(parsers, settings)
-    if settings['download_slave'] or settings['do_filter']:
-        export_slave_parser(parsers, settings)
+    parsers = populate_subordinate_parsers(parsers, settings)
+    if settings['download_subordinate'] or settings['do_filter']:
+        export_subordinate_parser(parsers, settings)
 
 
     report_cols = settings.coldata_class.get_col_data_native('report')
@@ -126,9 +126,9 @@ def main(override_args=None, settings=None):
                 report_cols[col] = col
 
     Registrar.register_message(
-        "slave parser: \n%s" %
+        "subordinate parser: \n%s" %
         SanitationUtils.coerce_unicode(
-            parsers.slave.tabulate(
+            parsers.subordinate.tabulate(
                 cols=report_cols
             )
         )

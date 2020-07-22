@@ -305,10 +305,10 @@ class ProductsForm(SyncForm):
 
         super(ProductsForm, self).create()
 
-        self.download_master = self.add_simple_question(
-            name="Download Master",
+        self.download_main = self.add_simple_question(
+            name="Download Main",
             help_str="Has the Google Drive Spreadsheet Been updated recently?",
-            cmd_particles=['--skip-download-master', '--download-master'],
+            cmd_particles=['--skip-download-main', '--download-main'],
             value=1)
 
         # self.generate_report = self.add_simple_question(
@@ -375,8 +375,8 @@ class ProductsForm(SyncForm):
             help_str="Would you like to attempt to automatically sync?",
             value=0,
             cmd_particles=[
-                '--master-and-quit',
-                '--download-slave --do-sync --auto-create-new'
+                '--main-and-quit',
+                '--download-subordinate --do-sync --auto-create-new'
             ])
 
         with self.increase_indent():
@@ -385,9 +385,9 @@ class ProductsForm(SyncForm):
                 help_str="Would you like preview the changes without making them?",
                 value=0,
                 cmd_particles=[
-                    ('--update-slave --auto-create-new --auto-delete-old '
+                    ('--update-subordinate --auto-create-new --auto-delete-old '
                      '--do-problematic --ask-before-update'),
-                    ('--skip-update-slave --do-report --report-duplicates '
+                    ('--skip-update-subordinate --do-report --report-duplicates '
                      '--report-matching --do-mail --report-and-quit')
                 ])
 

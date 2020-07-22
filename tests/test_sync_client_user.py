@@ -54,12 +54,12 @@
 # )
 # class TestUsrSyncClientHardDestructive(TestUsrSyncClient):
 #     def test_s_up_read_write_meta(self):
-#         self.settings.update_slave = True
-#         slave_client_args = self.settings.slave_upload_client_args
-#         slave_client_class = self.settings.slave_upload_client_class
+#         self.settings.update_subordinate = True
+#         subordinate_client_args = self.settings.subordinate_upload_client_args
+#         subordinate_client_class = self.settings.subordinate_upload_client_class
 #
-#         with slave_client_class(**slave_client_args) as slave_client:
-#             page_iterator = slave_client.get_iterator('users?context=edit')
+#         with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+#             page_iterator = subordinate_client.get_iterator('users?context=edit')
 #             first_page = next(page_iterator)
 #             first_usr = first_page[0]
 #             print("first_usr is \n%s" % pformat(first_usr))
@@ -67,11 +67,11 @@
 #             first_usr_grade = first_usr.get('meta',{}).get('client_grade')
 #             new_grade = TimeUtils.get_ms_timestamp()
 #             print("new_grade is %s" % pformat(new_grade))
-#             slave_client.upload_changes(
+#             subordinate_client.upload_changes(
 #                 first_usr_id, {'meta':{'client_grade':new_grade}}
 #             )
 #
-#             response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+#             response = subordinate_client.service.get('users/%s?context=edit' % first_usr_id)
 #             self.assertTrue(response)
 #             self.assertTrue(response.json())
 #             print("updated usr is \n%s" % pformat(response.json()))
@@ -81,22 +81,22 @@
 #                 response.json().get('meta',{}).get('client_grade')
 #             )
 #
-#             slave_client.upload_changes(
+#             subordinate_client.upload_changes(
 #                 first_usr_id, {'meta':{'client_grade':first_usr_grade}}
 #             )
 #
-#             response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+#             response = subordinate_client.service.get('users/%s?context=edit' % first_usr_id)
 #             self.assertTrue(response)
 #             self.assertTrue(response.json())
 #             print("finally, usr is \n%s" % pformat(response.json()))
 #
 #     def test_s_up_delete_meta(self):
-#         self.settings.update_slave = True
-#         slave_client_args = self.settings.slave_upload_client_args
-#         slave_client_class = self.settings.slave_upload_client_class
+#         self.settings.update_subordinate = True
+#         subordinate_client_args = self.settings.subordinate_upload_client_args
+#         subordinate_client_class = self.settings.subordinate_upload_client_class
 #
-#         with slave_client_class(**slave_client_args) as slave_client:
-#             page_iterator = slave_client.get_iterator('users?context=edit')
+#         with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+#             page_iterator = subordinate_client.get_iterator('users?context=edit')
 #             first_page = next(page_iterator)
 #             first_usr = first_page[0]
 #             print("first_usr is \n%s" % pformat(first_usr))
@@ -104,11 +104,11 @@
 #             first_usr_grade = first_usr.get('meta',{}).get('client_grade')
 #             new_grade = None
 #             print("new_grade is %s" % pformat(new_grade))
-#             slave_client.upload_changes(
+#             subordinate_client.upload_changes(
 #                 first_usr_id, {'meta':{'client_grade':new_grade}}
 #             )
 #
-#             response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+#             response = subordinate_client.service.get('users/%s?context=edit' % first_usr_id)
 #             self.assertTrue(response)
 #             self.assertTrue(response.json())
 #             print("updated usr is \n%s" % pformat(response.json()))
@@ -118,32 +118,32 @@
 #                 response.json().get('meta',{}).get('client_grade')
 #             )
 #
-#             slave_client.upload_changes(
+#             subordinate_client.upload_changes(
 #                 first_usr_id, {'meta':{'client_grade':first_usr_grade}}
 #             )
 #
-#             response = slave_client.service.get('users/%s?context=edit' % first_usr_id)
+#             response = subordinate_client.service.get('users/%s?context=edit' % first_usr_id)
 #             self.assertTrue(response)
 #             self.assertTrue(response.json())
 #             print("finally, usr is \n%s" % pformat(response.json()))
 #
 #     def test_s_up_ead_write(self):
-#         self.settings.update_slave = True
-#         slave_client_args = self.settings.slave_upload_client_args
-#         slave_client_class = self.settings.slave_upload_client_class
+#         self.settings.update_subordinate = True
+#         subordinate_client_args = self.settings.subordinate_upload_client_args
+#         subordinate_client_class = self.settings.subordinate_upload_client_class
 #
-#         with slave_client_class(**slave_client_args) as slave_client:
-#             page_iterator = slave_client.get_iterator('users?context=edit')
+#         with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+#             page_iterator = subordinate_client.get_iterator('users?context=edit')
 #             first_page = next(page_iterator)
 #             first_usr = first_page[0]
 #             first_usr_id = first_usr['id']
 #             first_usr_description = first_usr['description']
 #             new_description = TimeUtils.get_ms_timestamp()
-#             slave_client.upload_changes(
+#             subordinate_client.upload_changes(
 #                 first_usr_id, {'description':new_description}
 #             )
 #
-#             response = slave_client.service.get('users/%s' % first_usr_id)
+#             response = subordinate_client.service.get('users/%s' % first_usr_id)
 #             self.assertTrue(response)
 #             self.assertTrue(response.json())
 #
@@ -152,7 +152,7 @@
 #                 response.json().get('description')
 #             )
 #
-#             slave_client.upload_changes(
+#             subordinate_client.upload_changes(
 #                 first_usr_id, {'description':first_usr_description}
 #             )
 #
@@ -163,7 +163,7 @@
 # class TestUsrSyncClientDestructive(TestUsrSyncClient):
 #     def test_sqlwp_analyse(self):
 #         # TODO: Mock out SSH component
-#         self.settings.download_slave = True
+#         self.settings.download_subordinate = True
 #
 #         sa_parser = CsvParseUser(
 #             cols=ColDataUser.get_import_cols(),
@@ -171,7 +171,7 @@
 #         )
 #
 #         with UsrSyncClientSqlWP(
-#             **self.settings.slave_download_client_args
+#             **self.settings.subordinate_download_client_args
 #         ) as sql_client:
 #             sql_client.analyse_remote(sa_parser, since='2016-01-01 00:00:00')
 #
@@ -179,24 +179,24 @@
 #         self.assertIn('neil@technotan.com.au', sa_parser.emails)
 #
 #     def test_ssh_act_upload(self):
-#         self.settings.download_master = True
+#         self.settings.download_main = True
 #
 #         fields = {
 #             "ABN": "1",
 #             "MYOB Card ID": "C000001",
 #         }
 #
-#         master_download_client_args = self.settings.master_download_client_args
-#         # print "master_download_client_args: %s" % repr(master_download_client_args)
+#         main_download_client_args = self.settings.main_download_client_args
+#         # print "main_download_client_args: %s" % repr(main_download_client_args)
 #
-#         with UsrSyncClientSshAct(**master_download_client_args) as client:
+#         with UsrSyncClientSshAct(**main_download_client_args) as client:
 #             response = client.upload_changes('C000001', fields)
 #             self.assertTrue(response)
 #         # print response
 #
 #     def test_wc_read(self):
 #         response = []
-#         with UsrSyncClientWC(self.settings.slave_wc_api_params) as client:
+#         with UsrSyncClientWC(self.settings.subordinate_wc_api_params) as client:
 #             response = client.get_iterator()
 #         # print tabulate(list(response)[:10], headers='keys')
 #         # print list(response)
@@ -206,7 +206,7 @@
 #     #     fields = {"user_email": "neil@technotan.com.au"}
 #     #
 #     #     response = ''
-#     #     with UsrSyncClientWC(self.settings.slave_wc_api_params) as client:
+#     #     with UsrSyncClientWC(self.settings.subordinate_wc_api_params) as client:
 #     #         response = client.upload_changes(2, fields)
 #     #
 #     #     print response
@@ -215,7 +215,7 @@
 #     #     fields = {"first_name": "neil"}
 #     #
 #     #     response = ''
-#     #     with UsrSyncClientWC(self.settings.slave_wc_api_params) as client:
+#     #     with UsrSyncClientWC(self.settings.subordinate_wc_api_params) as client:
 #     #         response = client.upload_changes(1, fields)
 #     #
 #     #     self.assertTrue(response)
@@ -226,7 +226,7 @@
 #     #     user_id = 2508
 #     #
 #     #     response = None
-#     #     with UsrSyncClientWC(self.settings.slave_wc_api_params) as client:
+#     #     with UsrSyncClientWC(self.settings.subordinate_wc_api_params) as client:
 #     #         response = client.upload_changes(user_id, fields)
 #     #
 #     #     updated = ''
@@ -259,7 +259,7 @@
 #     #     user_id = 2508
 #     #
 #     #     response = None
-#     #     with UsrSyncClientWC(self.settings.slave_wc_api_params) as client:
+#     #     with UsrSyncClientWC(self.settings.subordinate_wc_api_params) as client:
 #     #         response = client.upload_changes(user_id, fields)
 #     #
 #     #     updated = ''
@@ -288,15 +288,15 @@
 #
 #     def test_wp_read(self):
 #         response = []
-#         with UsrSyncClientWP(self.settings.slave_wp_api_params) as client:
+#         with UsrSyncClientWP(self.settings.subordinate_wp_api_params) as client:
 #             response = client.get_iterator()
 #         # print tabulate(list(response)[:10], headers='keys')
 #         # print list(response)
 #         self.assertTrue(response)
 #
 #     def test_wp_iterator(self):
-#         with UsrSyncClientWP(self.settings.slave_wp_api_params) as slave_client:
-#             iterator = slave_client.get_iterator('users?context=edit')
+#         with UsrSyncClientWP(self.settings.subordinate_wp_api_params) as subordinate_client:
+#             iterator = subordinate_client.get_iterator('users?context=edit')
 #             self.assertTrue(next(iterator))
 #
 #     @unittest.skip("takes too long")
@@ -312,8 +312,8 @@
 #             defaults=ColDataUser.get_defaults()
 #         )
 #
-#         with UsrSyncClientWP(self.settings.slave_wp_api_params) as slave_client:
-#             slave_client.analyse_remote(sa_parser)
+#         with UsrSyncClientWP(self.settings.subordinate_wp_api_params) as subordinate_client:
+#             subordinate_client.analyse_remote(sa_parser)
 #
 #         self.assertTrue(sa_parser.objects)
 #         # print sa_parser.tabulate()
@@ -341,35 +341,35 @@
 # class TestUsrSyncClientConstructors(TestUsrSyncClient):
 #
 #     def test_make_usr_m_up_client(self):
-#         self.settings.update_master = True
-#         master_client_args = self.settings.master_upload_client_args
-#         master_client_class = self.settings.master_upload_client_class
-#         with master_client_class(**master_client_args) as master_client:
-#             self.assertTrue(master_client)
+#         self.settings.update_main = True
+#         main_client_args = self.settings.main_upload_client_args
+#         main_client_class = self.settings.main_upload_client_class
+#         with main_client_class(**main_client_args) as main_client:
+#             self.assertTrue(main_client)
 #
 #     def test_make_usr_s_up_client(self):
-#         self.settings.update_slave = True
-#         slave_client_args = self.settings.slave_upload_client_args
-#         self.assertTrue(slave_client_args['connect_params']['api_key'])
-#         slave_client_class = self.settings.slave_upload_client_class
-#         with slave_client_class(**slave_client_args) as slave_client:
-#             self.assertTrue(slave_client)
+#         self.settings.update_subordinate = True
+#         subordinate_client_args = self.settings.subordinate_upload_client_args
+#         self.assertTrue(subordinate_client_args['connect_params']['api_key'])
+#         subordinate_client_class = self.settings.subordinate_upload_client_class
+#         with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+#             self.assertTrue(subordinate_client)
 #
 #     def test_make_usr_m_down_client(self):
-#         self.settings.download_master = True
-#         master_client_args = self.settings.master_download_client_args
-#         master_client_class = self.settings.master_download_client_class
-#         with master_client_class(**master_client_args) as master_client:
-#             self.assertTrue(master_client)
+#         self.settings.download_main = True
+#         main_client_args = self.settings.main_download_client_args
+#         main_client_class = self.settings.main_download_client_class
+#         with main_client_class(**main_client_args) as main_client:
+#             self.assertTrue(main_client)
 #
 #     def test_make_usr_s_down_client(self):
-#         self.settings.download_slave = True
-#         slave_client_args = self.settings.slave_download_client_args
-#         self.assertTrue(slave_client_args['connect_params']['remote_bind_address'][0])
-#         self.assertTrue(slave_client_args['connect_params']['remote_bind_address'][1])
-#         slave_client_class = self.settings.slave_download_client_class
-#         with slave_client_class(**slave_client_args) as slave_client:
-#             self.assertTrue(slave_client)
+#         self.settings.download_subordinate = True
+#         subordinate_client_args = self.settings.subordinate_download_client_args
+#         self.assertTrue(subordinate_client_args['connect_params']['remote_bind_address'][0])
+#         self.assertTrue(subordinate_client_args['connect_params']['remote_bind_address'][1])
+#         subordinate_client_class = self.settings.subordinate_download_client_class
+#         with subordinate_client_class(**subordinate_client_args) as subordinate_client:
+#             self.assertTrue(subordinate_client)
 #
 # @pytest.mark.skip
 # @unittest.skip("no config file yet")
@@ -389,15 +389,15 @@
 #         wp_pass = config.get(self.optionNamePrefix + 'wp_pass')
 #         wp_callback = config.get(self.optionNamePrefix + 'wp_callback')
 #         merge_mode = config.get('merge_mode', 'sync')
-#         master_name = config.get('master_name', 'MASTER')
-#         slave_name = config.get('slave_name', 'SLAVE')
+#         main_name = config.get('main_name', 'MASTER')
+#         subordinate_name = config.get('subordinate_name', 'SLAVE')
 #         default_last_sync = config.get('default_last_sync')
 #
 #         TimeUtils.set_wp_srv_offset(wp_srv_offset)
-#         SyncUpdate.set_globals(master_name, slave_name, merge_mode,
+#         SyncUpdate.set_globals(main_name, subordinate_name, merge_mode,
 #                                default_last_sync)
 #
-#         self.slave_wp_api_params = {
+#         self.subordinate_wp_api_params = {
 #             'api_key': wp_api_key,
 #             'api_secret': wp_api_secret,
 #             'url': store_url,
@@ -411,23 +411,23 @@
 #     def setUp(self):
 #         super(TestSyncUpdateUsr, self).setUp()
 #
-#         for var in ['slave_wp_api_params']:
+#         for var in ['subordinate_wp_api_params']:
 #             self.assertTrue(getattr(self, var))
 #             # print var, getattr(self, var)
 #
 #         # Registrar.DEBUG_API = True
 #
-#     def test_upload_slave_changes(self):
+#     def test_upload_subordinate_changes(self):
 #
 #         ma_parser = CsvParseUser(
 #             cols=ColDataUser.get_act_import_cols(),
 #             defaults=ColDataUser.get_defaults())
 #
-#         master_bus_type = "Salon"
-#         master_client_grade = str(random.random())
-#         master_uname = "neil"
+#         main_bus_type = "Salon"
+#         main_client_grade = str(random.random())
+#         main_uname = "neil"
 #
-#         master_data = [
+#         main_data = [
 #             map(unicode, row)
 #             for row in [[
 #                 "E-mail", "Role", "First Name", "Surname", "Nick Name",
@@ -442,16 +442,16 @@
 #                 "Wordpress Username", "display_name", "ID", "updated"
 #             ], [
 #                 "neil@technotan.com.au", "ADMIN", "Neil", "Cunliffe-Williams",
-#                 "Neil Cunliffe-Williams", "", master_client_grade, "TT", "",
+#                 "Neil Cunliffe-Williams", "", main_client_grade, "TT", "",
 #                 "", +61416160912, "", "Laserphile", "7 Grosvenor Road", "",
 #                 "Bayswater", 6053, "WA", "AU", "0416160912",
 #                 "7 Grosvenor Road", "", "Bayswater", 6053, "AU", "WA", "", "",
-#                 "http://technotan.com.au", 32, master_bus_type, "", "", "", "",
-#                 "", "", master_uname, "Neil", 1, "2015-07-13 22:33:05"
+#                 "http://technotan.com.au", 32, main_bus_type, "", "", "", "",
+#                 "", "", main_uname, "Neil", 1, "2015-07-13 22:33:05"
 #             ]]
 #         ]
 #
-#         ma_parser.analyse_rows(master_data)
+#         ma_parser.analyse_rows(main_data)
 #
 #         # print "MASTER RECORDS: \n", ma_parser.tabulate()
 #
@@ -459,8 +459,8 @@
 #             cols=ColDataUser.get_wp_import_cols(),
 #             defaults=ColDataUser.get_defaults())
 #
-#         with UsrSyncClientWP(self.slave_wp_api_params) as slave_client:
-#             slave_client.analyse_remote(sa_parser, search=master_uname)
+#         with UsrSyncClientWP(self.subordinate_wp_api_params) as subordinate_client:
+#             subordinate_client.analyse_remote(sa_parser, search=main_uname)
 #
 #         # print "SLAVE RECORDS: \n", sa_parser.tabulate()
 #
@@ -492,16 +492,16 @@
 #             if sync_update.s_updated:
 #                 insort(updates, sync_update)
 #
-#         slave_failures = []
+#         subordinate_failures = []
 #
 #         #
 #         response_json = {}
 #
-#         with UsrSyncClientWP(self.slave_wp_api_params) as slave_client:
+#         with UsrSyncClientWP(self.subordinate_wp_api_params) as subordinate_client:
 #
 #             for count, update in enumerate(updates):
 #                 try:
-#                     response = update.update_slave(slave_client)
+#                     response = update.update_subordinate(subordinate_client)
 #                     # print "response (code) is %s" % response
 #                     assert \
 #                         response, \
@@ -512,33 +512,33 @@
 #                         response_json = response.json()
 #
 #                 except Exception as exc:
-#                     slave_failures.append({
+#                     subordinate_failures.append({
 #                         'update':
 #                         update,
-#                         'master':
+#                         'main':
 #                         SanitationUtils.coerce_unicode(update.new_m_object),
-#                         'slave':
+#                         'subordinate':
 #                         SanitationUtils.coerce_unicode(update.new_s_object),
 #                         'mchanges':
 #                         SanitationUtils.coerce_unicode(
-#                             update.get_master_updates()),
+#                             update.get_main_updates()),
 #                         'schanges':
 #                         SanitationUtils.coerce_unicode(
-#                             update.get_slave_updates()),
+#                             update.get_subordinate_updates()),
 #                         'exception':
 #                         repr(exc)
 #                     })
 #                     Registrar.register_error(
 #                         "ERROR UPDATING SLAVE (%s): %s\n%s" %
-#                         (update.slave_id, repr(exc), traceback.format_exc()))
+#                         (update.subordinate_id, repr(exc), traceback.format_exc()))
 #
 #         self.assertTrue(response_json.get('meta'))
 #         self.assertEqual(
 #             response_json.get('meta', {}).get('business_type'),
-#             master_bus_type)
+#             main_bus_type)
 #         self.assertEqual(
 #             response_json.get('meta', {}).get('client_grade'),
-#             master_client_grade)
+#             main_client_grade)
 #
 # if __name__ == '__main__':
 #     unittest.main()
